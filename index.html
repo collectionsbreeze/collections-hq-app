@@ -1,0 +1,3081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collections HQ</title>
+<style>
+  /* Collections HQ — Apple system design.
+     Uses Apple's own dark-mode semantic colours (systemBlue #0A84FF, systemRed #FF453A,
+     etc.), their label opacities (60% / 30% for secondary / tertiary), their fill tokens
+     (rgba(120,120,128,·)) and their separator (rgba(84,84,88,.6)), with the current Liquid
+     Glass material laid over an atmospheric wallpaper. Type is SF Pro via the system stack
+     so it renders in the OS's own face; SF Mono for identifiers. No web fonts are loaded. */
+  :root{
+    /* Apple dark-mode semantic colours */
+    --sys-blue:#0A84FF;   --sys-green:#30D158;  --sys-red:#FF453A;
+    --sys-orange:#FF9F0A; --sys-yellow:#FFD60A; --sys-purple:#BF5AF2;
+    --sys-teal:#64D2FF;   --sys-indigo:#5E5CE6; --sys-gray:#8E8E93;
+    --label:#FFFFFF;
+    --label-2:rgba(235,235,245,.60);
+    --label-3:rgba(235,235,245,.30);
+    --label-4:rgba(235,235,245,.18);
+    --fill-1:rgba(120,120,128,.36);
+    --fill-2:rgba(120,120,128,.32);
+    --fill-3:rgba(120,120,128,.24);
+    --fill-4:rgba(120,120,128,.18);
+    --separator:rgba(84,84,88,.60);
+    --separator-opaque:#38383A;
+
+    /* Liquid Glass material */
+    --glass:linear-gradient(160deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.07) 45%, rgba(255,255,255,.04) 100%);
+    --glass-raised:linear-gradient(160deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.11) 50%, rgba(255,255,255,.06) 100%);
+    --glass-blur:blur(18px) saturate(150%);
+    --glass-edge:inset 0 1px 0 rgba(255,255,255,.28), inset 0 -0.5px 0 rgba(255,255,255,.06);
+    --glass-shadow:0 20px 44px -18px rgba(0,0,0,.75), 0 2px 8px -2px rgba(0,0,0,.45);
+    --glass-shadow-sm:0 8px 22px -12px rgba(0,0,0,.6);
+    --stroke:rgba(255,255,255,.14);
+    --stroke-soft:rgba(255,255,255,.08);
+
+    /* iOS radii */
+    --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px; --r-pill:999px;
+
+    /* aliases so existing inline styles and JS keep resolving */
+    --ink:var(--label); --ink-soft:var(--label-2); --ink-dim:var(--label-2); --ink-faint:var(--label-3);
+    --accent:var(--sys-blue); --accent-soft:rgba(10,132,255,.22); --accent-strong:#409CFF; --accent-bg:rgba(10,132,255,.22);
+    --red:var(--sys-red);       --red-bg:rgba(255,69,58,.20);     --brick:var(--sys-red);   --brick-soft:rgba(255,69,58,.20);
+    --amber:var(--sys-orange);  --amber-bg:rgba(255,159,10,.20);  --amber-soft:rgba(255,159,10,.20);
+    --yellow:var(--sys-yellow); --yellow-bg:rgba(255,214,10,.18);
+    --green:var(--sys-green);   --green-bg:rgba(48,209,88,.20);   --green-soft:rgba(48,209,88,.20);
+    --blue:var(--sys-blue);     --blue-bg:rgba(10,132,255,.22);
+    --purple:var(--sys-purple); --purple-bg:rgba(191,90,242,.20); --violet:var(--sys-purple); --violet-soft:rgba(191,90,242,.20);
+    --gray:var(--sys-gray);     --gray-bg:rgba(142,142,147,.22);  --slate:var(--sys-gray);  --slate-soft:rgba(142,142,147,.22);
+    --maroon:var(--sys-red);
+    --panel:var(--glass); --panel-hover:var(--glass-raised); --panel-border:var(--stroke);
+    --line:var(--separator); --line-soft:var(--stroke-soft);
+    --surface:var(--glass); --surface-2:var(--glass-raised); --surface-3:var(--fill-3); --bg2:var(--glass);
+    --hairline:var(--stroke); --hairline-soft:var(--stroke-soft); --mat:var(--glass); --mat-hi:var(--glass-raised); --mat-sunk:var(--fill-4);
+    --edge:var(--glass-edge); --lift:var(--glass-shadow); --lift-sm:var(--glass-shadow-sm);
+    --radius:var(--r-lg); --radius-sm:var(--r-md); --radius-xs:var(--r-sm); --r-card:var(--r-lg); --r-inner:var(--r-md);
+    --blur:var(--glass-blur); --blur-lite:blur(12px) saturate(140%);
+  }
+  .cd-glass{ backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); }
+  *{ box-sizing:border-box; }
+
+  #cdApp, #cdDrawer, #cdModal{
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Helvetica Neue", system-ui, sans-serif;
+  }
+  /* The wallpaper sits on its own fixed layer instead of on #cdApp with
+     background-attachment:fixed. Attached to the scrolling element, the browser had to
+     repaint four large radial gradients on every hover and scroll — that is what made the
+     tables feel sticky. On its own layer it is painted once and composited thereafter. */
+  #cdBackdrop{
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background-color:#000;
+    background-image:
+      radial-gradient(ellipse 1300px 800px at 0% -20%, rgba(10,132,255,.30), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 100% -10%, rgba(191,90,242,.20), transparent 58%),
+      radial-gradient(ellipse 1200px 900px at 70% 115%, rgba(255,159,10,.14), transparent 60%),
+      radial-gradient(ellipse 900px 700px at -10% 110%, rgba(100,210,255,.12), transparent 60%);
+    transform:translateZ(0);
+  }
+  #cdApp{
+    background:transparent;
+    color:var(--label);
+    min-height:100vh; display:flex;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    font-size:15px; line-height:1.4; letter-spacing:-.016em;   /* SF body: 15/20, -0.24pt */
+    color-scheme:dark;
+  }
+  /* Default text colour without the ID-level specificity that was silently overriding every
+     component rule below. `:where()` carries zero specificity, so a plain class rule wins. */
+  :where(#cdApp, #cdDrawer){ color:var(--label); }
+  :where(#cdApp *, #cdDrawer *){ color:inherit; }
+
+  /* SF Mono for identifiers only */
+  .mono{ font-family:ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric:tabular-nums; letter-spacing:0; font-size:.94em; }
+
+  /* Form controls take the current text colour. No !important and no -webkit-text-fill-color:
+     both were forcing every button white, which hid the green "Sent" doc buttons, the blue
+     inline buttons and the red delete links. */
+  input, textarea, select, button{
+    color:inherit; background-color:transparent;
+    caret-color:var(--sys-blue); font-family:inherit; letter-spacing:inherit;
+  }
+  ::placeholder{ color:var(--label-3); opacity:1; }
+  ::selection{ background:rgba(10,132,255,.4); }
+  :focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.5); border-radius:var(--r-sm); }
+  #cdApp ::-webkit-scrollbar{ width:10px; height:10px; }
+  #cdApp ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:999px; border:3px solid transparent; background-clip:content-box; }
+  #cdApp ::-webkit-scrollbar-track{ background:transparent; }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+
+  /* ---- iPadOS sidebar ---- */
+  #cdNav{
+    width:260px; flex:none; padding:22px 14px; height:100vh; position:sticky; top:0; overflow-y:auto;
+    background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    border-right:0.5px solid var(--stroke);
+  }
+  .cd-brand{ padding:8px 12px 24px; }
+  .cd-brand b{ font-size:22px; font-weight:700; display:block; letter-spacing:-.026em; line-height:1.15; }
+  .cd-brand span{ font-size:13px; color:var(--label-2); letter-spacing:-.008em; }
+  .cd-navsec{
+    font-size:13px; font-weight:400; color:var(--label-2); padding:22px 12px 6px; letter-spacing:-.008em;
+    text-transform:uppercase; font-size:12px; letter-spacing:.02em;
+  }
+  .cd-navbtn{
+    display:flex; align-items:center; gap:12px;
+    padding:9px 12px; border-radius:var(--r-sm); border:none; background:transparent;
+    color:var(--label); font-size:15px; font-weight:400; text-align:left; cursor:pointer;
+    width:100%; font-family:inherit; letter-spacing:-.016em; margin-bottom:1px;
+    transition:background .15s ease;
+  }
+  .cd-navicon{ width:20px; height:20px; flex:none; color:var(--sys-blue); }
+  .cd-navicon svg{ width:20px; height:20px; display:block; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .cd-navbtn .cd-navdot{ display:none; }
+  .cd-navbtn:hover{ background:var(--fill-4); }
+  .cd-navbtn.on{ background:var(--fill-3); font-weight:500; }
+  .cd-navbtn .cd-navcount{
+    margin-left:auto; font-size:15px; font-variant-numeric:tabular-nums; color:var(--label-2); font-weight:400;
+  }
+  .cd-navbtn .cd-navcount.urgent{
+    color:#FFFFFF; background:var(--sys-red); border-radius:var(--r-pill); padding:1px 8px;
+    font-weight:500; font-size:13px; min-width:22px; text-align:center;
+  }
+
+  /* ---- Main ---- */
+  #cdMain{ flex:1; min-width:0; padding:38px 40px 90px; max-width:1320px; }
+  .cd-h1{ font-size:34px; font-weight:700; margin:0 0 6px; letter-spacing:-.037em; line-height:1.18; }   /* Large Title */
+  .cd-sub{ font-size:15px; color:var(--label-2); margin:0 0 28px; max-width:70ch; }
+
+  /* ---- Glass card ---- */
+  .cd-panel{
+    background:var(--glass);
+    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    border:0.5px solid var(--stroke); border-radius:var(--r-lg);
+    padding:0 20px 18px; margin-bottom:20px;
+    box-shadow:var(--glass-edge), var(--glass-shadow);
+  }
+  .cd-panel h3{
+    font-size:20px; font-weight:700; letter-spacing:-.026em;   /* Title 3 */
+    margin:0 -20px 14px; padding:18px 20px 14px;
+  }
+  .cd-panel > div:first-child > h3{ margin:0; padding:0; }
+  .cd-panel > div:first-child{ margin:0 -20px 14px; padding:18px 20px 12px; }
+  .cd-caption{ font-size:13px; color:var(--label-2); margin:-6px 0 14px; max-width:78ch; }
+  .cd-empty{ color:var(--label-3); font-size:15px; padding:34px 0; text-align:center; }
+
+  /* ---- Banner ---- */
+  .cd-nagbanner{
+    background:rgba(255,69,58,.18); border:0.5px solid rgba(255,69,58,.35);
+    border-radius:var(--r-md); padding:14px 18px; margin-bottom:14px;
+    display:flex; align-items:center; gap:10px; cursor:pointer; font-size:15px;
+    transition:background .15s ease;
+  }
+  .cd-nagbanner b{ color:var(--sys-red); font-weight:600; }
+  .cd-nagbanner:hover{ background:rgba(255,69,58,.26); }
+
+  /* ---- Chips as iOS filter capsules ---- */
+  .cd-chiprow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  .cd-chip{
+    display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:var(--r-pill);
+    background:var(--fill-3); border:none; font-size:15px; font-weight:400;
+    cursor:pointer; white-space:nowrap; color:var(--label);
+    transition:background .15s ease;
+  }
+  .cd-chip:hover{ background:var(--fill-2); }
+  .cd-chip.on{ background:var(--label); color:#000; font-weight:500; }
+  .cd-chip.on *{ color:inherit; }
+  .cd-chip b{ font-variant-numeric:tabular-nums; font-weight:500; }
+  .cd-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  /* ---- Tables ---- */
+  .cd-table{ width:100%; border-collapse:separate; border-spacing:0; font-size:15px; }
+  .cd-table th{
+    text-align:right; font-size:13px; font-weight:400; color:var(--label-2);
+    padding:16px 16px 12px; border-bottom:0.5px solid var(--separator);
+    white-space:nowrap; cursor:pointer; user-select:none; letter-spacing:-.008em;
+  }
+  .cd-table th:first-child, .cd-table th:nth-child(2){ text-align:left; }
+  .cd-table th:hover{ color:var(--label); }
+  .cd-table td{
+    text-align:right; padding:14px 16px; border-bottom:0.5px solid var(--separator);
+    vertical-align:middle; font-variant-numeric:tabular-nums;
+  }
+  .cd-table td:first-child, .cd-table td:nth-child(2){ text-align:left; }
+  .cd-table tbody tr{ cursor:pointer; }
+  .cd-table tbody tr:hover td{ background:var(--fill-4); }
+  .cd-table tbody tr:last-child td{ border-bottom:none; }
+  .cd-namecell b{ display:block; font-size:15px; font-weight:500; letter-spacing:-.016em; }
+  .cd-namecell > span{
+    display:block; font-size:12px; color:var(--label-2); margin-top:2px;
+    font-family:ui-monospace,"SF Mono",Menlo,monospace; letter-spacing:0;
+  }
+  .cd-sortarrow{ margin-left:5px; color:var(--sys-blue); }
+  .cd-flagpill{
+    display:inline-block; font-size:12px; font-weight:500; background:rgba(255,159,10,.2);
+    color:var(--sys-orange); padding:2px 9px; border-radius:var(--r-pill); margin-left:8px; vertical-align:middle;
+  }
+
+  /* ---- Badges: iOS tinted capsules ---- */
+  .cd-badge{
+    display:inline-block; padding:4px 11px; border-radius:var(--r-pill);
+    font-size:13px; font-weight:500; white-space:nowrap; letter-spacing:-.008em;
+  }
+  .cd-pctbar{
+    display:inline-block; width:56px; height:6px; border-radius:999px;
+    background:var(--fill-3); overflow:hidden; vertical-align:middle; margin-right:10px;
+  }
+  .cd-pctbar i{ display:block; height:100%; border-radius:999px; background:var(--sys-blue); }
+
+  .cd-toolbar{ margin-bottom:18px; }
+  .cd-search{
+    background:var(--fill-3); border:none; border-radius:var(--r-sm);
+    padding:9px 14px; font-size:15px; width:100%; max-width:380px;
+    transition:background .15s ease;
+  }
+  .cd-search:focus{ outline:none; background:var(--fill-2); box-shadow:0 0 0 3px rgba(10,132,255,.45); }
+
+  /* ---- Buttons ---- */
+  .cd-savebtn{
+    background:var(--sys-blue); color:#FFFFFF; border:none; border-radius:var(--r-pill);
+    padding:10px 20px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
+    letter-spacing:-.016em; transition:filter .15s ease, transform .1s ease;
+  }
+  .cd-savebtn:hover{ filter:brightness(1.08); }
+  .cd-savebtn:active{ transform:scale(.97); }
+  .cd-savebtn:disabled{ opacity:.4; cursor:default; }
+  .cd-savebtn.secondary{ background:rgba(10,132,255,.22); color:var(--sys-blue); }
+  .cd-savebtn.secondary:hover{ background:rgba(10,132,255,.3); filter:none; }
+  .cd-saveok{ display:none; font-size:13px; color:var(--sys-green); margin-left:10px; }
+
+  /* ---- Grouped list rows with disclosure chevron ---- */
+  .cd-listrow{
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    padding:13px 34px 13px 14px; margin:0 -14px; position:relative;
+    border-bottom:0.5px solid var(--separator); font-size:15px; cursor:pointer;
+    transition:background .12s ease;
+  }
+  .cd-listrow::after{
+    content:"\203A"; position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    color:var(--label-3); font-size:22px; line-height:1; font-weight:300;
+  }
+  .cd-listrow:hover{ background:var(--fill-4); border-radius:var(--r-sm); }
+  .cd-listrow:last-child{ border-bottom:none; }
+  .cd-listrow b{ font-weight:500; letter-spacing:-.016em; }
+  .cd-listrow small{ color:var(--label-2); display:block; margin-top:2px; font-size:13px; }
+
+  /* ---- KPI widgets ---- */
+  .cd-kpirow{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
+  .cd-kpi{
+    background:var(--glass); border:0.5px solid var(--stroke); border-radius:var(--r-lg);
+    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    padding:18px 20px 20px; box-shadow:var(--glass-edge), var(--glass-shadow);
+  }
+  .cd-kpi span{ font-size:13px; color:var(--label-2); display:block; margin-bottom:8px; font-weight:500; letter-spacing:-.008em; }
+  .cd-kpi b, .cd-kpi b.mono{ font-family:inherit; font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.04em; line-height:1; }
+  .cd-kpisub{ font-size:13px; color:var(--label-2); margin-top:8px; }
+
+  /* ---- Drawer (sheet) ---- */
+  #cdDrawer{
+    position:fixed; top:0; right:0; width:520px; max-width:95vw; height:100vh;
+    background:linear-gradient(165deg, rgba(38,44,54,.985), rgba(22,26,33,.985) 55%, rgba(17,20,26,.985));
+    border-left:0.5px solid var(--stroke); transform:translateX(100%);
+    will-change:transform; contain:layout paint;
+    transition:transform .4s cubic-bezier(.32,.72,0,1); z-index:50; overflow-y:auto;
+    padding:30px 28px 80px; box-shadow:-40px 0 100px -30px rgba(0,0,0,.9);
+  }
+  #cdDrawer.on{ transform:translateX(0); }
+  #cdDrawerOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; display:none; }
+  #cdDrawerOverlay.on{ display:block; }
+
+  /* ---- Modal (alert sheet) ---- */
+  #cdModalOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.62); z-index:59; display:none; align-items:center; justify-content:center; }
+  #cdModalOverlay.on{ display:flex; }
+  #cdModal{
+    background:linear-gradient(165deg, rgba(40,46,56,.99), rgba(24,28,36,.99));
+    border:0.5px solid var(--stroke); border-radius:var(--r-xl); padding:26px;
+    width:470px; max-width:93vw; max-height:86vh; overflow-y:auto;
+    box-shadow:var(--glass-edge), 0 40px 100px -24px rgba(0,0,0,.85);
+  }
+  #cdModal h3{ font-size:22px; font-weight:700; margin:0 0 18px; letter-spacing:-.03em; }
+
+  /* iOS close: grey circle with ✕ */
+  .cd-modalclose, .cd-drclose{
+    background:var(--fill-3); border:none; color:var(--label-2); cursor:pointer;
+    width:30px; height:30px; border-radius:50%; font-size:15px; line-height:30px; text-align:center; padding:0;
+    transition:background .15s ease;
+  }
+  .cd-modalclose{ float:right; }
+  .cd-drclose{ position:absolute; top:26px; right:26px; }
+  .cd-modalclose:hover, .cd-drclose:hover{ background:var(--fill-2); color:var(--label); }
+
+  .cd-dealpick{ max-height:190px; overflow-y:auto; border-radius:var(--r-md); margin-top:6px; background:var(--fill-4); }
+  .cd-dealpickrow{ padding:11px 14px; font-size:15px; cursor:pointer; border-bottom:0.5px solid var(--separator); }
+  .cd-dealpickrow:last-child{ border-bottom:none; }
+  .cd-dealpickrow:hover{ background:var(--fill-3); }
+  .cd-dealpickrow.picked{ background:rgba(10,132,255,.25); }
+
+  .cd-drtitle{ font-size:28px; font-weight:700; padding-right:40px; margin-bottom:4px; letter-spacing:-.035em; line-height:1.15; }
+  .cd-drsub{ font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12px; color:var(--label-2); margin-bottom:22px; }
+  .cd-drsect{
+    font-size:13px; font-weight:400; color:var(--label-2); margin:28px 0 8px; padding:0 4px;
+    text-transform:uppercase; letter-spacing:.02em;   /* iOS grouped section header */
+  }
+  .cd-drsect-toggle{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+  .cd-drsect-toggle:hover{ color:var(--label); }
+  .cd-drsect-chevron{ font-size:11px; transition:transform .25s cubic-bezier(.32,.72,0,1); display:inline-block; }
+  .cd-drsect-chevron.open{ transform:rotate(90deg); }
+  .cd-collapsible-body{ overflow:hidden; }
+
+  /* Segmented control */
+  .cd-drtabbar{
+    display:flex; background:var(--fill-3); border-radius:var(--r-sm); padding:2px; margin-bottom:8px;
+  }
+  .cd-drtab{
+    flex:1; padding:7px 10px; background:transparent; border:none; color:var(--label); font-size:13px;
+    font-weight:500; cursor:pointer; font-family:inherit; border-radius:8px; margin:0; white-space:nowrap;
+    transition:background .18s ease, box-shadow .18s ease;
+  }
+  .cd-drtab.on{ background:#636366; color:#FFFFFF; box-shadow:0 3px 8px rgba(0,0,0,.25), inset 0 0.5px 0 rgba(255,255,255,.2); }
+
+  .cd-tlrow{ display:flex; justify-content:space-between; padding:9px 0; font-size:15px; border-bottom:0.5px solid var(--separator); }
+  .cd-tlrow:last-child{ border-bottom:none; }
+  .cd-tlrow span:first-child{ color:var(--label-2); }
+  .cd-tlrow span:last-child{ font-variant-numeric:tabular-nums; }
+  .cd-note{
+    width:100%; background:var(--fill-3) !important; border:none;
+    border-radius:var(--r-md); padding:12px 14px; color:var(--label) !important;
+    font-family:inherit; font-size:15px; min-height:72px; resize:vertical;
+  }
+  .cd-note:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
+  .cd-comment{ background:var(--fill-4); border-radius:var(--r-md); padding:13px 15px; margin-bottom:10px; }
+  .cd-comment-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .cd-comment-time{ font-size:13px; color:var(--label-2); }
+  .cd-comment-del{ background:none; border:none; color:var(--sys-red); font-size:13px; cursor:pointer; font-family:inherit; padding:0; opacity:.7; }
+  .cd-comment-del:hover{ opacity:1; }
+  .cd-comment-text{ font-size:15px; white-space:pre-wrap; }
+  .cd-logrow{ display:flex; gap:12px; padding:8px 0; border-bottom:0.5px solid var(--separator); font-size:13px; }
+  .cd-logrow span:first-child{ color:var(--label-2); font-family:ui-monospace,"SF Mono",Menlo,monospace; white-space:nowrap; font-size:12px; }
+  .cd-select{
+    background:var(--fill-3) !important; border:none; border-radius:var(--r-sm);
+    padding:10px 14px; font-size:15px; width:100%; -webkit-appearance:none; appearance:none;
+  }
+  .cd-select:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
+  .cd-datebtn{ display:flex; cursor:pointer; }
+  .cd-minical{
+    background:linear-gradient(165deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+    backdrop-filter:blur(18px) saturate(150%); border:0.5px solid var(--stroke);
+    border-radius:var(--r-lg); padding:14px; margin-top:8px; width:100%;
+    box-shadow:var(--glass-edge), var(--glass-shadow);
+  }
+  .cd-minicalhead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:17px; }
+  .cd-minicalhead b{ font-weight:600; letter-spacing:-.02em; }
+  .cd-minicalhead button{ background:none; border:none; color:var(--sys-blue); cursor:pointer; font-size:20px; width:30px; height:30px; border-radius:50%; font-weight:500; }
+  .cd-minicalhead button:hover{ background:var(--fill-4); }
+  .cd-minicalgrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .cd-minicaldow{ font-size:13px; color:var(--label-2); text-align:center; padding:5px 0; font-weight:500; }
+  .cd-minicalday{
+    background:none; border:none; color:var(--label); font-size:17px; padding:0; height:38px;
+    border-radius:50%; cursor:pointer; font-family:inherit; font-variant-numeric:tabular-nums; font-weight:400;
+    transition:background .12s ease;
+  }
+  .cd-minicalday:hover{ background:var(--fill-3); }
+  .cd-minicalday.today{ color:var(--sys-blue); font-weight:600; }
+  .cd-minicalday.sel{ background:var(--sys-blue); color:#FFFFFF; font-weight:600; }
+  .cd-inlinebtn{
+    background:rgba(10,132,255,.2); border:none; border-radius:var(--r-pill);
+    padding:6px 14px; font-size:13px; font-weight:500; cursor:pointer; color:var(--sys-blue);
+    transition:background .15s ease;
+  }
+  .cd-inlinebtn:hover{ background:rgba(10,132,255,.3); }
+  .cd-docrow{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; font-size:15px; border-bottom:0.5px solid var(--separator); }
+  .cd-docrow:last-child{ border-bottom:none; }
+  .cd-docstate{ display:flex; gap:6px; }
+  .cd-docbtn{
+    font-size:13px; font-weight:500; padding:5px 12px; border-radius:var(--r-pill);
+    border:none; background:var(--fill-4); cursor:pointer; color:var(--label-2);
+    transition:background .15s ease, color .15s ease;
+  }
+  .cd-docbtn:hover{ background:var(--fill-3); color:var(--label); }
+  .cd-docbtn.on{ background:rgba(48,209,88,.22); color:var(--sys-green); }
+  .cd-docbtn.na.on{ background:var(--fill-3); color:var(--label); }
+  .cd-warn{
+    background:rgba(255,159,10,.2); border:none;
+    border-radius:var(--r-md); padding:13px 16px; font-size:15px; color:var(--sys-orange); margin-bottom:18px;
+  }
+
+  /* ---- Calendar ---- */
+  .cd-calgrid{ display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:124px; gap:8px; }
+  .cd-calhead{ font-size:13px; font-weight:500; color:var(--label-2); text-align:center; padding:6px 0; }
+  .cd-calday{
+    background:var(--glass); border:0.5px solid var(--stroke-soft); border-radius:var(--r-md);
+    height:124px; padding:10px; font-size:12px; cursor:pointer; overflow:hidden;
+    box-shadow:var(--glass-edge); transition:background .15s ease;
+  }
+  .cd-calday:hover{ background:var(--glass-raised); }
+  .cd-calday.today{ border-color:rgba(10,132,255,.6); background:rgba(10,132,255,.16); }
+  .cd-calday.empty{ background:none; border:none; cursor:default; box-shadow:none; }
+  .cd-caldate{ font-weight:600; margin-bottom:6px; font-variant-numeric:tabular-nums; font-size:15px; letter-spacing:-.02em; }
+  .cd-calday.today .cd-caldate{ color:var(--sys-blue); }
+  .cd-calitem{ display:block; font-size:11px; padding:3px 9px; border-radius:var(--r-pill); margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+  .cd-calnav{ display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+  .cd-calnav b{ font-size:22px; font-weight:700; letter-spacing:-.03em; }
+  .cd-calnavbtn{
+    background:var(--fill-3); border:none; border-radius:50%; width:34px; height:34px;
+    cursor:pointer; font-size:18px; color:var(--sys-blue); transition:background .15s ease;
+  }
+  .cd-calnavbtn:hover{ background:var(--fill-2); }
+  .cd-calviewsel{ display:flex; gap:2px; margin-left:auto; background:var(--fill-3); border-radius:var(--r-sm); padding:2px; }
+  .cd-calviewbtn{ background:none; border:none; padding:7px 18px; border-radius:8px; font-size:13px; color:var(--label); cursor:pointer; font-family:inherit; font-weight:500; transition:background .18s ease; }
+  .cd-calviewbtn.on{ background:#636366; color:#FFFFFF; box-shadow:0 3px 8px rgba(0,0,0,.25), inset 0 0.5px 0 rgba(255,255,255,.2); }
+
+  .cd-weekwrap{
+    border:0.5px solid var(--stroke); border-radius:var(--r-lg); overflow:hidden;
+    background:var(--glass); backdrop-filter:var(--glass-blur); box-shadow:var(--glass-edge), var(--glass-shadow);
+  }
+  .cd-weekheadrow{ display:grid; border-bottom:0.5px solid var(--separator); }
+  .cd-weekheadcell{ padding:14px 6px; text-align:center; border-left:0.5px solid var(--separator); }
+  .cd-weekheadcell:first-child{ border-left:none; }
+  .cd-weekheadcell .dow{ font-size:12px; color:var(--label-2); font-weight:500; }
+  .cd-weekheadcell .dnum{ font-size:20px; margin-top:4px; font-variant-numeric:tabular-nums; font-weight:600; letter-spacing:-.03em; }
+  .cd-weekheadcell.today .dnum{ background:var(--sys-blue); color:#FFFFFF; border-radius:50%; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; }
+  .cd-allday-row{ display:grid; border-bottom:0.5px solid var(--separator); min-height:34px; }
+  .cd-allday-cell{ border-left:0.5px solid var(--separator); padding:4px; }
+  .cd-allday-cell:first-child{ border-left:none; }
+  .cd-hourgrid{ display:grid; grid-template-columns:60px 1fr; max-height:540px; overflow-y:auto; }
+  .cd-hourlabels{ display:flex; flex-direction:column; }
+  .cd-hourlabel{ height:44px; font-size:11px; color:var(--label-2); text-align:right; padding-right:12px; transform:translateY(-6px); font-variant-numeric:tabular-nums; }
+  .cd-hourcols{ display:grid; position:relative; }
+  .cd-hourcol{ border-left:0.5px solid var(--separator); position:relative; }
+  .cd-hourcol:first-child{ border-left:none; }
+  .cd-hourslot{ height:44px; border-bottom:0.5px solid rgba(84,84,88,.4); }
+  .cd-nowline{ position:absolute; left:0; right:0; height:1.5px; background:var(--sys-red); z-index:2; }
+  .cd-nowdot{ position:absolute; left:-5px; top:-4.5px; width:11px; height:11px; border-radius:50%; background:var(--sys-red); }
+  .cd-calitem-chip{
+    background:rgba(10,132,255,.24); color:#B9D8FF; font-size:11px; padding:3px 9px;
+    border-radius:var(--r-pill); margin-bottom:3px; cursor:pointer; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; display:block; font-weight:500;
+  }
+  .cd-timedev{
+    position:absolute; left:3px; right:3px; background:rgba(255,159,10,.22);
+    border-left:3px solid var(--sys-orange); color:var(--label); font-size:11px; line-height:1.3;
+    padding:5px 9px; border-radius:8px; overflow:hidden; max-height:40px; cursor:pointer; z-index:2;
+  }
+
+  /* ---- Reminder / inbox rows ---- */
+  .cd-remrow{
+    display:flex; gap:14px; align-items:flex-start; padding:16px 18px;
+    border-radius:var(--r-md); margin-bottom:10px;
+    background:var(--fill-4);
+  }
+  .cd-remrow.fired{ background:rgba(255,159,10,.14); }
+  .cd-remmeta{ font-size:13px; color:var(--label-2); margin-top:5px; }
+  .cd-remacts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .cd-remacts button{
+    font-size:13px; font-weight:500; padding:7px 14px; border-radius:var(--r-pill);
+    border:none; background:var(--fill-3); color:var(--label);
+    cursor:pointer; transition:background .15s ease;
+  }
+  .cd-remacts button:hover{ background:var(--fill-2); }
+  .cd-remacts button.primary{ background:var(--sys-blue); color:#FFFFFF; }
+  .cd-remacts button.primary:hover{ filter:brightness(1.08); }
+  .cd-timesel{ display:flex; gap:7px; align-items:center; }
+  .cd-timesel select{
+    background:var(--fill-3); color:var(--label); border:none;
+    border-radius:var(--r-sm); padding:9px 12px; font-size:15px; font-variant-numeric:tabular-nums; -webkit-appearance:none; appearance:none;
+  }
+
+  .cd-formrow{ margin-bottom:14px; }
+  .cd-formrow label{ display:block; font-size:13px; color:var(--label-2); margin-bottom:6px; padding:0 4px; text-transform:uppercase; letter-spacing:.02em; }
+  .cd-input{
+    width:100%; background:var(--fill-3) !important; border:none;
+    border-radius:var(--r-sm); padding:11px 14px; font-size:15px; color:var(--label) !important;
+  }
+  .cd-input:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
+
+  @media (max-width: 900px){
+    #cdApp{ flex-direction:column; }
+    #cdNav{ width:100%; height:auto; position:relative; border-right:none; border-bottom:0.5px solid var(--stroke); }
+    #cdMain{ padding:24px 18px 60px; }
+    .cd-kpirow{ grid-template-columns:repeat(2,1fr); }
+    .cd-h1{ font-size:28px; }
+  }
+</style>
+</head>
+<body>
+<div id="cdBackdrop"></div>
+<div id="cdApp"><div style="padding:40px;color:#9CA1AC">Loading Collections HQ...</div></div>
+<div id="cdDrawerOverlay"></div>
+<div id="cdDrawer"></div>
+<div id="cdModalOverlay"><div id="cdModal"></div></div>
+
+<script>
+(function(){
+  "use strict";
+  const STORE_KEY = "collections_hq_v2";
+  const DATA_VERSION = "v2-2026-09-10h";
+  // Live clock. This used to be a frozen constant, which meant "today" drifted out of
+  // date between sessions and reminders could never actually come due. TODAY is now
+  // refreshed by a ticker (see startClock) so the app tracks real time.
+  let TODAY = new Date();
+
+  // Status palette. Deliberately desaturated: saturation itself carries urgency, so the
+  // two statuses that mean "act now" are the only ones with any real chroma. Terminal
+  // states are quietest of all — a resolved deal should recede, not glow.
+  // Semantic pairs from the design system: bold colour on a soft tint, never a solid fill.
+  const STATUS = {
+    contact_today: {label:"Contact Today", color:"#FF453A", bg:"rgba(255,69,58,.20)", severity:6},
+    needs_file:    {label:"Needs to Be Filed", color:"#FF453A", bg:"rgba(255,69,58,.20)", severity:5.5},
+    urgent:        {label:"Urgent", color:"#FF9F0A", bg:"rgba(255,159,10,.20)", severity:5},
+    legal:         {label:"Legal", color:"#BF5AF2", bg:"rgba(191,90,242,.20)", severity:5},
+    in_touch:      {label:"In Touch", color:"#0A84FF", bg:"rgba(10,132,255,.22)", severity:4},
+    awaiting_response: {label:"Awaiting Response", color:"#FFD60A", bg:"rgba(255,214,10,.18)", severity:3.5},
+    debt_relief:   {label:"Debt Relief", color:"#BF5AF2", bg:"rgba(191,90,242,.20)", severity:3},
+    monitor:       {label:"Monitor", color:"#8E8E93", bg:"rgba(142,142,147,.22)", severity:2},
+    resolved:      {label:"Resolved", color:"#30D158", bg:"rgba(48,209,88,.20)", severity:0, terminal:true},
+    paid_full:     {label:"Paid Full", color:"#30D158", bg:"rgba(48,209,88,.20)", severity:0, terminal:true},
+    write_off:     {label:"Write Off", color:"#8E8E93", bg:"rgba(142,142,147,.22)", severity:0, terminal:true}
+  };
+  function statusOf(s){ return STATUS[s] || {label:s||"Unknown", color:"var(--gray)", bg:"var(--gray-bg)", severity:1, terminal:false}; }
+
+  const CLAWBACK = {
+    none:           {label:"None", color:"var(--ink-faint)"},
+    at_risk:        {label:"At Risk", color:"var(--amber)"},
+    needs_pull:     {label:"Needs to Be Pulled", color:"var(--red)"},
+    pulled_pending: {label:"Pulled — Pending", color:"var(--blue)"},
+    landed:         {label:"Landed", color:"var(--green)"},
+    bounced:        {label:"Bounced — ISO Wire Needed", color:"var(--red)"}
+  };
+
+  const TASK_TYPES = {
+    contact_merchant:   "Contact Merchant",
+    iso_in_touch:       "ISO In Touch",
+    payment_confirmation: "Payment/Wire Confirmation",
+    legal_followup:     "Legal Follow-up",
+    internal_followup:  "Internal Follow-up",
+    settlement_compliance: "Settlement Compliance"
+  };
+  const WAITING_ON = {
+    you: "You", david: "David", iso: "ISO", legal_firm: "Legal Firm",
+    merchant: "Merchant", gabriela: "Gabriela", anusha: "Anusha"
+  };
+
+  const LEGAL_STAGES = {
+    assembling_packet: {label:"Assembling Packet", track:"universal"},
+    sent_to_firm: {label:"Sent to Firm", track:"universal"},
+    docs_requested: {label:"Docs Requested", track:"universal"},
+    confirmed_received: {label:"Confirmed Received", track:"universal"},
+    payment_plan_proposed: {label:"Payment Plan Proposed", track:"madeb"},
+    payment_plan_active: {label:"Payment Plan Active", track:"madeb"},
+    ar_lien_freeze: {label:"AR/Lien Freeze", track:"lieberman"},
+    judgment: {label:"Judgment / Further Action", track:"lieberman"},
+    resolved: {label:"Resolved", track:"universal", terminal:true},
+    defaulted_again: {label:"Defaulted Again", track:"madeb"}
+  };
+  // Broker/ISO contact registry — seeded with names already known from deal history.
+  // Editable and extendable in the app (Deals drawer > broker dropdown > Add New).
+
+  // Registry of other companies whose deals sit on our platform but aren't ours to
+  // collect — same add-as-you-go pattern as brokers, picked from a dropdown instead of
+  // re-typing a name each time.
+
+  const KNOWN_FIRMS = {
+    "Madeb Law": "madeb",
+    "L&K Legal": "lieberman", // internal track key only — L&K is the one and only firm on this track, never a separate "Lieberman"
+    "Weinstein LLP": "other",
+    "Other": "other"
+  };
+  const LEGAL_DOC_LABELS = {
+    statements: "Bank Statements", application: "Application", dlvc: "DL / Voided Check",
+    ucc: "UCC Filing", wireScreenshot: "Wire Screenshot", payrunScreenshot: "Payrun Screenshot",
+    pdfPayrun: "PDF Payrun", arInvoices: "AR / Invoices / CC Processor", settlementAgreement: "Settlement Agreement"
+  };
+
+  // ---- SEED DATA ----
+
+
+
+  // Cleared 2026-09-04: the 2026-09-03 snapshot is now the baseline in SEED_*.
+  // Everything previously listed here is already applied in Yaakov's live storage
+  // and baked into the seeds above. New deltas get appended here going forward.
+  // Inbound items only — things that ARRIVED. Never our own actions. This is the phone-
+  // notifications model: a report lands, an email comes in, David sends a screenshot. Once
+  // it has been read it drops off Today for good. Everything seeded here is marked read,
+  // because it was all worked through on 9/8 — the list should start empty and fill with
+  // whatever genuinely arrives next.
+
+
+  // Conditional items: "X happens only if Y clears / fails". These have no due date of their
+  // own — they hang on an outcome — which is exactly why they get forgotten. Each one names
+  // the condition, what happens either way, and when to look.
+
+
+
+
+
+
+  // ---- Storage helpers ----
+  // The whole DB used to go into ONE key (~270KB and growing). That started failing with
+  // "Internal server error while processing action" — the write was simply too big. Data is
+  // now split across several smaller keys, only the parts that actually changed get written,
+  // each write retries on failure, and anything that still won't save raises a visible banner
+  // instead of dying silently in the console.
+  // ---------------------------------------------------------------------------
+  // GitHub-backed storage.
+  //
+  // One file, data/state.json, in a private repo. This replaces ~12KB of sharding,
+  // connection pooling and rate-limit backoff, all of which existed to work around
+  // window.storage limiting message count and payload size. GitHub has neither problem
+  // here: one read, one write, 5,000 calls an hour, 342KB against a 100MB ceiling.
+  //
+  // The one piece of real complexity kept is SHA matching. Every read returns a SHA and a
+  // write only lands if that SHA still matches. Without it, Yaakov saving in the browser
+  // while Claude patches the same file means one side's work vanishes with no error at all.
+  // ---------------------------------------------------------------------------
+  const LOG_KEEP = 300;   // keep the activity log bounded so it can't grow back into the problem
+
+  let DB = null;
+
+  const GH_API  = "https://api.github.com";
+  const GH_PATH = "data/state.json";
+  const CFG_KEY = "collections_hq_gh_config";
+
+  let ghCfg = { owner: "", repo: "", token: "" };
+  let ghSha = null;
+  let saveBannerEl = null;
+
+  function ghConfigured(){ return !!(ghCfg.owner && ghCfg.repo && ghCfg.token); }
+
+  function loadCfg(){
+    try{
+      const raw = localStorage.getItem(CFG_KEY);
+      if(raw) ghCfg = Object.assign(ghCfg, JSON.parse(raw));
+    }catch(e){ /* first run, or storage blocked */ }
+  }
+  function saveCfg(){
+    try{ localStorage.setItem(CFG_KEY, JSON.stringify(ghCfg)); }catch(e){}
+  }
+  function clearCfg(){
+    ghCfg = { owner:"", repo:"", token:"" };
+    try{ localStorage.removeItem(CFG_KEY); }catch(e){}
+  }
+
+  function ghHeaders(){
+    return { "Authorization": "Bearer " + ghCfg.token,
+             "Accept": "application/vnd.github+json",
+             "X-GitHub-Api-Version": "2022-11-28" };
+  }
+
+  // btoa mangles anything outside Latin-1, and this data is full of em-dashes and accented
+  // merchant names. Round-tripping through UTF-8 bytes explicitly is the only safe way.
+  function b64encode(str){
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for(let i=0; i<bytes.length; i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000));
+    return btoa(bin);
+  }
+  function b64decode(b64){
+    const bin = atob(String(b64).replace(/\s/g, ""));
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function ghUrl(){
+    return GH_API + "/repos/" + ghCfg.owner + "/" + ghCfg.repo + "/contents/" + GH_PATH;
+  }
+
+  async function ghFetch(url, opts, tries){
+    tries = (tries == null) ? 3 : tries;
+    let lastErr = null;
+    for(let i=0; i<=tries; i++){
+      try{
+        const r = await fetch(url, opts);
+        if(r.status === 401) throw {code:"bad_token", message:"GitHub rejected the token. It may have expired or been revoked."};
+        if(r.status === 403){
+          const body = await r.text();
+          if(/rate limit/i.test(body)) throw {code:"rate_limit", message:"GitHub rate limit reached. Try again shortly."};
+          throw {code:"forbidden", message:"The token can't write to this repo. It needs Contents: Read and write."};
+        }
+        if(r.status === 404) return { status:404 };
+        if(r.status === 409 || r.status === 422) return { status:r.status };
+        if(!r.ok) throw {code:"http", message:"GitHub returned " + r.status + "."};
+        return { status:r.status, body: await r.json() };
+      }catch(e){
+        // "Failed to fetch" means the request never left the page — the browser blocked it
+        // before it was sent. In practice that is a sandboxed preview or an extension, not a
+        // problem with GitHub or the token, and retrying is pointless. Saying so plainly stops
+        // people re-entering a token that was never the issue.
+        if(e instanceof TypeError && /fetch|network/i.test(e.message || "")){
+          throw {code:"blocked",
+                 message:"The browser blocked the request to GitHub before it was sent. "
+                       + "That usually means this page is running inside a preview or sandbox. "
+                       + "Download the file and open it directly in your browser, or use the hosted URL."};
+        }
+        lastErr = e;
+        // A bad token or missing permission will never fix itself — fail fast instead of
+        // making the user wait through three retries for a certainty.
+        // None of these fix themselves within a retry window. A rate limit lasts until
+        // GitHub's reset (up to an hour), and a bad token or missing permission is never fixed
+        // by waiting at all — so surface them immediately instead of stalling the user.
+        if(e && (e.code === "bad_token" || e.code === "forbidden" || e.code === "rate_limit")) throw e;
+        if(i < tries) await new Promise(res=>setTimeout(res, 600*Math.pow(2,i) + Math.random()*400));
+      }
+    }
+    throw lastErr || {code:"unknown", message:"Couldn't reach GitHub."};
+  }
+
+  async function ghRead(){
+    const r = await ghFetch(ghUrl() + "?t=" + Date.now(), { headers: ghHeaders(), cache:"no-store" });
+    if(r.status === 404){ ghSha = null; return null; }
+    ghSha = r.body.sha;
+    try{ return JSON.parse(b64decode(r.body.content)); }
+    catch(e){ throw {code:"corrupt", message:"state.json isn't valid JSON. Earlier versions are in the repo's commit history."}; }
+  }
+
+  // Returns true on success, "conflict" if someone saved since we last read, false on failure.
+  // A conflict isn't an error — it's the safety net doing its job.
+  async function ghWrite(state, message){
+    const payload = { message: message || ("Collections HQ — " + new Date().toISOString()),
+                      content: b64encode(JSON.stringify(state, null, 1)) };
+    if(ghSha) payload.sha = ghSha;
+    const r = await ghFetch(ghUrl(), { method:"PUT", headers: ghHeaders(), body: JSON.stringify(payload) });
+    if(r.status === 409 || r.status === 422) return "conflict";
+    ghSha = r.body && r.body.content && r.body.content.sha;
+    return true;
+  }
+
+  function showBanner(html, tone){
+    if(!saveBannerEl){
+      saveBannerEl = document.createElement("div");
+      saveBannerEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:200;"
+        + "padding:12px 18px;border-radius:14px;font-size:14px;max-width:92vw;"
+        + "background-color:rgba(20,24,30,.97);"
+        + "box-shadow:0 20px 44px -18px rgba(0,0,0,.75);";
+      document.body.appendChild(saveBannerEl);
+    }
+    const bg = tone === "bad" ? "rgba(255,69,58,.22)" : tone === "warn" ? "rgba(255,159,10,.22)" : "rgba(48,209,88,.22)";
+    const fg = tone === "bad" ? "#FF453A" : tone === "warn" ? "#FF9F0A" : "#30D158";
+    saveBannerEl.style.background = bg;
+    saveBannerEl.style.border = "0.5px solid " + fg;
+    saveBannerEl.style.color = "#F5F7FA";
+    saveBannerEl.innerHTML = html;
+    saveBannerEl.style.display = "block";
+  }
+  function hideBanner(){ if(saveBannerEl) saveBannerEl.style.display = "none"; }
+
+  function emptyDb(){
+    return { deals:[], commitments:[], tasks:[], reminders:[], inbox:[], watch:[],
+             brokers:[], owners:[], eventLog:[], version: DATA_VERSION,
+             thresholds:{daily:3, weeklyMonthly:10}, lastReportAt:null, appliedUpdates:[] };
+  }
+
+  function normalise(db){
+    const base = emptyDb();
+    const out = Object.assign(base, db || {});
+    ["deals","commitments","tasks","reminders","inbox","watch","brokers","owners","eventLog"]
+      .forEach(k=>{ if(!Array.isArray(out[k])) out[k] = []; });
+    return out;
+  }
+
+  async function load(){
+    loadCfg();
+    if(!ghConfigured()){ renderSetup(); return; }
+    try{
+      const remote = await ghRead();
+      DB = normalise(remote);
+      if(remote === null){
+        // Repo has no state file yet — start empty and create it on first save.
+        await save("Create state.json");
+      }
+      hideBanner();
+      render();
+    }catch(e){
+      renderLoadError(e);
+    }
+  }
+
+  let saveInFlight = null, saveQueued = false, queuedWaiters = [];
+
+  // Coalescing is right — a burst of edits shouldn't mean a burst of writes. But a caller
+  // arriving mid-save must wait for the NEXT save, not the in-flight one, because the
+  // in-flight one doesn't contain their change yet.
+  async function save(message){
+    if(!ghConfigured()) return;
+    if(saveInFlight){
+      saveQueued = true;
+      return new Promise(resolve => queuedWaiters.push(resolve));
+    }
+    saveInFlight = doSave(message);
+    try{ await saveInFlight; } finally { saveInFlight = null; }
+    if(saveQueued){
+      saveQueued = false;
+      const waiters = queuedWaiters; queuedWaiters = [];
+      await save(message);
+      waiters.forEach(r=>r());
+    }
+  }
+
+  async function doSave(message){
+    if(DB && DB.eventLog && DB.eventLog.length > LOG_KEEP) DB.eventLog = DB.eventLog.slice(-LOG_KEEP);
+    DB.version = DATA_VERSION;
+    DB.savedAt = new Date().toISOString();
+    try{
+      const r = await ghWrite(DB, message);
+      if(r === "conflict"){
+        // Someone else wrote since we read. Reloading is the honest response — better a
+        // visible "your last change may not have saved" than a silent overwrite of theirs.
+        showBanner("Someone else saved while you were editing. "
+          + "<b>Reloading</b> so you don't overwrite their work \u2014 re-check your last change.", "warn");
+        setTimeout(()=>location.reload(), 2600);
+        return;
+      }
+      hideBanner();
+    }catch(e){
+      const msg = (e && e.message) || "Couldn't save to GitHub.";
+      showBanner("<b>Not saved.</b> " + esc(msg)
+        + ' <button id="cdRetrySave" style="margin-left:10px;background:rgba(255,255,255,.18);border:none;'
+        + 'color:inherit;padding:4px 12px;border-radius:999px;cursor:pointer;font:inherit;">Retry</button>', "bad");
+      const btn = document.getElementById("cdRetrySave");
+      if(btn) btn.onclick = ()=>{ hideBanner(); save(message); };
+    }
+  }
+
+  function renderLoadError(e){
+    const msg = (e && e.message) || "Couldn't reach GitHub.";
+    const app = document.getElementById("cdApp");
+    app.innerHTML = '<div style="margin:auto;max-width:520px;padding:40px;text-align:center;">'
+      + '<div class="cd-h1" style="font-size:24px;">Couldn\'t load your data</div>'
+      + '<p class="cd-sub" style="margin:10px 0 22px;">' + esc(msg) + '</p>'
+      + '<button class="cd-savebtn" id="cdRetryLoad">Try again</button> '
+      + '<button class="cd-savebtn secondary" id="cdReconfig">Change settings</button></div>';
+    document.getElementById("cdRetryLoad").onclick = ()=>load();
+    document.getElementById("cdReconfig").onclick = ()=>{ clearCfg(); renderSetup(); };
+  }
+
+  // First run on a device. Deliberately its own screen rather than a prompt() \u2014 those are
+  // blocked in some contexts and give no room to explain what the token is for.
+  function renderSetup(err){
+    const app = document.getElementById("cdApp");
+    app.innerHTML = '<div style="margin:auto;max-width:460px;padding:40px 24px;">'
+      + '<div class="cd-h1" style="font-size:26px;">Connect to GitHub</div>'
+      + '<p class="cd-sub" style="margin:8px 0 24px;">Your data lives in a private repo. '
+      + 'These details are stored in this browser only \u2014 never in the app itself.</p>'
+      + (err ? '<div class="cd-warn">' + esc(err) + '</div>' : '')
+      + '<div class="cd-formrow"><label>GitHub username</label>'
+      + '<input class="cd-input" id="cfgOwner" placeholder="collectionsbreeze" value="' + esc(ghCfg.owner||"") + '"></div>'
+      + '<div class="cd-formrow"><label>Repository name</label>'
+      + '<input class="cd-input" id="cfgRepo" placeholder="Collections-HQ" value="' + esc(ghCfg.repo||"Collections-HQ") + '"></div>'
+      + '<div class="cd-formrow"><label>Access token</label>'
+      + '<input class="cd-input" id="cfgToken" type="password" placeholder="github_pat_..."></div>'
+      + '<button class="cd-savebtn" id="cfgSave" style="margin-top:8px;">Connect</button>'
+      + '<div id="cfgStatus" class="cd-sub" style="margin-top:14px;"></div></div>';
+    document.getElementById("cfgSave").onclick = async ()=>{
+      const owner = document.getElementById("cfgOwner").value.trim();
+      const repo  = document.getElementById("cfgRepo").value.trim();
+      const token = document.getElementById("cfgToken").value.trim();
+      const status = document.getElementById("cfgStatus");
+      if(!owner || !repo || !token){
+        status.textContent = "All three are needed.";
+        ["cfgOwner","cfgRepo","cfgToken"].forEach(id=>{
+          const el = document.getElementById(id);
+          el.style.borderColor = el.value.trim() ? "" : "var(--sys-red)";
+        });
+        return;
+      }
+      status.textContent = "Checking\u2026";
+      ghCfg = { owner, repo, token };
+      try{
+        await ghRead();          // proves the token can actually see the file
+        saveCfg();
+        status.textContent = "Connected. Loading\u2026";
+        await load();
+      }catch(e){
+        ghCfg = { owner:"", repo:"", token:"" };
+        status.innerHTML = '<span style="color:var(--sys-red);">' + esc((e && e.message) || "Couldn't connect.") + '</span>';
+      }
+    };
+  }
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+  function money(v){ v = Math.round(v||0); return "$"+v.toLocaleString("en-US"); }
+  function moneyDec(v){ return "$"+(v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fmtDate(d){ if(!d) return "—"; const dt = typeof d==="string"?new Date(d+"T12:00:00Z"):d; return dt.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); }
+  function fmtDateShort(d){ if(!d) return "—"; const dt = typeof d==="string"?new Date(d+"T12:00:00Z"):d; return dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
+  function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+  function daysUntil(dateStr){ if(!dateStr) return null; const d = new Date(dateStr+"T12:00:00Z"); return daysBetween(TODAY, d); }
+  function pct(rec, orig){ if(!orig) return 0; return Math.min(100, Math.max(0, (rec/orig)*100)); }
+  // Local calendar date, not UTC — after 8pm Eastern a UTC date is already tomorrow,
+  // which would make "today" wrong for most of the working evening.
+  function localDateStr(d){
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function todayStr(){ return localDateStr(TODAY); }
+  function nowStamp(){ return localDateStr(TODAY)+"T"+String(TODAY.getHours()).padStart(2,"0")+":"+String(TODAY.getMinutes()).padStart(2,"0"); }
+  function fmtTime(hhmm){
+    if(!hhmm) return "";
+    const [h,m] = hhmm.split(":").map(Number);
+    const ap = h<12?"AM":"PM"; const h12 = h%12===0?12:h%12;
+    return h12+":"+String(m).padStart(2,"0")+" "+ap;
+  }
+  function splitDueAt(dueAt){
+    if(!dueAt) return {date:null, time:null};
+    const [date, time] = dueAt.split("T");
+    return {date, time: time || null};
+  }
+  function fmtDueAt(dueAt){
+    const {date,time} = splitDueAt(dueAt);
+    return fmtDateShort(date) + (time ? " at " + fmtTime(time) : "");
+  }
+  function dueAtPassed(dueAt){
+    if(!dueAt) return false;
+    return dueAt <= nowStamp();
+  }
+  function relativeDue(dueAt){
+    const mins = Math.round((new Date(dueAt.replace("T"," ").replace(/-/g,"/")) - TODAY)/60000);
+    const a = Math.abs(mins);
+    const unit = a<60 ? a+" min" : a<1440 ? Math.round(a/60)+" hr" : Math.round(a/1440)+" day"+(Math.round(a/1440)===1?"":"s");
+    return mins<0 ? unit+" ago" : "in "+unit;
+  }
+  function isoDaysAgo(dateStr){ if(!dateStr) return null; const d = new Date(dateStr+"T12:00:00Z"); return daysBetween(d, TODAY); }
+  function uid(prefix){ return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7); }
+
+  // ---------------- MINI CALENDAR DATE PICKER ----------------
+  // Custom component instead of native <input type="date"> — guaranteed to actually
+  // open when clicked, and matches the app's own look instead of the OS picker.
+  let datePickerOpenFor = null;
+  let datePickerValues = {};
+  let datePickerMonth = {};
+
+  function dateFieldHtml(key){
+    const val = datePickerValues[key] || "";
+    const displayVal = val ? fmtDateShort(val) : "Select date";
+    let html = '<button type="button" class="cd-select cd-datebtn" data-datetoggle="'+key+'" style="justify-content:space-between;align-items:center;color:'+(val?'var(--ink)':'var(--ink-faint)')+';">'+esc(displayVal)+'<span></span></button>';
+    if(datePickerOpenFor===key) html += miniCalendarHtml(key);
+    return html;
+  }
+
+  function miniCalendarHtml(key){
+    if(!datePickerMonth[key]){
+      const base = datePickerValues[key] ? new Date(datePickerValues[key]+"T12:00:00Z") : TODAY;
+      datePickerMonth[key] = {y: base.getUTCFullYear(), m: base.getUTCMonth()};
+    }
+    const anchor = datePickerMonth[key];
+    const first = new Date(Date.UTC(anchor.y, anchor.m, 1));
+    const startDow = first.getUTCDay();
+    const daysInMonth = new Date(Date.UTC(anchor.y, anchor.m+1, 0)).getUTCDate();
+    const label = first.toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
+    let cells = "";
+    for(let i=0;i<startDow;i++) cells += "<div></div>";
+    for(let day=1; day<=daysInMonth; day++){
+      const ds = anchor.y+"-"+String(anchor.m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+      const isSel = ds===datePickerValues[key];
+      const isToday = ds===todayStr();
+      cells += '<button type="button" class="cd-minicalday'+(isSel?' sel':'')+(isToday&&!isSel?' today':'')+'" data-datepick="'+key+'|'+ds+'">'+day+'</button>';
+    }
+    return '<div class="cd-minical">'
+      + '<div class="cd-minicalhead"><button type="button" data-dateminicalmove="'+key+'|-1">‹</button><b>'+label+'</b><button type="button" data-dateminicalmove="'+key+'|1">›</button></div>'
+      + '<div class="cd-minicalgrid">' + ["S","M","T","W","T","F","S"].map(d=>'<div class="cd-minicaldow">'+d+'</div>').join("") + cells + '</div>'
+      + '</div>';
+  }
+
+  // Time picker built from plain selects — native <input type="time"> is as unreliable
+  // here as <input type="date">, so it gets the same treatment as the mini calendar.
+  let timePickerValues = {};
+  function timeFieldHtml(key, dflt){
+    const val = timePickerValues[key] || dflt || "16:00";
+    timePickerValues[key] = val;
+    const [h,m] = val.split(":");
+    let hopts = "", mopts = "";
+    for(let i=0;i<24;i++){
+      const hh = String(i).padStart(2,"0");
+      const lab = (i%12===0?12:i%12)+" "+(i<12?"AM":"PM");
+      hopts += '<option value="'+hh+'"'+(hh===h?' selected':'')+'>'+lab+'</option>';
+    }
+    ["00","15","30","45"].forEach(mm=>{
+      mopts += '<option value="'+mm+'"'+(mm===m?' selected':'')+'>:'+mm+'</option>';
+    });
+    return '<div class="cd-timesel"><select data-timehour="'+key+'">'+hopts+'</select>'
+      + '<select data-timemin="'+key+'">'+mopts+'</select></div>';
+  }
+  function wireTimePickers(){
+    document.querySelectorAll("[data-timehour]").forEach(s=>s.onchange=()=>{
+      const k=s.dataset.timehour; const m=(timePickerValues[k]||"16:00").split(":")[1];
+      timePickerValues[k] = s.value+":"+m;
+    });
+    document.querySelectorAll("[data-timemin]").forEach(s=>s.onchange=()=>{
+      const k=s.dataset.timemin; const h=(timePickerValues[k]||"16:00").split(":")[0];
+      timePickerValues[k] = h+":"+s.value;
+    });
+  }
+
+  function wireDatePickers(rerenderFn){
+    document.querySelectorAll("[data-datetoggle]").forEach(b=>b.onclick=(e)=>{
+      e.preventDefault();
+      const key = b.dataset.datetoggle;
+      datePickerOpenFor = datePickerOpenFor===key ? null : key;
+      rerenderFn();
+    });
+    document.querySelectorAll("[data-datepick]").forEach(b=>b.onclick=(e)=>{
+      e.preventDefault();
+      const [key, ds] = b.dataset.datepick.split("|");
+      datePickerValues[key] = ds;
+      datePickerOpenFor = null;
+      rerenderFn();
+    });
+    document.querySelectorAll("[data-dateminicalmove]").forEach(b=>b.onclick=(e)=>{
+      e.preventDefault();
+      const [key, dir] = b.dataset.dateminicalmove.split("|");
+      const anchor = datePickerMonth[key];
+      let m = anchor.m + parseInt(dir,10), y = anchor.y;
+      if(m<0){m=11;y--;} if(m>11){m=0;y++;}
+      datePickerMonth[key] = {y,m};
+      rerenderFn();
+    });
+  }
+
+
+  function dealById(id){ return DB.deals.find(d=>d.id===id); }
+  function normalizeMerchantKey(name){
+    return (name||"").toLowerCase().replace(/\b(llc|inc|corp|pllc|ps|pc|dba)\b/g,"").replace(/[^a-z0-9]/g,"").trim();
+  }
+
+  function logEvent(text, dealId){
+    DB.eventLog = DB.eventLog || [];
+    const now = new Date();
+    const stamp = now.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " " + now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+    const entry = {date: todayStr(), stamp, text};
+    if(dealId) entry.dealId = dealId;
+    DB.eventLog.push(entry);
+  }
+
+  // Deals owned by someone else, just sitting on our platform — Yaakov doesn't work
+  // these at all. Excluded from every "active work" surface, kept only on their own page.
+  function isOtherOwnerDeal(d){ return !!(d.owner && d.owner.isOurs===false); }
+  function ourDeals(){ return DB.deals.filter(d=>!isOtherOwnerDeal(d)); }
+
+  function dealsMissingContact(){
+    return ourDeals().filter(d=>{
+      const st = statusOf(d.status);
+      if(st.terminal) return false;
+      const c = d.contact || {};
+      return !(c.name && (c.phone || c.email));
+    });
+  }
+
+  function openCommitments(){
+    return DB.commitments.filter(c=>{
+      if(c.status!=="open") return false;
+      const d = dealById(c.dealId);
+      return d && !isOtherOwnerDeal(d);
+    }).sort((a,b)=>(a.dueDate||"").localeCompare(b.dueDate||""));
+  }
+  // ---------------- REMINDERS ----------------
+  // A reminder is not a commitment. A commitment is a promise somebody made; a reminder
+  // is just "poke me about this at 4pm." It has a clock time, it fires, and it sits on the
+  // Notifications page until it's marked done or pushed to a new time.
+  function allReminders(){
+    return (DB.reminders||[]).filter(r=>{
+      if(!r.dealId) return true;
+      const d = dealById(r.dealId);
+      return !d || !isOtherOwnerDeal(d);
+    });
+  }
+  function firedReminders(){
+    return allReminders().filter(r=>r.status==="open" && dueAtPassed(r.dueAt))
+      .sort((a,b)=> a.dueAt < b.dueAt ? -1 : 1);
+  }
+  function upcomingReminders(){
+    return allReminders().filter(r=>r.status==="open" && !dueAtPassed(r.dueAt))
+      .sort((a,b)=> a.dueAt < b.dueAt ? -1 : 1);
+  }
+  function reminderById(id){ return (DB.reminders||[]).find(r=>r.id===id); }
+
+  // ---------------- INBOX ----------------
+  // What has ARRIVED and not yet been read. Our own updates never appear here — a note we
+  // wrote is not news. Reading an item removes it, the same way a notification clears once
+  // you have opened the message.
+  // Conditional items. Ours-only, and due when their check date arrives.
+  function openWatch(){
+    return (DB.watch||[]).filter(w=>{
+      if(w.status!=="open") return false;
+      if(w.dealId){ const d = dealById(w.dealId); if(d && isOtherOwnerDeal(d)) return false; }
+      return true;
+    }).sort((a,b)=> (a.checkOn||"") < (b.checkOn||"") ? -1 : 1);
+  }
+  function dueWatch(){ const t = todayStr(); return openWatch().filter(w=>(w.checkOn||"") <= t); }
+  function watchById(id){ return (DB.watch||[]).find(w=>w.id===id); }
+
+  // Emergency contacts come off the application \u2014 a spouse, a partner, an accountant.
+  // When a merchant stops answering their own phone this is the next route. David asked for
+  // it after Grand Central went silent on both call and text.
+  let drawerEditingEmergency = null;
+  function emergencyContactsHtml(d){
+    const list = d.emergencyContacts || [];
+    let h = '<div class="cd-drsect">Emergency Contacts'
+      + (list.length ? ' <span style="color:var(--label-3);">\u00B7 '+list.length+'</span>' : '')
+      + '</div>';
+    if(list.length){
+      h += list.map((ec,i)=>'<div class="cd-comment">'
+        + '<div class="cd-comment-head"><b>'+esc(ec.name||"\u2014")+(ec.relationship?' <span style="color:var(--label-2);font-weight:400;">\u00B7 '+esc(ec.relationship)+'</span>':'')+'</b>'
+        + '<button class="cd-comment-del" data-delemerg="'+d.id+'|'+i+'">Remove</button></div>'
+        + '<div class="cd-comment-text">'+esc(ec.phone||"\u2014")+(ec.email?' \u00B7 '+esc(ec.email):'')+'</div>'
+        + (ec.note?'<div class="cd-remmeta">'+esc(ec.note)+'</div>':'')
+        + (ec.lastTried?'<div class="cd-remmeta">Last tried '+esc(fmtDateShort(ec.lastTried))+'</div>':'')
+        + '<div class="cd-remacts"><button data-triedemerg="'+d.id+'|'+i+'">Mark tried today</button></div>'
+        + '</div>').join("");
+    } else {
+      h += '<div class="cd-caption" style="margin:0 0 8px;">None on file. These come off the application and are the next route when the merchant stops answering.</div>';
+    }
+    if(drawerEditingEmergency === d.id){
+      h += '<div class="cd-comment">'
+        + '<input class="cd-note" id="cdEmergName" placeholder="Name" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<input class="cd-note" id="cdEmergRel" placeholder="Relationship (partner, spouse, accountant)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<input class="cd-note" id="cdEmergPhone" placeholder="Phone" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<input class="cd-note" id="cdEmergEmail" placeholder="Email (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<input class="cd-note" id="cdEmergNote" placeholder="Note (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:8px;">'
+        + '<div id="cdEmergErr" class="cd-remmeta" style="color:var(--sys-red);"></div>'
+        + '<button class="cd-savebtn" data-saveemerg="'+d.id+'">Save</button> '
+        + '<button class="cd-inlinebtn" id="cdCancelEmerg">Cancel</button>'
+        + '</div>';
+    } else {
+      h += '<button class="cd-inlinebtn" data-addemerg="'+d.id+'">Add emergency contact</button>';
+    }
+    return h;
+  }
+
+  function inboxUnread(){
+    return (DB.inbox||[]).filter(x=>x.status!=="read")
+      .sort((a,b)=> a.receivedAt < b.receivedAt ? 1 : -1);
+  }
+  function inboxById(id){ return (DB.inbox||[]).find(x=>x.id===id); }
+  function fmtReceived(ts){
+    const {date,time} = splitDueAt(ts);
+    if(date === todayStr()) return time ? fmtTime(time) : "today";
+    return fmtDateShort(date) + (time ? " " + fmtTime(time) : "");
+  }
+  const REPEAT_DAYS = {weekly:7, biweekly:14, monthly:30};
+  function nextReminderOccurrence(r){
+    const step = REPEAT_DAYS[r.repeat];
+    if(!step) return null;
+    const {date, time} = splitDueAt(r.dueAt);
+    // Roll forward from the scheduled date, skipping occurrences already missed, so completing
+    // a long-overdue check-in schedules the NEXT real one rather than another overdue one.
+    let d = new Date(date+"T12:00:00Z");
+    do { d = new Date(d.getTime() + step*86400000); } while(localDateStr(d) <= todayStr());
+    return {id: uid("rem"), dealId: r.dealId, text: r.text,
+      dueAt: localDateStr(d)+"T"+(time||"09:00"), status:"open", repeat: r.repeat,
+      createdDate: todayStr(), history:[{date: nowStamp(), note:"Auto-scheduled after completing the "+fmtDateShort(date)+" check-in"}]};
+  }
+
+  function overdueCommitments(){
+    const t = todayStr();
+    return openCommitments().filter(c=>c.dueDate && c.dueDate < t);
+  }
+  function dueTodayCommitments(){
+    const t = todayStr();
+    return openCommitments().filter(c=>c.dueDate === t);
+  }
+
+  function openTasks(){
+    return DB.tasks.filter(t=>{
+      if(t.status!=="open") return false;
+      const d = dealById(t.dealId);
+      return d && !isOtherOwnerDeal(d);
+    });
+  }
+
+  function dealsWithLegalCase(){ return ourDeals().filter(d=>d.legalCase); }
+  function legalNextFollowUp(deal){
+    const lc = deal.legalCase;
+    if(!lc) return null;
+    const base = lc.lastContactDate || lc.filedDate;
+    if(!base) return null;
+    const d = new Date(base+"T12:00:00Z");
+    d.setDate(d.getDate() + 14 + (lc.snoozeWeeks||0)*7);
+    return d.toISOString().slice(0,10);
+  }
+  function legalIsStale(deal){
+    const nf = legalNextFollowUp(deal);
+    if(!nf) return false;
+    return nf <= todayStr();
+  }
+
+  function overnightActivity(){
+    const y = new Date(TODAY); y.setDate(y.getDate()-1);
+    const yStr = y.toISOString().slice(0,10);
+    const t = todayStr();
+    return ourDeals().filter(d=>(d.notesLog||[]).some(n=>n.date===t || n.date===yStr));
+  }
+
+  function totals(){
+    let placed=0, recovered=0, remaining=0;
+    ourDeals().forEach(d=>{ placed+=d.original||0; recovered+=d.recovered||0; remaining+=Math.max(0,(d.original||0)-(d.recovered||0)); });
+    return {placed, recovered, remaining, rate: placed>0 ? (recovered/placed*100):0};
+  }
+  function statusCounts(){
+    const c = {};
+    ourDeals().forEach(d=>{ c[d.status] = (c[d.status]||0)+1; });
+    return c;
+  }
+
+  // ---------------- NAV & RENDER ----------------
+  let currentPage = "today";
+
+  function navHtml(){
+    const missingContact = dealsMissingContact().length;
+    const overdue = overdueCommitments().length + DB.deals.filter(d=>legalIsStale(d)).length;
+    const openTaskCount = openTasks().length;
+    const ICONS = {
+      today:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+      calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+      notifications:'<svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2H4.5L6 17z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>',
+      tasks:'<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>',
+      legal:'<svg viewBox="0 0 24 24"><path d="M12 3v18M5 21h14M12 6l6 2M12 6L6 8M6 8l-3 6h6l-3-6zM18 8l-3 6h6l-3-6z"/></svg>',
+      deals:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 15h4"/></svg>',
+      merchants:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-5 8 5v12"/><path d="M4 21h16M9 21v-6h6v6M9 12h.01M15 12h.01"/></svg>',
+      repeatbouncers:'<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+      otherdeals:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>',
+      brokers:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+      reports:'<svg viewBox="0 0 24 24"><path d="M4 20h16M6 16V10M11 16V6M16 16v-3"/></svg>',
+      watchlist:'<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>'
+    };
+    function item(id,label,count,urgent){
+      return '<button class="cd-navbtn '+(currentPage===id?'on':'')+'" data-page="'+id+'"><span class="cd-navicon">'+(ICONS[id]||'')+'</span>'+label+(count!=null?'<span class="cd-navcount'+(urgent?' urgent':'')+'">'+count+'</span>':'')+'</button>';
+    }
+    return '<div id="cdNav">'
+      + '<div class="cd-brand"><b>Collections HQ</b><span>Breeze / Emberstone</span></div>'
+      + '<div class="cd-navsec">Daily</div>'
+      + item("today","Today", (inboxUnread().length + overdue) || null, inboxUnread().length>0 || overdue>0)
+      + item("calendar","Calendar")
+      + item("notifications","Notifications", firedReminders().length || null, firedReminders().length>0)
+      + '<div class="cd-navsec">Work</div>'
+      + item("watchlist","Watchlist", dueWatch().length || null, dueWatch().length>0)
+      + item("tasks","Tasks", openTaskCount)
+      + item("legal","Legal", DB.deals.filter(d=>d.legalCase && legalIsStale(d)).length, DB.deals.filter(d=>d.legalCase && legalIsStale(d)).length>0)
+      + '<div class="cd-navsec">Portfolio</div>'
+      + item("deals","Deals", DB.deals.length)
+      + item("merchants","Merchants")
+      + item("repeatbouncers","Repeat Bouncers", DB.deals.filter(isRepeatBouncer).length)
+      + item("otherdeals","Other Deals", DB.deals.filter(isOtherOwnerDeal).length)
+      + item("brokers","Brokers")
+      + item("reports","Reports")
+      + '</div>';
+  }
+
+  function pageHtml(){
+    if(currentPage==="today") return todayHtml();
+    if(currentPage==="calendar") return calendarHtml();
+    if(currentPage==="notifications") return notificationsHtml();
+    if(currentPage==="watchlist") return watchlistHtml();
+    if(currentPage==="tasks") return tasksHtml();
+    if(currentPage==="legal") return legalHtml();
+    if(currentPage==="deals") return dealsHtml();
+    if(currentPage==="merchants") return merchantsHtml();
+    if(currentPage==="repeatbouncers") return repeatBouncersHtml();
+    if(currentPage==="otherdeals") return otherDealsHtml();
+    if(currentPage==="brokers") return brokersHtml();
+    if(currentPage==="reports") return reportsHtml();
+    return "";
+  }
+
+  // Keeps the app on real time: refreshes TODAY, and re-renders when a reminder actually
+  // comes due so it appears without anyone reloading the page. Skips the re-render while a
+  // drawer is open or a field has focus, so it can never eat what's being typed.
+  let lastFiredCount = -1;
+  function startClock(){
+    setInterval(()=>{
+      TODAY = new Date();
+      if(!DB) return;
+      const n = firedReminders().length;
+      const badge = document.querySelector('[data-page="notifications"] .cd-navcount');
+      if(badge && String(n)!==badge.textContent) badge.textContent = n;
+      if(n !== lastFiredCount){
+        lastFiredCount = n;
+        const typing = document.activeElement && ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
+        const drawerOpen = document.getElementById("cdDrawer") && document.getElementById("cdDrawer").classList.contains("open");
+        if(!typing && !drawerOpen && (currentPage==="today" || currentPage==="notifications" || currentPage==="calendar")) render();
+      }
+    }, 20000);
+  }
+
+  function render(){
+    const app = document.getElementById("cdApp");
+    app.innerHTML = navHtml() + '<div id="cdMain">' + pageHtml() + '</div>';
+    wire();
+  }
+
+  function wire(){
+    document.querySelectorAll(".cd-nagbanner[data-viewmode-hint]").forEach(el=>el.onclick=()=>{
+      currentPage="deals"; dealViewMode=el.dataset.viewmodeHint; render();
+    });
+    document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>{ currentPage=b.dataset.page; render(); });
+    document.querySelectorAll("[data-open]").forEach(el=>el.onclick=(e)=>{
+      if(e.target.closest(".cd-nagbanner[data-viewmode-hint]")) return;
+      const id = el.dataset.open; const d = dealById(id);
+      if(d) openDrawer(d);
+    });
+    document.getElementById("cdDrawerOverlay").onclick = closeDrawer;
+    document.getElementById("cdModalOverlay").onclick = (e)=>{ if(e.target.id==="cdModalOverlay") closeQuickTaskModal(); };
+    wirePageSpecific();
+  }
+
+  function wirePageSpecific(){
+    const dealSearchEl = document.getElementById("cdDealSearch");
+    if(dealSearchEl){
+      dealSearchEl.oninput = ()=>{ dealSearch = dealSearchEl.value; render(); const el=document.getElementById("cdDealSearch"); if(el){ el.focus(); el.selectionStart=el.value.length; } };
+    }
+    document.querySelectorAll("[data-dealfilter]").forEach(b=>b.onclick=()=>{ dealFilter=b.dataset.dealfilter; render(); });
+    document.querySelectorAll("[data-dealviewmode]").forEach(b=>b.onclick=()=>{ dealViewMode=b.dataset.dealviewmode; dealFilter="all"; render(); });
+
+    // Brokers page
+    const brokerAddBtn = document.getElementById("cdPageBrokerAddBtn");
+    if(brokerAddBtn) brokerAddBtn.onclick = ()=>{ addingBrokerOnPage = true; render(); };
+    const brokerAddCancelBtn = document.getElementById("cdPageBrokerAddCancel");
+    if(brokerAddCancelBtn) brokerAddCancelBtn.onclick = ()=>{ addingBrokerOnPage = false; render(); };
+    const brokerAddSaveBtn = document.getElementById("cdPageBrokerAddSave");
+    if(brokerAddSaveBtn) brokerAddSaveBtn.onclick = async ()=>{
+      const name = document.getElementById("cdPageNewBrokerName").value.trim();
+      if(!name){ document.getElementById("cdPageNewBrokerName").style.borderColor = "var(--red)"; return; }
+      const phone = document.getElementById("cdPageNewBrokerPhone").value.trim();
+      const email = document.getElementById("cdPageNewBrokerEmail").value.trim();
+      DB.brokers = DB.brokers || [];
+      DB.brokers.push({id: uid("broker"), name, phone, email});
+      logEvent("Added broker "+name, null);
+      addingBrokerOnPage = false;
+      await save(); render();
+    };
+    document.querySelectorAll("[data-brokerpageedit]").forEach(b=>b.onclick=()=>{ brokerEditingId = b.dataset.brokerpageedit; render(); });
+    document.querySelectorAll("[data-brokerpagecancel]").forEach(b=>b.onclick=()=>{ brokerEditingId = null; render(); });
+    document.querySelectorAll("[data-brokerpagesave]").forEach(b=>b.onclick=async()=>{
+      const bid = b.dataset.brokerpagesave;
+      const broker = DB.brokers.find(x=>x.id===bid);
+      if(!broker) return;
+      const name = document.getElementById("cdEditBrokerName-"+bid).value.trim();
+      if(!name){ document.getElementById("cdEditBrokerName-"+bid).style.borderColor = "var(--red)"; return; }
+      const phone = document.getElementById("cdEditBrokerPhone-"+bid).value.trim();
+      const email = document.getElementById("cdEditBrokerEmail-"+bid).value.trim();
+      const changed = name!==broker.name || phone!==broker.phone || email!==broker.email;
+      broker.name = name; broker.phone = phone; broker.email = email;
+      if(changed) logEvent("Broker updated — "+name, null);
+      brokerEditingId = null;
+      await save(); render();
+    });
+
+    // Emergency contacts
+    document.querySelectorAll("[data-addemerg]").forEach(b=>b.onclick=()=>{
+      drawerEditingEmergency = b.dataset.addemerg; renderDrawer();
+    });
+    const cancelEmerg = document.getElementById("cdCancelEmerg");
+    if(cancelEmerg) cancelEmerg.onclick = ()=>{ drawerEditingEmergency = null; renderDrawer(); };
+    document.querySelectorAll("[data-saveemerg]").forEach(b=>b.onclick=async()=>{
+      const d = dealById(b.dataset.saveemerg); if(!d) return;
+      const nameEl = document.getElementById("cdEmergName");
+      const phoneEl = document.getElementById("cdEmergPhone");
+      const name = (nameEl.value||"").trim(), phone = (phoneEl.value||"").trim();
+      const err = document.getElementById("cdEmergErr");
+      if(!name || !phone){
+        err.textContent = "Name and phone are both needed.";
+        nameEl.style.borderColor = name ? "" : "var(--sys-red)";
+        phoneEl.style.borderColor = phone ? "" : "var(--sys-red)";
+        return;
+      }
+      d.emergencyContacts = d.emergencyContacts || [];
+      d.emergencyContacts.push({ name, phone,
+        relationship: (document.getElementById("cdEmergRel").value||"").trim(),
+        email: (document.getElementById("cdEmergEmail").value||"").trim(),
+        note: (document.getElementById("cdEmergNote").value||"").trim(),
+        addedOn: todayStr() });
+      logEvent("Added emergency contact "+name, d.id);
+      drawerEditingEmergency = null;
+      await save(); renderDrawer(); render();
+    });
+    document.querySelectorAll("[data-delemerg]").forEach(b=>b.onclick=async()=>{
+      const [id,i] = b.dataset.delemerg.split("|");
+      const d = dealById(id); if(!d || !d.emergencyContacts) return;
+      const removed = d.emergencyContacts.splice(Number(i),1)[0];
+      logEvent("Removed emergency contact "+(removed&&removed.name||""), d.id);
+      await save(); renderDrawer(); render();
+    });
+    document.querySelectorAll("[data-triedemerg]").forEach(b=>b.onclick=async()=>{
+      const [id,i] = b.dataset.triedemerg.split("|");
+      const d = dealById(id); if(!d || !d.emergencyContacts) return;
+      const ec = d.emergencyContacts[Number(i)]; if(!ec) return;
+      ec.lastTried = todayStr();
+      logEvent("Tried emergency contact "+(ec.name||""), d.id);
+      await save(); renderDrawer();
+    });
+
+    // Watchlist actions
+    document.querySelectorAll("[data-watchmet]").forEach(b=>b.onclick=async()=>{
+      const w = watchById(b.dataset.watchmet); if(!w) return;
+      w.status="met"; w.closedOn=todayStr();
+      logEvent("Condition met: "+w.condition+" \u2192 "+(w.ifMet||""), w.dealId);
+      await save(); render();
+    });
+    document.querySelectorAll("[data-watchfailed]").forEach(b=>b.onclick=async()=>{
+      const w = watchById(b.dataset.watchfailed); if(!w) return;
+      w.status="failed"; w.closedOn=todayStr();
+      logEvent("Condition NOT met: "+w.condition+" \u2192 "+(w.ifFailed||""), w.dealId);
+      await save(); render();
+    });
+    document.querySelectorAll("[data-watchdrop]").forEach(b=>b.onclick=async()=>{
+      const w = watchById(b.dataset.watchdrop); if(!w) return;
+      w.status="dropped"; w.closedOn=todayStr();
+      logEvent("Condition dropped: "+w.condition, w.dealId);
+      await save(); render();
+    });
+
+    // Today inbox
+    document.querySelectorAll("[data-inboxread]").forEach(b=>b.onclick=async()=>{
+      const x = inboxById(b.dataset.inboxread); if(!x) return;
+      x.status = "read"; x.readAt = nowStamp();
+      await save(); render();
+    });
+    const inboxAll = document.getElementById("cdInboxAllRead");
+    if(inboxAll) inboxAll.onclick = async ()=>{
+      inboxUnread().forEach(x=>{ x.status="read"; x.readAt = nowStamp(); });
+      logEvent("Marked all inbound items read", null);
+      await save(); render();
+    };
+
+    // Notifications page
+    const remAddBtn = document.getElementById("cdRemAddBtn");
+    if(remAddBtn) remAddBtn.onclick = ()=>{ remAdding = !remAdding; render(); };
+    const remToggleDone = document.getElementById("cdRemToggleDone");
+    if(remToggleDone) remToggleDone.onclick = ()=>{ remShowDone = !remShowDone; render(); };
+    const remSave = document.getElementById("cdRemSave");
+    if(remSave) remSave.onclick = async ()=>{
+      const textEl = document.getElementById("cdRemText");
+      const text = textEl.value.trim();
+      const date = datePickerValues["newRem"];
+      if(!text){ textEl.style.borderColor = "var(--red)"; return; }
+      if(!date){ const btn=document.querySelector('[data-datetoggle="newRem"]'); if(btn) btn.style.borderColor="var(--red)"; return; }
+      const time = timePickerValues["newRem"] || "16:00";
+      DB.reminders = DB.reminders || [];
+      const repeatEl = document.getElementById("cdRemRepeat");
+      DB.reminders.push({id: uid("rem"), dealId: document.getElementById("cdRemDeal").value || null,
+        text, dueAt: date+"T"+time, status:"open", repeat: (repeatEl && repeatEl.value) || null,
+        createdDate: todayStr(), history:[]});
+      logEvent("Reminder set for "+fmtDateShort(date)+" "+fmtTime(time)+" — "+text, document.getElementById("cdRemDeal").value || null);
+      remAdding = false;
+      delete datePickerValues["newRem"]; delete datePickerMonth["newRem"]; delete timePickerValues["newRem"];
+      await save(); render();
+    };
+    document.querySelectorAll("[data-remdone]").forEach(b=>b.onclick=async()=>{
+      const r = reminderById(b.dataset.remdone); if(!r) return;
+      r.status = "done";
+      r.history = r.history || []; r.history.push({date: nowStamp(), note: "Marked done"});
+      logEvent("Reminder completed — "+r.text, r.dealId);
+      // Repeating reminders roll forward on completion, the same way a recurring
+      // commitment does — so a weekly check-in can't quietly stop happening.
+      const next = nextReminderOccurrence(r);
+      if(next){
+        DB.reminders.push(next);
+        logEvent("Next "+r.repeat+" check-in scheduled for "+fmtDueAt(next.dueAt)+" — "+r.text, r.dealId);
+      }
+      await save(); render();
+    });
+    document.querySelectorAll("[data-remdismiss]").forEach(b=>b.onclick=async()=>{
+      const r = reminderById(b.dataset.remdismiss); if(!r) return;
+      r.status = "dismissed";
+      r.history = r.history || []; r.history.push({date: nowStamp(), note: "Dismissed"});
+      logEvent("Reminder dismissed — "+r.text, r.dealId);
+      await save(); render();
+    });
+    document.querySelectorAll("[data-rempush]").forEach(b=>b.onclick=async()=>{
+      const [id, how] = b.dataset.rempush.split("|");
+      const r = reminderById(id); if(!r) return;
+      const was = r.dueAt;
+      if(how==="tomorrow"){
+        const nd = new Date(TODAY.getTime() + 86400000);
+        r.dueAt = localDateStr(nd)+"T09:00";
+      } else {
+        const base = new Date(TODAY.getTime() + parseInt(how,10)*60000);
+        const mins = Math.round(base.getMinutes()/15)*15;
+        base.setMinutes(mins===60?45:mins, 0, 0);
+        r.dueAt = localDateStr(base)+"T"+String(base.getHours()).padStart(2,"0")+":"+String(base.getMinutes()).padStart(2,"0");
+      }
+      r.history = r.history || []; r.history.push({date: nowStamp(), note: "Rescheduled from "+was+" to "+r.dueAt});
+      logEvent("Reminder pushed to "+fmtDueAt(r.dueAt)+" — "+r.text, r.dealId);
+      await save(); render();
+    });
+    document.querySelectorAll("[data-remresched]").forEach(b=>b.onclick=()=>{
+      const id = b.dataset.remresched;
+      remReschedulingId = remReschedulingId===id ? null : id;
+      if(remReschedulingId){
+        const r = reminderById(id);
+        datePickerValues["resched-"+id] = splitDueAt(r.dueAt).date;
+        timePickerValues["resched-"+id] = splitDueAt(r.dueAt).time || "16:00";
+      }
+      render();
+    });
+    document.querySelectorAll("[data-remreschedsave]").forEach(b=>b.onclick=async()=>{
+      const id = b.dataset.remreschedsave;
+      const r = reminderById(id); if(!r) return;
+      const date = datePickerValues["resched-"+id]; if(!date) return;
+      const was = r.dueAt;
+      r.dueAt = date+"T"+(timePickerValues["resched-"+id]||"16:00");
+      r.status = "open";
+      r.history = r.history || []; r.history.push({date: nowStamp(), note: "Rescheduled from "+was+" to "+r.dueAt});
+      logEvent("Reminder rescheduled to "+fmtDueAt(r.dueAt)+" — "+r.text, r.dealId);
+      remReschedulingId = null;
+      await save(); render();
+    });
+    if(currentPage==="notifications"){ wireDatePickers(()=>render()); wireTimePickers(); }
+
+    document.querySelectorAll("[data-taskfilter]").forEach(b=>b.onclick=()=>{ taskTypeFilter=b.dataset.taskfilter; render(); });
+    document.querySelectorAll("[data-waitfilter]").forEach(b=>b.onclick=()=>{ taskWaitingFilter=b.dataset.waitfilter; render(); });
+    document.querySelectorAll("[data-taskdone]").forEach(cb=>cb.onchange=async()=>{
+      const t = DB.tasks.find(x=>x.id===cb.dataset.taskdone);
+      if(t){ t.status="done"; const d=dealById(t.dealId); logEvent((d?d.name+": ":"")+"Task completed — "+(TASK_TYPES[t.type]||t.type), t.dealId); await save(); render(); }
+    });
+
+    document.querySelectorAll("[data-calmove]").forEach(b=>b.onclick=()=>{
+      const mv = b.dataset.calmove;
+      if(mv==="today"){ calAnchor = todayStr(); calSelectedDay = null; }
+      else{
+        const n = parseInt(mv,10);
+        if(calViewMode==="month"){
+          const d = new Date(calAnchor+"T12:00:00Z");
+          d.setUTCMonth(d.getUTCMonth()+n);
+          calAnchor = d.toISOString().slice(0,10);
+        } else if(calViewMode==="week"){
+          calAnchor = addDays(calAnchor, n*7);
+        } else {
+          calAnchor = addDays(calAnchor, n);
+        }
+      }
+      render();
+    });
+    document.querySelectorAll("[data-calview]").forEach(b=>b.onclick=()=>{
+      calViewMode = b.dataset.calview; render();
+    });
+    document.querySelectorAll("[data-calday]").forEach(el=>el.onclick=(e)=>{
+      if(e.target.closest("[data-open]")) return;
+      if(calViewMode==="month"){ calSelectedDay = el.dataset.calday; render(); }
+      else { calAnchor = el.dataset.calday; calViewMode = "day"; render(); }
+    });
+
+    const genBtn = document.getElementById("cdGenReport");
+    if(genBtn) genBtn.onclick = generateReport;
+    const exportBtn = document.getElementById("cdExportBtn");
+    if(exportBtn) exportBtn.onclick = saveSnapshot;
+
+    const newTaskBtn = document.getElementById("cdNewTask");
+    if(newTaskBtn) newTaskBtn.onclick = openQuickTaskModal;
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{ load(); startClock(); });
+
+  // ---------------- TODAY ----------------
+  function firedRemindersBlockHtml(){
+    const fired = firedReminders();
+    if(!fired.length) return "";
+    return '<div class="cd-panel" style="border-color:var(--yellow);margin-bottom:16px;">'
+      + '<h3 style="color:var(--yellow);">Reminders due \u2014 '+fired.length+'</h3>'
+      + fired.map(r=>reminderRowHtml(r,true)).join("")
+      + '</div>';
+  }
+
+  function todayHtml(){
+    const unread = inboxUnread();
+    const overdueC = overdueCommitments();
+    const dueTodayC = dueTodayCommitments();
+    const overdueTasks = openTasks().filter(t=>t.dueDate && t.dueDate < todayStr());
+    const dueTodayTasks = openTasks().filter(t=>t.dueDate === todayStr());
+    const staleLegal = DB.deals.filter(d=>d.legalCase && legalIsStale(d));
+    const missingContact = dealsMissingContact();
+    const t = totals();
+
+    let html = '<div class="cd-h1">Today — '+fmtDate(todayStr())+'</div>'
+      + '<p class="cd-sub">What has come in since you last looked, then everything overdue, then what\'s due today.</p>';
+
+    if(missingContact.length){
+      html += '<div class="cd-nagbanner" data-page="deals" data-viewmode-hint="missingcontact"><b>'+missingContact.length+' deal'+(missingContact.length===1?'':'s')+' missing contact info</b><span style="color:var(--ink-dim);">— '+missingContact.slice(0,3).map(d=>esc(d.name)).join(", ")+(missingContact.length>3?" and "+(missingContact.length-3)+" more":"")+'. Click to fix.</span></div>';
+    }
+    const needsReviewLegal = DB.deals.filter(d=>d.legalCase && d.legalCase.needsReview);
+    if(needsReviewLegal.length){
+      html += '<div class="cd-nagbanner" data-page="legal"><b>'+needsReviewLegal.length+' legal case'+(needsReviewLegal.length===1?'':'s')+' migrated with guessed stage/docs</b><span style="color:var(--ink-dim);">— worth confirming against reality before relying on them. Click to review.</span></div>';
+    }
+
+    html += '<div class="cd-kpirow">'
+      + '<div class="cd-kpi"><span>New</span><b class="mono" style="color:var(--amber);">'+unread.length+'</b></div>'
+      + '<div class="cd-kpi"><span>Overdue</span><b class="mono" style="color:var(--red);">'+(overdueC.length+overdueTasks.length+staleLegal.length)+'</b></div>'
+      + '<div class="cd-kpi"><span>Due today</span><b class="mono" style="color:var(--blue);">'+(dueTodayC.length+dueTodayTasks.length)+'</b></div>'
+      + '<div class="cd-kpi"><span>Remaining balance</span><b class="mono">'+money(t.remaining)+'</b><div class="cd-kpisub">'+DB.deals.length+' deals</div></div>'
+      + '</div>';
+
+    // Conditional items whose check date has arrived
+    const dueW = dueWatch();
+    if(dueW.length){
+      html += '<div class="cd-panel"><h3>Conditions to check ('+dueW.length+')</h3>'
+        + '<p class="cd-caption">Each of these was parked on an outcome. The outcome is now due.</p>'
+        + dueW.map(w=>watchRowHtml(w,true)).join("") + '</div>';
+    }
+
+    // New since you last looked — inbound only
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;">'
+      + '<h3 style="margin:0;">New since you last looked ('+unread.length+')</h3>'
+      + (unread.length ? '<button class="cd-savebtn secondary" id="cdInboxAllRead">Mark all read</button>' : '')
+      + '</div>'
+      + '<p class="cd-caption">Reports, emails and messages that have arrived. Your own updates never appear here — a note you wrote is not news. Reading an item clears it.</p>';
+    html += unread.length ? unread.map(x=>{
+      const d = x.dealId ? dealById(x.dealId) : null;
+      const idBits = d ? [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ") : "";
+      return '<div class="cd-remrow fired">'
+        + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);">'
+            + esc(x.source)+' · '+esc(fmtReceived(x.receivedAt))+(idBits?' · '+esc(idBits):'')+'</div>'
+          + '<div style="margin-top:2px;"><b'+(x.dealId?' data-open="'+x.dealId+'" style="cursor:pointer;"':'')+'>'+esc(x.title)+'</b></div>'
+          + (x.detail?'<div class="cd-remmeta" style="margin-top:3px;">'+esc(x.detail)+'</div>':'')
+          + '<div class="cd-remacts"><button class="primary" data-inboxread="'+x.id+'">Mark read</button></div>'
+        + '</div></div>';
+    }).join("") : '<div class="cd-empty">Nothing new. Everything that has come in has been read.</div>';
+    html += '</div>';
+
+    // Overdue commitments
+    if(overdueC.length){
+      html += '<div class="cd-panel"><h3 style="color:var(--red);">Overdue commitments ('+overdueC.length+')</h3><p class="cd-caption">Promises that came due and haven\'t been marked fulfilled.</p>';
+      html += overdueC.map(c=>commitmentRowHtml(c)).join("");
+      html += '</div>';
+    }
+
+    // Overdue tasks
+    if(overdueTasks.length){
+      html += '<div class="cd-panel"><h3 style="color:var(--red);">Overdue tasks ('+overdueTasks.length+')</h3>';
+      html += overdueTasks.map(taskRowHtml).join("");
+      html += '</div>';
+    }
+
+    // Stale legal
+    if(staleLegal.length){
+      html += '<div class="cd-panel"><h3 style="color:var(--red);">Legal gone quiet ('+staleLegal.length+')</h3><p class="cd-caption">No contact logged in 2+ weeks (plus any snooze).</p>';
+      html += staleLegal.map(d=>{
+        const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
+        const nf = legalNextFollowUp(d);
+        return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.name)+'</b><small>'+esc(idBits)+' — '+esc(d.legalCase.firm||"firm TBD")+', follow-up was due '+fmtDateShort(nf)+'</small></div></div>';
+      }).join("");
+      html += '</div>';
+    }
+
+    // Due today
+    if(dueTodayC.length || dueTodayTasks.length){
+      html += '<div class="cd-panel"><h3>Due today</h3>';
+      html += dueTodayC.map(c=>commitmentRowHtml(c)).join("");
+      html += dueTodayTasks.map(taskRowHtml).join("");
+      html += '</div>';
+    }
+
+    return html;
+  }
+
+  function commitmentRowHtml(c){
+    const d = dealById(c.dealId);
+    if(!d) return "";
+    const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
+    const overdueDays = daysUntil(c.dueDate);
+    const overdueLabel = overdueDays<0 ? Math.abs(overdueDays)+"d overdue" : overdueDays===0?"Due today":"Due in "+overdueDays+"d";
+    return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.description)+'</b><small>'+esc(d.name)+' ('+esc(idBits)+') — promised by '+esc(WAITING_ON[c.promisedBy]||c.promisedBy)+'</small></div><span class="cd-badge" style="color:'+(overdueDays<0?'var(--red)':'var(--blue)')+';background:'+(overdueDays<0?'var(--red-bg)':'var(--blue-bg)')+';flex:none;">'+overdueLabel+'</span></div>';
+  }
+  function taskRowHtml(t){
+    const d = dealById(t.dealId);
+    if(!d) return "";
+    const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
+    return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(TASK_TYPES[t.type]||t.type)+'</b><small>'+esc(d.name)+' ('+esc(idBits)+') — waiting on '+esc(WAITING_ON[t.waitingOn]||t.waitingOn)+(t.description?': '+esc(t.description):"")+'</small></div></div>';
+  }
+
+  // ---------------- CALENDAR ----------------
+  let calAnchor = todayStr(); // single date anchor drives all 3 views
+  let calViewMode = "month"; // month | week | day
+  let calSelectedDay = null;
+
+  function allCalendarEvents(){
+    // returns map dateStr -> [{label, color, dealId}]
+    const map = {};
+    function add(dateStr, label, color, dealId, time, reminderId){
+      if(!dateStr) return;
+      if(!map[dateStr]) map[dateStr] = [];
+      map[dateStr].push({label, color, dealId, time: time||null, reminderId: reminderId||null});
+    }
+    DB.commitments.filter(c=>c.status==="open").forEach(c=>{
+      const d = dealById(c.dealId);
+      if(!d || isOtherOwnerDeal(d)) return;
+      add(c.dueDate, d.name+": "+c.description, "var(--blue)", c.dealId);
+    });
+    ourDeals().filter(d=>d.legalCase).forEach(d=>{
+      const nf = legalNextFollowUp(d);
+      if(nf) add(nf, d.name+": Legal follow-up", "var(--maroon)", d.id);
+    });
+    DB.tasks.filter(t=>t.status==="open" && t.dueDate).forEach(t=>{
+      const d = dealById(t.dealId);
+      if(!d || isOtherOwnerDeal(d)) return;
+      add(t.dueDate, d.name+": "+(TASK_TYPES[t.type]||t.type), "var(--purple)", t.dealId);
+    });
+    allReminders().filter(r=>r.status==="open").forEach(r=>{
+      const {date,time} = splitDueAt(r.dueAt);
+      const d = r.dealId ? dealById(r.dealId) : null;
+      const who = d ? d.name+": " : "";
+      add(date, (time?fmtTime(time)+" ":"")+""+who+r.text, "var(--yellow)", r.dealId, time, r.id);
+    });
+    // Manual-pay deals (wire/manual, invisible to bounce feeds) — recurring check-in
+    // computed from the stored frequency, always showing the current upcoming occurrence.
+    ourDeals().filter(d=>d.manualPay).forEach(d=>{
+      const nd = nextManualPayDate(d.manualPay);
+      if(nd) add(nd, d.name+": Check for "+(d.manualPay.method||"manual")+" payment ("+money(d.manualPay.expectedAmount)+")", "var(--green)", d.id);
+    });
+    return map;
+  }
+
+  function nextManualPayDate(mp){
+    if(!mp) return null;
+    // Trust the stored nextExpectedDate if it's still in the future or today;
+    // otherwise project forward from it at the deal's frequency until it lands
+    // on or after today, so a missed update doesn't leave a stale/past date sitting there.
+    let nd = mp.nextExpectedDate || mp.lastReceivedDate;
+    if(!nd) return null;
+    const stepDays = mp.frequency==="biweekly" ? 14 : mp.frequency==="weekly" ? 7 : mp.frequency==="monthly" ? 30 : 14;
+    let guard = 0;
+    while(nd < todayStr() && guard < 36){ nd = addDays(nd, stepDays); guard++; }
+    return nd;
+  }
+
+  function addDays(dateStr, n){
+    const d = new Date(dateStr+"T12:00:00Z");
+    d.setDate(d.getDate()+n);
+    return d.toISOString().slice(0,10);
+  }
+  function startOfWeek(dateStr){
+    const d = new Date(dateStr+"T12:00:00Z");
+    const dow = d.getUTCDay();
+    return addDays(dateStr, -dow);
+  }
+
+  function calNavHtml(label){
+    return '<div class="cd-calnav">'
+      + '<button class="cd-savebtn secondary" data-calmove="today">Today</button>'
+      + '<button class="cd-calnavbtn" data-calmove="-1">‹</button>'
+      + '<button class="cd-calnavbtn" data-calmove="1">›</button>'
+      + '<b style="font-size:17px;">'+label+'</b>'
+      + '<div class="cd-calviewsel">'
+        + '<button class="cd-calviewbtn '+(calViewMode==="month"?"on":"")+'" data-calview="month">Month</button>'
+        + '<button class="cd-calviewbtn '+(calViewMode==="week"?"on":"")+'" data-calview="week">Week</button>'
+        + '<button class="cd-calviewbtn '+(calViewMode==="day"?"on":"")+'" data-calview="day">Day</button>'
+      + '</div></div>';
+  }
+
+  function calendarHtml(){
+    const events = allCalendarEvents();
+    let body, label;
+    if(calViewMode==="month") { const r = monthViewHtml(events); body=r.body; label=r.label; }
+    else if(calViewMode==="week") { const r = weekViewHtml(events); body=r.body; label=r.label; }
+    else { const r = dayViewHtml(events); body=r.body; label=r.label; }
+
+    const selectedEvs = calSelectedDay ? (events[calSelectedDay]||[]) : [];
+
+    return '<div class="cd-h1">Calendar</div><p class="cd-sub">Every open commitment, reminder, legal follow-up, and task due date in one place.</p>'
+      + calNavHtml(label)
+      + body
+      + (calSelectedDay && calViewMode==="month" ? '<div class="cd-panel" style="margin-top:16px;"><h3>'+fmtDate(calSelectedDay)+'</h3>'
+          + (selectedEvs.length ? selectedEvs.map(e=>'<div class="cd-listrow" data-open="'+e.dealId+'"><div><b>'+esc(e.label)+'</b></div></div>').join("") : '<div class="cd-empty">Nothing due this day.</div>')
+          + '</div>' : "");
+  }
+
+  function monthViewHtml(events){
+    const anchor = new Date(calAnchor+"T12:00:00Z");
+    const y = anchor.getUTCFullYear(), m = anchor.getUTCMonth();
+    const first = new Date(Date.UTC(y, m, 1));
+    const startDow = first.getUTCDay();
+    const daysInMonth = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+    const label = first.toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
+
+    let cells = "";
+    for(let i=0;i<startDow;i++) cells += '<div class="cd-calday empty"></div>';
+    for(let day=1; day<=daysInMonth; day++){
+      const dateStr = y+"-"+String(m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+      const isToday = dateStr===todayStr();
+      const evs = events[dateStr]||[];
+      cells += '<div class="cd-calday'+(isToday?' today':'')+'" data-calday="'+dateStr+'">'
+        + '<div class="cd-caldate">'+day+'</div>'
+        + evs.slice(0,3).map(e=>'<span class="cd-calitem" data-open="'+e.dealId+'" style="background:rgba(255,255,255,.08);color:'+e.color+';" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join("")
+        + (evs.length>3?'<span style="font-size:9px;color:var(--ink-faint);">+'+(evs.length-3)+' more</span>':"")
+        + '</div>';
+    }
+    const body = '<div class="cd-calgrid">'
+      + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div class="cd-calhead">'+d+'</div>').join("")
+      + cells + '</div>';
+    return {body, label};
+  }
+
+  function hourGridHtml(dayDateStrs, events){
+    const hourLabels = [];
+    for(let h=0;h<24;h++){
+      const hr = h===0?"12 AM":h<12?h+" AM":h===12?"12 PM":(h-12)+" PM";
+      hourLabels.push('<div class="cd-hourlabel">'+hr+'</div>');
+    }
+    const now = TODAY;
+    const nowTop = (now.getHours() + now.getMinutes()/60) * 44;
+
+    const cols = dayDateStrs.map(ds=>{
+      const slots = Array.from({length:24}).map(()=>'<div class="cd-hourslot"></div>').join("");
+      const isToday = ds===localDateStr(now);
+      const timed = ((events[ds]||[]).filter(e=>e.time)).map(e=>{
+        const [h,m] = e.time.split(":").map(Number);
+        const top = (h + m/60) * 44;
+        return '<div class="cd-timedev" style="top:'+top+'px;" '+(e.dealId?'data-open="'+e.dealId+'"':'')+' title="'+esc(e.label)+'">'+esc(e.label)+'</div>';
+      }).join("");
+      return '<div class="cd-hourcol" data-calday="'+ds+'">'+slots+timed+(isToday?'<div class="cd-nowline" style="top:'+nowTop+'px;"><div class="cd-nowdot"></div></div>':"")+'</div>';
+    }).join("");
+
+    return '<div class="cd-hourgrid">'
+      + '<div class="cd-hourlabels">'+hourLabels.join("")+'</div>'
+      + '<div class="cd-hourcols" style="grid-template-columns:repeat('+dayDateStrs.length+',1fr);">'+cols+'</div>'
+      + '</div>';
+  }
+
+  function weekViewHtml(events){
+    const weekStart = startOfWeek(calAnchor);
+    const days = Array.from({length:7}).map((_,i)=>addDays(weekStart, i));
+    const label = new Date(days[0]+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"})
+      + " – " + new Date(days[6]+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
+
+    const headCells = days.map(ds=>{
+      const d = new Date(ds+"T12:00:00Z");
+      const isToday = ds===todayStr();
+      return '<div class="cd-weekheadcell'+(isToday?' today':'')+'"><div class="dow">'+d.toLocaleDateString("en-US",{weekday:"short",timeZone:"UTC"}).toUpperCase()+'</div><div class="dnum">'+d.getUTCDate()+'</div></div>';
+    }).join("");
+
+    const alldayCells = days.map(ds=>{
+      const evs = (events[ds]||[]).filter(e=>!e.time);
+      return '<div class="cd-allday-cell" data-calday="'+ds+'">'+evs.map(e=>'<span class="cd-calitem-chip" data-open="'+e.dealId+'" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join("")+'</div>';
+    }).join("");
+
+    const body = '<div class="cd-weekwrap">'
+      + '<div class="cd-weekheadrow" style="grid-template-columns:52px repeat(7,1fr);"><div></div>'+headCells+'</div>'
+      + '<div class="cd-allday-row" style="grid-template-columns:52px repeat(7,1fr);"><div style="font-size:9px;color:var(--ink-faint);padding:4px;">All-day</div>'+alldayCells+'</div>'
+      + hourGridHtml(days, events)
+      + '</div>';
+    return {body, label};
+  }
+
+  function dayViewHtml(events){
+    const ds = calAnchor;
+    const d = new Date(ds+"T12:00:00Z");
+    const label = d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric",timeZone:"UTC"});
+    const isToday = ds===todayStr();
+    const evs = events[ds]||[];
+
+    const body = '<div class="cd-weekwrap">'
+      + '<div class="cd-weekheadrow" style="grid-template-columns:52px 1fr;"><div></div><div class="cd-weekheadcell'+(isToday?' today':'')+'"><div class="dow">'+d.toLocaleDateString("en-US",{weekday:"short",timeZone:"UTC"}).toUpperCase()+'</div><div class="dnum">'+d.getUTCDate()+'</div></div></div>'
+      + '<div class="cd-allday-row" style="grid-template-columns:52px 1fr;"><div style="font-size:9px;color:var(--ink-faint);padding:4px;">All-day</div><div class="cd-allday-cell" data-calday="'+ds+'">'+(evs.filter(e=>!e.time).length?evs.filter(e=>!e.time).map(e=>'<span class="cd-calitem-chip" data-open="'+e.dealId+'" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join(""):"")+'</div></div>'
+      + hourGridHtml([ds], events)
+      + '</div>';
+    return {body, label};
+  }
+
+  // ---------------- TASKS ----------------
+  let taskTypeFilter = "all";
+  let taskWaitingFilter = "all";
+
+  // ---------------- NOTIFICATIONS ----------------
+  let remAdding = false;
+  let remReschedulingId = null;
+  let remShowDone = false;
+
+  function reminderRowHtml(r, fired){
+    const d = r.dealId ? dealById(r.dealId) : null;
+    const idBits = d ? [d.mcht?("MCHT "+d.mcht):null, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" \u00B7 ") : "";
+    const resched = remReschedulingId===r.id;
+    return '<div class="cd-remrow'+(fired?' fired':'')+'">'
+      + ''
+      + '<div style="flex:1;min-width:0;">'
+        + (d ? '<div><b '+(r.dealId?'data-open="'+r.dealId+'" style="cursor:pointer;"':'')+'>'+esc(d.name)+'</b>'
+              + (idBits?' <span style="color:var(--ink-faint);font-size:11px;">'+esc(idBits)+'</span>':'')+'</div>' : '')
+        + '<div style="margin-top:2px;">'+esc(r.text)+'</div>'
+        + '<div class="cd-remmeta">'+fmtDueAt(r.dueAt)+' \u00B7 '+relativeDue(r.dueAt)
+        + (r.repeat ? ' \u00B7 repeats '+r.repeat : '')
+        + (r.history && r.history.length ? ' \u00B7 rescheduled '+r.history.filter(h=>h.note&&h.note.indexOf("Rescheduled")===0).length+'\u00D7' : '')
+        + '</div>'
+        + (r.status==="open" ? '<div class="cd-remacts">'
+            + '<button class="primary" data-remdone="'+r.id+'">Mark done</button>'
+            + '<button data-rempush="'+r.id+'|30">+30 min</button>'
+            + '<button data-rempush="'+r.id+'|120">+2 hrs</button>'
+            + '<button data-rempush="'+r.id+'|tomorrow">Tomorrow 9 AM</button>'
+            + '<button data-remresched="'+r.id+'">'+(resched?'Cancel':'Pick a time\u2026')+'</button>'
+            + '<button data-remdismiss="'+r.id+'">Dismiss</button>'
+            + '</div>' : '<div class="cd-remmeta" style="color:var(--green);">'+(r.status==="done"?"Done":"Dismissed")+'</div>')
+        + (resched ? '<div style="margin-top:10px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">'
+            + '<div style="min-width:180px;">'+dateFieldHtml("resched-"+r.id)+'</div>'
+            + timeFieldHtml("resched-"+r.id, splitDueAt(r.dueAt).time||"16:00")
+            + '<button class="cd-savebtn" data-remreschedsave="'+r.id+'">Save</button></div>' : '')
+      + '</div></div>';
+  }
+
+  function notificationsHtml(){
+    const fired = firedReminders();
+    const upcoming = upcomingReminders();
+    const done = allReminders().filter(r=>r.status!=="open")
+      .sort((a,b)=> a.dueAt < b.dueAt ? 1 : -1);
+
+    let h = '<div class="cd-h1">Notifications</div>'
+      + '<p class="cd-sub">Reminders that have come due. They stay here until you mark them off or push them to a new time. Live as of '+fmtTime(nowStamp().split("T")[1])+'.</p>';
+
+    h += '<div class="cd-panel"><h3>Due now'+(fired.length?' \u2014 '+fired.length:'')+'</h3>'
+      + (fired.length ? fired.map(r=>reminderRowHtml(r,true)).join("") : '<div class="cd-empty">Nothing has come due. Anything scheduled is below.</div>')
+      + '</div>';
+
+    h += '<div class="cd-panel" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;">'
+      + '<h3 style="margin:0;">Scheduled'+(upcoming.length?' \u2014 '+upcoming.length:'')+'</h3>'
+      + '<button class="cd-savebtn secondary" id="cdRemAddBtn">'+(remAdding?'Cancel':'+ New reminder')+'</button></div>';
+
+    if(remAdding){
+      const dealOpts = '<option value="">— No deal (general) —</option>'
+        + ourDeals().slice().sort((a,b)=>a.name.localeCompare(b.name))
+            .map(d=>'<option value="'+d.id+'">'+esc(d.name)+(d.mcht?" \u2014 MCHT "+d.mcht:"")+(d.leadId?" \u00B7 Lead "+d.leadId:"")+'</option>').join("");
+      h += '<div style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:14px;">'
+        + '<div class="cd-formrow"><label>Deal</label><select class="cd-select" id="cdRemDeal">'+dealOpts+'</select></div>'
+        + '<div class="cd-formrow"><label>Remind me to</label><input class="cd-input" id="cdRemText" placeholder="Follow up with the broker on the wire"></div>'
+        + '<div class="cd-formrow"><label>Date</label>'+dateFieldHtml("newRem")+'</div>'
+        + '<div class="cd-formrow"><label>Time</label>'+timeFieldHtml("newRem","16:00")+'</div>'
+        + '<div class="cd-formrow"><label>Repeat</label><select class="cd-select" id="cdRemRepeat">'
+          + '<option value="">Does not repeat</option><option value="weekly">Weekly</option>'
+          + '<option value="biweekly">Every 2 weeks</option><option value="monthly">Monthly</option></select></div>'
+        + '<div style="display:flex;gap:8px;margin-top:10px;"><button class="cd-savebtn" id="cdRemSave">Save reminder</button></div>'
+        + '</div>';
+    }
+
+    h += (upcoming.length ? '<div style="margin-top:12px;">'+upcoming.map(r=>reminderRowHtml(r,false)).join("")+'</div>'
+                          : '<div class="cd-empty">Nothing scheduled.</div>')
+      + '</div>';
+
+    if(done.length){
+      h += '<div class="cd-panel" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;">'
+        + '<h3 style="margin:0;">Closed \u2014 '+done.length+'</h3>'
+        + '<button class="cd-savebtn secondary" id="cdRemToggleDone">'+(remShowDone?'Hide':'Show')+'</button></div>'
+        + (remShowDone ? '<div style="margin-top:12px;">'+done.map(r=>reminderRowHtml(r,false)).join("")+'</div>' : '')
+        + '</div>';
+    }
+    return h;
+  }
+
+  function tasksHtml(){
+    let list = openTasks();
+    if(taskTypeFilter!=="all") list = list.filter(t=>t.type===taskTypeFilter);
+    if(taskWaitingFilter!=="all") list = list.filter(t=>t.waitingOn===taskWaitingFilter);
+    list.sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999"));
+
+    const typeChips = ["all",...Object.keys(TASK_TYPES)].map(k=>{
+      const label = k==="all"?"All Types":TASK_TYPES[k];
+      const cnt = k==="all"?openTasks().length:openTasks().filter(t=>t.type===k).length;
+      return '<div class="cd-chip '+(taskTypeFilter===k?'on':'')+'" data-taskfilter="'+k+'">'+label+' <b>'+cnt+'</b></div>';
+    }).join("");
+    const waitChips = ["all",...Object.keys(WAITING_ON)].map(k=>{
+      const label = k==="all"?"Anyone":WAITING_ON[k];
+      const cnt = k==="all"?openTasks().length:openTasks().filter(t=>t.waitingOn===k).length;
+      return '<div class="cd-chip '+(taskWaitingFilter===k?'on':'')+'" data-waitfilter="'+k+'">'+label+' <b>'+cnt+'</b></div>';
+    }).join("");
+
+    let rows = list.map(t=>{
+      const d = dealById(t.dealId);
+      if(!d) return "";
+      const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
+      const overdue = t.dueDate && t.dueDate < todayStr();
+      return '<tr data-open="'+d.id+'">'
+        + '<td><span class="cd-badge" style="color:var(--purple);background:var(--purple-bg);">'+esc(TASK_TYPES[t.type]||t.type)+'</span></td>'
+        + '<td class="cd-namecell"><b>'+esc(d.name)+'</b><span>'+esc(idBits)+'</span></td>'
+        + '<td>'+esc(t.description||"—")+'</td>'
+        + '<td><span class="cd-badge" style="color:var(--blue);background:var(--blue-bg);">'+esc(WAITING_ON[t.waitingOn]||t.waitingOn)+'</span></td>'
+        + '<td class="mono" style="'+(overdue?'color:var(--red);':'')+'">'+(t.dueDate?fmtDateShort(t.dueDate):"—")+'</td>'
+        + '<td><input type="checkbox" data-taskdone="'+t.id+'" onclick="event.stopPropagation()"></td>'
+        + '</tr>';
+    }).join("");
+
+    return '<div class="cd-h1">Tasks</div><p class="cd-sub">Every open task across all deals — six recurring types, each with who it\'s waiting on.</p>'
+      + '<div class="cd-toolbar"><button class="cd-savebtn" id="cdNewTask">+ New Task</button></div>'
+      + '<div class="cd-chiprow">'+typeChips+'</div>'
+      + '<div class="cd-chiprow">'+waitChips+'</div>'
+      + '<div class="cd-panel" style="padding:0;overflow-x:auto;"><table class="cd-table"><thead><tr>'
+      + '<th>Type</th><th>Deal</th><th>Description</th><th>Waiting On</th><th>Due</th><th>Done</th>'
+      + '</tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="cd-empty">No open tasks match.</td></tr>')+'</tbody></table></div>';
+  }
+
+  // ---------------- LEGAL ----------------
+  function legalHtml(){
+    let rows = dealsWithLegalCase();
+    rows.sort((a,b)=>{
+      const sa = legalIsStale(a) ? 0 : 1;
+      const sb = legalIsStale(b) ? 0 : 1;
+      return sa - sb;
+    });
+
+    let body = rows.map(d=>{
+      const lc = d.legalCase;
+      const stage = LEGAL_STAGES[lc.stage] || {label:lc.stage};
+      const stale = legalIsStale(d);
+      const nf = legalNextFollowUp(d);
+      const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
+      const docsSent = Object.values(lc.docs||{}).filter(v=>v==="sent").length;
+      const docsTotal = Object.keys(LEGAL_DOC_LABELS).length;
+      const docsMissing = Object.keys(LEGAL_DOC_LABELS).filter(k=>(lc.docs||{})[k]==="pending");
+      return '<tr data-open="'+d.id+'">'
+        + '<td class="cd-namecell"><b>'+esc(d.name)+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</span></td>'
+        + '<td>'+esc(lc.firm||"—")+(lc.needsReview?' <span class="cd-flagpill">Review</span>':"")+'</td>'
+        + '<td><span class="cd-badge" style="background:rgba(255,255,255,.08);">'+esc(stage.label)+'</span></td>'
+        + '<td style="'+(stale?'color:var(--red);':'')+'">'+(nf?fmtDateShort(nf)+(stale?' (due)':""):"—")+'</td>'
+        + '<td>'+docsSent+'/'+docsTotal+(docsMissing.length?' <span style="color:var(--yellow);">missing '+docsMissing.length+'</span>':'')+'</td>'
+        + '<td class="mono" style="color:var(--maroon);">'+money(remaining)+'</td>'
+        + '</tr>';
+    }).join("");
+
+    return '<div class="cd-h1">Legal</div><p class="cd-sub">Every filed deal — stage, document checklist completion, and follow-up cadence (2 weeks of silence auto-flags, snoozable).</p>'
+      + '<div class="cd-panel" style="padding:0;overflow-x:auto;"><table class="cd-table"><thead><tr>'
+      + '<th>Deal</th><th>Firm</th><th>Stage</th><th>Next Follow-up</th><th>Docs</th><th>Remaining</th>'
+      + '</tr></thead><tbody>'+(body||'<tr><td colspan="6" class="cd-empty">No legal cases tracked right now.</td></tr>')+'</tbody></table></div>';
+  }
+
+  // ---------------- DEALS ----------------
+  let dealFilter = "all";
+  let dealSearch = "";
+  let dealSort = {col:"remaining", dir:"desc"};
+  let dealViewMode = "standard";
+
+  const DEAL_VIEW_MODES = {
+    standard:        {label:"All Deals", predicate: d=>!isOtherOwnerDeal(d)},
+    missingcontact:  {label:"Missing Contact", predicate: d=>{ if(isOtherOwnerDeal(d)) return false; const c=d.contact||{}; return !(c.name && (c.phone||c.email)); }},
+    paused:          {label:"Paused / Lowered", predicate: d=> !isOtherOwnerDeal(d) && (d.pauseInfo || (d.flags||[]).includes("Paused Schedule"))},
+    settlements:     {label:"Settlements", predicate: d=> !isOtherOwnerDeal(d) && (d.settlement || d.status==="debt_relief")},
+    manualpay:       {label:"Manual Pay", predicate: d=> !isOtherOwnerDeal(d) && !!d.manualPay},
+    clawback:        {label:"Clawback Active", predicate: d=> !isOtherOwnerDeal(d) && d.clawback && d.clawback!=="none"}
+  };
+
+  function dealsHtml(){
+    const counts = statusCounts();
+    const mode = DEAL_VIEW_MODES[dealViewMode] || DEAL_VIEW_MODES.standard;
+    let list = DB.deals.filter(d=>{
+      if(!mode.predicate(d)) return false;
+      if(dealFilter!=="all" && d.status!==dealFilter) return false;
+      if(dealSearch){
+        const s = dealSearch.toLowerCase();
+        return (d.name||"").toLowerCase().includes(s) || (d.mcht||"").toLowerCase().includes(s) || (d.leadId||"").toLowerCase().includes(s);
+      }
+      return true;
+    });
+    list.sort((a,b)=>{
+      let av,bv;
+      if(dealSort.col==="name"){ av=a.name||""; bv=b.name||""; }
+      else if(dealSort.col==="remaining"){ av=(a.original||0)-(a.recovered||0); bv=(b.original||0)-(b.recovered||0); }
+      else { av=a.name; bv=b.name; }
+      if(typeof av==="string") return dealSort.dir==="asc"?av.localeCompare(bv):bv.localeCompare(av);
+      return dealSort.dir==="asc"?av-bv:bv-av;
+    });
+
+    const viewChips = Object.keys(DEAL_VIEW_MODES).map(k=>{
+      const cnt = DB.deals.filter(DEAL_VIEW_MODES[k].predicate).length;
+      const urgent = k==="missingcontact" && cnt>0;
+      return '<div class="cd-chip '+(dealViewMode===k?'on':'')+'" data-dealviewmode="'+k+'" style="'+(urgent?'color:var(--red);':'')+'">'+DEAL_VIEW_MODES[k].label+' <b>'+cnt+'</b></div>';
+    }).join("");
+    const statusChips = ["all",...Object.keys(STATUS)].map(k=>{
+      const label = k==="all"?"All":statusOf(k).label;
+      const cnt = k==="all"?DB.deals.length:(counts[k]||0);
+      const color = k==="all"?null:statusOf(k).color;
+      return '<div class="cd-chip '+(dealFilter===k?'on':'')+'" data-dealfilter="'+k+'"'+(color?' style="color:'+color+'"':'')+'>'+(color?'<span class="cd-dot" style="background:'+color+'"></span>':'')+label+' <b>'+cnt+'</b></div>';
+    }).join("");
+
+    let rows = list.map(d=>{
+      const st = statusOf(d.status);
+      const p = pct(d.recovered, d.original);
+      const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
+      const c = d.contact||{};
+      const missingContact = !(c.name && (c.phone||c.email));
+      return '<tr data-open="'+d.id+'">'
+        + '<td class="cd-namecell"><b>'+esc(d.name)+(missingContact?'<span class="cd-flagpill" style="background:var(--red-bg);color:var(--red);">No Contact</span>':"")+(d.flags&&d.flags.length?d.flags.map(f=>'<span class="cd-flagpill">'+esc(f)+'</span>').join(""):"")+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+(d.contractUrl?' · <a href="'+esc(d.contractUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--amber);">Contract</a>':"")+'</span></td>'
+        + '<td><span class="cd-badge" style="color:'+st.color+';background:'+st.bg+'">'+st.label+'</span></td>'
+        + '<td class="mono">'+money(remaining)+'</td>'
+        + '<td><span class="cd-pctbar"><i style="width:'+p.toFixed(0)+'%"></i></span><span class="mono">'+p.toFixed(0)+'%</span></td>'
+        + '<td>'+esc(d.source||"—")+'</td>'
+        + '</tr>';
+    }).join("");
+
+    return '<div class="cd-h1">Deals</div><p class="cd-sub">Every deal currently tracked. Click a row for full detail.</p>'
+      + '<div class="cd-chiprow">'+viewChips+'</div>'
+      + '<div class="cd-chiprow">'+statusChips+'</div>'
+      + '<div class="cd-toolbar"><input class="cd-search" id="cdDealSearch" placeholder="Search name, MCHT, lead ID" value="'+esc(dealSearch)+'"></div>'
+      + '<div class="cd-panel" style="padding:0;overflow-x:auto;"><table class="cd-table"><thead><tr>'
+      + '<th>Deal</th><th>Status</th><th>Remaining</th><th>% Recovered</th><th>Source</th>'
+      + '</tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="cd-empty">No deals match.</td></tr>')+'</tbody></table></div>';
+  }
+
+  // ---------------- MERCHANTS ----------------
+  function merchantsHtml(){
+    const groups = {};
+    ourDeals().forEach(d=>{
+      const key = normalizeMerchantKey(d.name);
+      if(!groups[key]) groups[key] = {name:d.name, deals:[]};
+      groups[key].deals.push(d);
+    });
+    const multi = Object.values(groups).filter(g=>g.deals.length>1);
+    const single = Object.values(groups).filter(g=>g.deals.length===1);
+
+    function groupRow(g){
+      const totalRemaining = g.deals.reduce((s,d)=>s+Math.max(0,(d.original||0)-(d.recovered||0)),0);
+      const worstStatus = g.deals.reduce((worst,d)=>statusOf(d.status).severity > statusOf(worst.status).severity ? d : worst, g.deals[0]);
+      return '<div class="cd-panel" style="margin-bottom:10px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(g.deals.length>1?'8px':'0')+';">'
+        + '<b>'+esc(g.name)+'</b>'
+        + '<span style="display:flex;gap:10px;align-items:center;"><span class="cd-badge" style="color:'+statusOf(worstStatus.status).color+';background:'+statusOf(worstStatus.status).bg+';">'+statusOf(worstStatus.status).label+'</span><span class="mono" style="color:var(--ink-dim);">'+money(totalRemaining)+' remaining</span></span>'
+        + '</div>'
+        + (g.deals.length>1 ? g.deals.map(d=>'<div class="cd-listrow" data-open="'+d.id+'" style="padding-left:8px;"><div><b style="font-size:12px;">'+esc(d.mcht||d.id)+(d.leadId?' · Lead '+esc(d.leadId):"")+'</b><small>'+money(Math.max(0,(d.original||0)-(d.recovered||0)))+' remaining</small></div><span class="cd-badge" style="color:'+statusOf(d.status).color+';background:'+statusOf(d.status).bg+';flex:none;">'+statusOf(d.status).label+'</span></div>').join("") : "")
+        + '</div>';
+    }
+    // single-deal groups: whole panel clickable
+    function singleRow(g){
+      const d = g.deals[0];
+      const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
+      return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.name)+'</b><small>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</small></div><span style="display:flex;gap:10px;align-items:center;"><span class="cd-badge" style="color:'+statusOf(d.status).color+';background:'+statusOf(d.status).bg+';">'+statusOf(d.status).label+'</span><span class="mono" style="color:var(--ink-dim);">'+money(remaining)+'</span></span></div>';
+    }
+
+    return '<div class="cd-h1">Merchants</div><p class="cd-sub">Deals grouped by real-world merchant — multi-deal merchants (renewals, multiple locations) roll up together.</p>'
+      + (multi.length ? '<div class="cd-drsect">Multi-Deal Merchants ('+multi.length+')</div>'+multi.map(groupRow).join("") : "")
+      + '<div class="cd-drsect">Single-Deal Merchants ('+single.length+')</div>'
+      + '<div class="cd-panel" style="padding:6px 20px;">'+single.map(singleRow).join("")+'</div>';
+  }
+
+  // ---------------- REPEAT BOUNCERS ----------------
+  // A "cyclical" bouncer — bounced, cleared, bounced again — rather than a deal that's
+  // just been failing nonstop since day one. Approximated from lifetime vs. consecutive
+  // returns: a wide gap between them means clears happened somewhere in between.
+  function isRepeatBouncer(d){
+    if(isOtherOwnerDeal(d)) return false;
+    const lifetime = d.lifetime||0, consecutive = d.consecutive||0;
+    if(statusOf(d.status).terminal) return false;
+    return lifetime >= 4 && consecutive < lifetime;
+  }
+  function repeatBouncersHtml(){
+    let list = DB.deals.filter(isRepeatBouncer);
+    list.sort((a,b)=> (b.lifetime-b.consecutive) - (a.lifetime-a.consecutive));
+    let rows = list.map(d=>{
+      const st = statusOf(d.status);
+      const clearedCycles = Math.max(0, (d.lifetime||0) - (d.consecutive||0));
+      return '<tr data-open="'+d.id+'">'
+        + '<td class="cd-namecell"><b>'+esc(d.name)+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</span></td>'
+        + '<td><span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span></td>'
+        + '<td class="mono">'+(d.lifetime||0)+'</td>'
+        + '<td class="mono">'+(d.consecutive||0)+'</td>'
+        + '<td class="mono" style="color:var(--yellow);">'+clearedCycles+'</td>'
+        + '<td class="mono" style="color:var(--maroon);">'+money(Math.max(0,(d.original||0)-(d.recovered||0)))+'</td>'
+        + '</tr>';
+    }).join("");
+    return '<div class="cd-h1">Repeat Bouncers</div><p class="cd-sub">Deals with a cyclical pattern — bounce, clear, bounce again — rather than a single unbroken streak. Sorted by how much "clearing" has happened between bounces (a rough proxy for how many separate cycles).</p>'
+      + '<div class="cd-panel" style="padding:0;overflow-x:auto;"><table class="cd-table"><thead><tr>'
+      + '<th>Deal</th><th>Status</th><th>Lifetime Returns</th><th>Current Streak</th><th>Implied Clear Cycles</th><th>Remaining</th>'
+      + '</tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="cd-empty">No deals match this pattern right now.</td></tr>')+'</tbody></table></div>';
+  }
+
+  // ---------------- OTHER DEALS (not ours, just on our platform) ----------------
+  function otherDealsHtml(){
+    const list = DB.deals.filter(isOtherOwnerDeal);
+    const groups = {};
+    list.forEach(d=>{
+      const key = (d.owner && d.owner.ownerName) || "Unspecified owner";
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(d);
+    });
+    let body = "";
+    Object.keys(groups).sort().forEach(ownerName=>{
+      body += '<div class="cd-drsect">'+esc(ownerName)+' ('+groups[ownerName].length+')</div>';
+      body += groups[ownerName].map(d=>{
+        const st = statusOf(d.status);
+        return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.name)+'</b><small>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</small></div><span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';flex:none;">'+st.label+'</span></div>';
+      }).join("");
+    });
+    return '<div class="cd-h1">Other Deals</div><p class="cd-sub">Deals that sit on our platform but belong to someone else — not tracked, no tasks or reminders, kept here just for reference. Change the Ownership field in a deal\'s drawer to move it here or back.</p>'
+      + '<div class="cd-panel">'+(body || '<p class="cd-empty">Nothing here right now.</p>')+'</div>';
+  }
+
+  // ---------------- BROKERS ----------------
+  let brokerEditingId = null;
+  let addingBrokerOnPage = false;
+
+  function brokersHtml(){
+    const brokers = [...(DB.brokers||[])].sort((a,b)=>a.name.localeCompare(b.name));
+    let body = '<div class="cd-panel">';
+
+    if(addingBrokerOnPage){
+      body += '<div class="cd-drsect">New Broker</div>'
+        + '<input class="cd-note" id="cdPageNewBrokerName" placeholder="Broker name" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<input class="cd-note" id="cdPageNewBrokerPhone" placeholder="Phone (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<input class="cd-note" id="cdPageNewBrokerEmail" placeholder="Email (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:10px;">'
+        + '<button class="cd-savebtn" id="cdPageBrokerAddSave">Save</button> <button class="cd-inlinebtn" id="cdPageBrokerAddCancel">Cancel</button>';
+    } else {
+      body += '<button class="cd-savebtn" id="cdPageBrokerAddBtn">+ Add Broker</button>';
+    }
+    body += '</div>';
+
+    body += '<div class="cd-panel">';
+    if(!brokers.length){
+      body += '<p class="cd-empty">No brokers added yet.</p>';
+    } else {
+      body += brokers.map(b=>{
+        const linkedCount = DB.deals.filter(d=>d.brokerId===b.id).length;
+        if(brokerEditingId===b.id){
+          return '<div class="cd-comment">'
+            + '<input class="cd-note" id="cdEditBrokerName-'+b.id+'" value="'+esc(b.name)+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+            + '<input class="cd-note" id="cdEditBrokerPhone-'+b.id+'" value="'+esc(b.phone||"")+'" placeholder="Phone" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+            + '<input class="cd-note" id="cdEditBrokerEmail-'+b.id+'" value="'+esc(b.email||"")+'" placeholder="Email" style="min-height:auto;padding:8px 10px;margin-bottom:8px;">'
+            + '<button class="cd-savebtn" data-brokerpagesave="'+b.id+'">Save</button> <button class="cd-inlinebtn" data-brokerpagecancel="'+b.id+'">Cancel</button>'
+            + '</div>';
+        }
+        return '<div class="cd-listrow"><div><b>'+esc(b.name)+'</b><small>'+esc(b.phone||"—")+' · '+esc(b.email||"—")+(linkedCount?' · on '+linkedCount+' deal'+(linkedCount===1?'':'s'):'')+'</small></div><button class="cd-inlinebtn" data-brokerpageedit="'+b.id+'">Edit</button></div>';
+      }).join("");
+    }
+    body += '</div>';
+
+    return '<div class="cd-h1">Brokers</div><p class="cd-sub">Every broker/ISO contact on file. Edit any of them directly, or add a new one — no need to go through a deal first.</p>' + body;
+  }
+
+  // ---------------- REPORTS ----------------
+  function watchRowHtml(w, showDeal){
+    const d = w.dealId ? dealById(w.dealId) : null;
+    const idBits = d ? [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" \u00B7 ") : "";
+    const overdue = (w.checkOn||"") < todayStr();
+    return '<div class="cd-remrow'+(overdue?" fired":"")+'">'
+      + '<div style="flex:1;min-width:0;">'
+        + (showDeal && d ? '<div><b data-open="'+d.id+'" style="cursor:pointer;">'+esc(d.name)+'</b>'
+            + (idBits?' <span class="cd-remmeta" style="margin:0;">'+esc(idBits)+'</span>':'')+'</div>' : '')
+        + '<div style="margin-top:3px;"><b>If:</b> '+esc(w.condition)+'</div>'
+        + '<div class="cd-remmeta" style="margin-top:4px;"><b style="color:var(--sys-green);">Met \u2192</b> '+esc(w.ifMet||"\u2014")+'</div>'
+        + '<div class="cd-remmeta" style="margin-top:2px;"><b style="color:var(--sys-red);">Not met \u2192</b> '+esc(w.ifFailed||"\u2014")+'</div>'
+        + '<div class="cd-remmeta" style="margin-top:5px;">Check '+esc(fmtDateShort(w.checkOn))+(overdue?' \u00B7 overdue':'')
+            + (w.source?' \u00B7 '+esc(w.source):'')+'</div>'
+        + '<div class="cd-remacts">'
+          + '<button class="primary" data-watchmet="'+w.id+'">Condition met</button>'
+          + '<button data-watchfailed="'+w.id+'">Not met</button>'
+          + '<button data-watchdrop="'+w.id+'">No longer relevant</button>'
+        + '</div>'
+      + '</div></div>';
+  }
+
+  function watchlistHtml(){
+    const all = openWatch(), due = dueWatch();
+    let html = '<div class="cd-h1">Watchlist</div>'
+      + '<p class="cd-sub">Things that only happen if something else does. These have no due date of their own, which is exactly why they get lost \u2014 each one records the condition, what follows either way, and when to look.</p>';
+    html += '<div class="cd-kpirow">'
+      + '<div class="cd-kpi"><span>Due to check</span><b style="color:'+(due.length?'var(--sys-red)':'var(--sys-green)')+';">'+due.length+'</b></div>'
+      + '<div class="cd-kpi"><span>Open conditions</span><b>'+all.length+'</b></div>'
+      + '<div class="cd-kpi"><span>Resolved</span><b>'+(DB.watch||[]).filter(w=>w.status!=="open").length+'</b></div>'
+      + '</div>';
+    html += '<div class="cd-panel"><h3>Due to check ('+due.length+')</h3>';
+    html += due.length ? due.map(w=>watchRowHtml(w,true)).join("") : '<div class="cd-empty">Nothing to check yet.</div>';
+    html += '</div>';
+    const later = all.filter(w=>!due.includes(w));
+    html += '<div class="cd-panel"><h3>Waiting ('+later.length+')</h3>';
+    html += later.length ? later.map(w=>watchRowHtml(w,true)).join("") : '<div class="cd-empty">Nothing waiting.</div>';
+    html += '</div>';
+    return html;
+  }
+
+  function reportsHtml(){
+    const since = DB.lastReportAt;
+    const events = (DB.eventLog||[]).filter(e=> !since || e.date >= since);
+    return '<div class="cd-h1">Reports</div><p class="cd-sub">A plain-English summary for David, plus the raw log and data export.</p>'
+      + '<div class="cd-panel"><h3>Generate Report for David</h3><p class="cd-caption">Written in plain, human, easy-to-read language — what changed, what needs a decision, general state of things'+(since?'. Last pulled '+since+', covers everything since then.':'. First run covers full history.')+'</p>'
+      + '<button class="cd-savebtn" id="cdGenReport">Generate Report</button>'
+      + '<span class="cd-saveok" id="cdReportGenerating" style="display:none;color:var(--ink-faint);">Writing summary…</span>'
+      + '<div id="cdReportOutput"></div>'
+      + '</div>'
+      + '<div class="cd-panel"><h3>Activity Log</h3><p class="cd-caption">Raw event log, most recent first.</p>'
+      + [...DB.eventLog].reverse().slice(0,150).map(l=>'<div class="cd-logrow"><span>'+esc(l.stamp||l.date)+'</span><span>'+esc(l.text)+'</span></div>').join("")
+      + '</div>'
+      + '<div class="cd-panel"><h3>Save Snapshot</h3><p class="cd-caption">Downloads everything currently in this app as a file. This is the reliable way to hand your data to Claude in a new chat — drag the downloaded file in instead of typing everything out again.</p>'
+      + '<button class="cd-savebtn secondary" id="cdExportBtn">Save Snapshot</button>'
+      + '<div id="cdExportOutput"></div>'
+      + '</div>'
+      + dataSourcesHtml();
+  }
+
+  // ---------------- DRAWER ----------------
+  let drawerTab = "overview";
+  let drawerEditingContact = false;
+  let commitEditingId = null;
+  let taskEditingId = null;
+  let addingOwnerFor = null;
+  let addingBrokerFor = null;
+  let drawerDealId = null;
+  // Which section keys are collapsed — persists across renders and across switching
+  // between deals, since it's a "how dense do I want this" preference, not per-deal.
+  // A few start pre-collapsed since they're consulted less often than they take up space.
+  let collapsedSections = new Set(["ownership","broker","clawback","documents","legaldocs","resolved-commit"]);
+
+  function sectionHtml(key, title, innerHtml){
+    const isOpen = !collapsedSections.has(key);
+    return '<div class="cd-drsect cd-drsect-toggle" data-sectiontoggle="'+key+'"><span><span class="cd-drsect-chevron'+(isOpen?' open':'')+'">▸</span> '+esc(title)+'</span></div>'
+      + (isOpen ? '<div class="cd-collapsible-body">'+innerHtml+'</div>' : '');
+  }
+
+  function openDrawer(d){
+    drawerDealId = d.id;
+    drawerTab = "overview";
+    drawerEditingContact = false;
+    commitEditingId = null;
+    taskEditingId = null;
+    addingOwnerFor = null;
+    addingBrokerFor = null;
+    datePickerValues = {}; datePickerMonth = {}; datePickerOpenFor = null;
+    renderDrawer(d);
+    document.getElementById("cdDrawer").classList.add("on");
+    document.getElementById("cdDrawerOverlay").classList.add("on");
+  }
+  function closeDrawer(){
+    document.getElementById("cdDrawer").classList.remove("on");
+    document.getElementById("cdDrawerOverlay").classList.remove("on");
+    drawerDealId = null;
+  }
+
+  function renderDrawer(d){
+    document.getElementById("cdDrawer").innerHTML = drawerHtml(d);
+    wireDrawer(d);
+  }
+
+  function drawerHtml(d){
+    const st = statusOf(d.status);
+    const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
+    const p = pct(d.recovered, d.original);
+    const c = d.contact || {};
+    const missingContact = !(c.name && (c.phone||c.email));
+    const dealCommitments = DB.commitments.filter(cm=>cm.dealId===d.id);
+    const dealTasks = DB.tasks.filter(t=>t.dealId===d.id);
+
+    function tab(id,label,count){
+      return '<button class="cd-drtab '+(drawerTab===id?'on':'')+'" data-drtab="'+id+'">'+label+(count!=null&&count>0?' ('+count+')':'')+'</button>';
+    }
+
+    let body = "";
+    if(drawerTab==="overview"){
+      const owner = d.owner || {isOurs:true, ownerId:null, ownerName:""};
+      const brokers = DB.brokers || [];
+      const owners = DB.owners || [];
+      const currentBroker = brokers.find(b=>b.id===d.brokerId);
+      const currentOwner = owners.find(o=>o.id===owner.ownerId);
+      const ownershipForceOpen = !owner.isOurs; // don't hide an important not-ours flag behind a collapse
+      body = '<div class="cd-drsect">Balances</div>'
+        + '<div class="cd-tlrow"><span>Placed</span><span>'+money(d.original)+'</span></div>'
+        + '<div class="cd-tlrow"><span>Recovered</span><span>'+money(d.recovered)+'</span></div>'
+        + '<div class="cd-tlrow"><span>Remaining</span><span>'+money(remaining)+'</span></div>'
+        + '<div class="cd-tlrow"><span>% Recovered</span><span>'+p.toFixed(0)+'%</span></div>'
+        + '<div class="cd-drsect">Deal Info</div>'
+        + '<div class="cd-tlrow"><span>Platform</span><span>'+esc(d.platform||"—")+'</span></div>'
+        + '<div class="cd-tlrow"><span>Source / ISO Firm</span><span>'+esc(d.source||"—")+'</span></div>'
+        + '<div class="cd-tlrow"><span>Date Placed</span><span>'+fmtDate(d.datePlaced)+'</span></div>'
+        + '<div class="cd-tlrow"><span>Frequency</span><span>'+esc(d.freq||"—")+'</span></div>'
+        + '<div class="cd-tlrow"><span>Last Payment</span><span>'+fmtDate(d.lastPaymentDate)+'</span></div>'
+        + '<div class="cd-tlrow"><span>Consecutive / Lifetime Returns</span><span>'+(d.consecutive||0)+' / '+(d.lifetime||0)+'</span></div>'
+        + '<div class="cd-drsect">Contact'+(missingContact?' <span style="color:var(--red);">— missing</span>':'')+'</div>'
+        + (drawerEditingContact
+            ? '<input class="cd-note" id="cdContactName" placeholder="Name" value="'+esc(c.name||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+              + '<input class="cd-note" id="cdContactPhone" placeholder="Phone" value="'+esc(c.phone||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+              + '<input class="cd-note" id="cdContactEmail" placeholder="Email" value="'+esc(c.email||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:8px;">'
+              + '<button class="cd-savebtn" id="cdSaveContact">Save Contact</button> '
+              + '<button class="cd-inlinebtn" id="cdCancelContact">Cancel</button>'
+            : (missingContact
+                ? '<div class="cd-warn">No contact info on file. <button class="cd-inlinebtn" data-addcontact="'+d.id+'" style="margin-left:6px;">Add contact info</button></div>'
+                : '<div class="cd-tlrow"><span>Name</span><span>'+esc(c.name||"—")+'</span></div>'
+                  + '<div class="cd-tlrow"><span>Phone</span><span>'+esc(c.phone||"—")+'</span></div>'
+                  + '<div class="cd-tlrow"><span>Email</span><span>'+esc(c.email||"—")+'</span></div>'
+                  + '<button class="cd-inlinebtn" data-addcontact="'+d.id+'" style="margin-top:6px;">Edit contact info</button>'))
+        + emergencyContactsHtml(d)
+        + '<div class="cd-drsect">Status</div>'
+        + '<select class="cd-select" data-statuschange="'+d.id+'">'
+          + Object.keys(STATUS).map(k=>'<option value="'+k+'" '+(d.status===k?'selected':'')+'>'+STATUS[k].label+'</option>').join("")
+        + '</select>'
+        + (ownershipForceOpen
+            ? '<div class="cd-drsect">Deal Ownership <span style="color:var(--yellow);">— not ours</span></div>'
+            : sectionHtml("ownership","Deal Ownership",""))
+        + (ownershipForceOpen || !collapsedSections.has("ownership") ? (
+            '<select class="cd-select" data-ownerchange="'+d.id+'" style="margin-bottom:'+(!owner.isOurs?'6px':'0')+';"><option value="ours" '+(owner.isOurs?'selected':'')+'>Our deal</option><option value="other" '+(!owner.isOurs?'selected':'')+'>Not our deal (on our platform)</option></select>'
+            + (!owner.isOurs
+                ? (addingOwnerFor===d.id
+                    ? '<input class="cd-note" id="cdNewOwnerName" placeholder="Company/owner name" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+                      + '<button class="cd-savebtn" data-ownersave="'+d.id+'">Save</button> <button class="cd-inlinebtn" data-ownercancel="'+d.id+'">Cancel</button>'
+                    : '<select class="cd-select" data-ownerpick="'+d.id+'">'
+                      + '<option value="">— Select whose deal it is —</option>'
+                      + owners.map(o=>'<option value="'+esc(o.id)+'" '+(owner.ownerId===o.id?'selected':'')+'>'+esc(o.name)+'</option>').join("")
+                      + '<option value="__new__">+ Add new owner…</option>'
+                      + '</select>')
+                : "")
+          ) : "")
+        + sectionHtml("broker","Broker Contact",
+            (addingBrokerFor===d.id
+              ? '<input class="cd-note" id="cdNewBrokerName" placeholder="Broker name" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+                + '<input class="cd-note" id="cdNewBrokerPhone" placeholder="Phone (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+                + '<input class="cd-note" id="cdNewBrokerEmail" placeholder="Email (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+                + '<button class="cd-savebtn" data-brokersave="'+d.id+'">Save</button> <button class="cd-inlinebtn" data-brokercancel="'+d.id+'">Cancel</button>'
+              : '<select class="cd-select" data-brokerchange="'+d.id+'" style="margin-bottom:'+(currentBroker&&(currentBroker.phone||currentBroker.email)?'6px':'0')+';">'
+                + '<option value="">— None selected —</option>'
+                + brokers.map(b=>'<option value="'+esc(b.id)+'" '+(d.brokerId===b.id?'selected':'')+'>'+esc(b.name)+'</option>').join("")
+                + '<option value="__new__">+ Add new broker…</option>'
+                + '</select>'
+                + (currentBroker && (currentBroker.phone||currentBroker.email) ? '<div class="cd-tlrow"><span>Phone</span><span>'+esc(currentBroker.phone||"—")+'</span></div><div class="cd-tlrow"><span>Email</span><span>'+esc(currentBroker.email||"—")+'</span></div>' : "")))
+        + sectionHtml("clawback","Clawback",
+            '<select class="cd-select" data-clawback="'+d.id+'">'
+              + Object.keys(CLAWBACK).map(k=>'<option value="'+k+'" '+(d.clawback===k?'selected':'')+'>'+CLAWBACK[k].label+'</option>').join("")
+            + '</select>')
+        + (d.contractUrl ? sectionHtml("documents","Documents",'<a class="cd-savebtn" style="display:inline-block;text-decoration:none;text-align:center;" href="'+esc(d.contractUrl)+'" target="_blank" rel="noopener">Open Contract</a>') : "");
+    } else if(drawerTab==="notes"){
+      body = '<textarea class="cd-note" id="cdNewNote" placeholder="Add a note..."></textarea>'
+        + '<p class="cd-caption" style="margin:4px 0 0;">Ctrl+Enter to add · Enter for a new line</p>'
+        + '<button class="cd-savebtn" id="cdAddNote" style="margin-top:6px;">Add Note</button>'
+        + '<div class="cd-drsect">History</div>'
+        + (d.notesLog||[]).slice().reverse().map((n,revIdx)=>{
+            return '<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(n.stamp||n.date||"")+'</span></div><div class="cd-comment-text">'+esc(n.text)+'</div></div>';
+          }).join("");
+    } else if(drawerTab==="commitments"){
+      body = '<div class="cd-drsect">New Commitment</div>'
+        + '<input class="cd-note" id="cdNewCommitDesc" placeholder="What was promised? e.g. Merchant will wire $2,000" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + '<select class="cd-select" id="cdNewCommitBy" style="margin-bottom:6px;">'+Object.keys(WAITING_ON).map(k=>'<option value="'+k+'">'+WAITING_ON[k]+' promised</option>').join("")+'</select>'
+        + dateFieldHtml("newCommit")
+        + '<select class="cd-select" id="cdNewCommitRecur" style="margin-top:6px;"><option value="0">Does not repeat</option><option value="7">Repeats weekly</option><option value="14">Repeats every 2 weeks</option><option value="30">Repeats monthly</option></select>'
+        + '<button class="cd-savebtn" id="cdAddCommit" style="margin-top:8px;">Add Commitment</button>'
+        + '<div class="cd-drsect">Open ('+dealCommitments.filter(c=>c.status==="open").length+')</div>'
+        + (dealCommitments.filter(c=>c.status==="open").length ? dealCommitments.filter(c=>c.status==="open").map(c=>{
+            if(commitEditingId===c.id){
+              return '<div class="cd-comment">'
+                + '<input class="cd-note" id="cdEditCommitDesc-'+c.id+'" value="'+esc(c.description)+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+                + '<select class="cd-select" id="cdEditCommitBy-'+c.id+'" style="margin-bottom:6px;">'+Object.keys(WAITING_ON).map(k=>'<option value="'+k+'" '+(c.promisedBy===k?"selected":"")+'>'+WAITING_ON[k]+' promised</option>').join("")+'</select>'
+                + dateFieldHtml("editCommit-"+c.id)
+                + '<button class="cd-savebtn" data-commitsave="'+c.id+'">Save</button> '
+                + '<button class="cd-inlinebtn" data-commitcancel="'+c.id+'">Cancel</button>'
+                + '</div>';
+            }
+            const od = daysUntil(c.dueDate);
+            const odLabel = od<0?Math.abs(od)+"d overdue":od===0?"Due today":"Due in "+od+"d";
+            const recurLabel = c.recurrenceDays===7?"weekly":c.recurrenceDays===14?"every 2 weeks":c.recurrenceDays===30?"monthly":c.recurrenceDays?"every "+c.recurrenceDays+"d":null;
+            return '<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(WAITING_ON[c.promisedBy])+' — due '+fmtDateShort(c.dueDate)+' ('+odLabel+')'+(recurLabel?' <span style="color:var(--blue);">↻ '+recurLabel+'</span>':'')+'</span></div>'
+              + '<div class="cd-comment-text">'+esc(c.description)+'</div>'
+              + '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">'
+              + '<button class="cd-inlinebtn" data-commitedit="'+c.id+'">Edit</button>'
+              + '<button class="cd-inlinebtn" data-commitfulfill="'+c.id+'">Mark Fulfilled</button>'
+              + '<button class="cd-inlinebtn" data-commitbreak="'+c.id+'" style="color:var(--red);">Broken</button>'
+              + '</div></div>';
+          }).join("") : '<p class="cd-caption">No open commitments.</p>')
+        + sectionHtml("resolved-commit","Resolved ("+dealCommitments.filter(c=>c.status!=="open").length+")",
+            dealCommitments.filter(c=>c.status!=="open").length ? dealCommitments.filter(c=>c.status!=="open").map(c=>{
+              return '<div class="cd-comment" style="opacity:.6;"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(c.status)+' — was due '+fmtDateShort(c.dueDate)+'</span></div><div class="cd-comment-text">'+esc(c.description)+'</div></div>';
+            }).join("") : '<p class="cd-caption">None yet.</p>');
+    } else if(drawerTab==="tasks"){
+      body = '<div class="cd-drsect">New Task</div>'
+        + '<select class="cd-select" id="cdNewTaskType" style="margin-bottom:6px;">'+Object.keys(TASK_TYPES).map(k=>'<option value="'+k+'">'+TASK_TYPES[k]+'</option>').join("")+'</select>'
+        + '<select class="cd-select" id="cdNewTaskWaiting" style="margin-bottom:6px;">'+Object.keys(WAITING_ON).map(k=>'<option value="'+k+'">Waiting on '+WAITING_ON[k]+'</option>').join("")+'</select>'
+        + '<input class="cd-note" id="cdNewTaskDesc" placeholder="Details (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + dateFieldHtml("newTask")
+        + '<button class="cd-savebtn" id="cdAddTask">Add Task</button>'
+        + '<div class="cd-drsect">Open ('+dealTasks.filter(t=>t.status==="open").length+')</div>'
+        + (dealTasks.filter(t=>t.status==="open").length ? dealTasks.filter(t=>t.status==="open").map(t=>{
+            if(taskEditingId===t.id){
+              return '<div class="cd-comment">'
+                + '<select class="cd-select" id="cdEditTaskType-'+t.id+'" style="margin-bottom:6px;">'+Object.keys(TASK_TYPES).map(k=>'<option value="'+k+'" '+(t.type===k?"selected":"")+'>'+TASK_TYPES[k]+'</option>').join("")+'</select>'
+                + '<select class="cd-select" id="cdEditTaskWaiting-'+t.id+'" style="margin-bottom:6px;">'+Object.keys(WAITING_ON).map(k=>'<option value="'+k+'" '+(t.waitingOn===k?"selected":"")+'>Waiting on '+WAITING_ON[k]+'</option>').join("")+'</select>'
+                + '<input class="cd-note" id="cdEditTaskDesc-'+t.id+'" value="'+esc(t.description||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+                + dateFieldHtml("editTask-"+t.id)
+                + '<div style="margin-top:8px;"><button class="cd-savebtn" data-tasksave="'+t.id+'">Save</button> <button class="cd-inlinebtn" data-taskcancel="'+t.id+'">Cancel</button></div>'
+                + '</div>';
+            }
+            return '<div class="cd-comment"><div class="cd-comment-head" style="align-items:center;">'
+              + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;"><input type="checkbox" data-taskcompletebox="'+t.id+'"><span class="cd-comment-time">'+esc(TASK_TYPES[t.type])+' — waiting on '+esc(WAITING_ON[t.waitingOn])+(t.dueDate?' — due '+fmtDateShort(t.dueDate):"")+'</span></label>'
+              + '<button class="cd-comment-del" data-taskedit="'+t.id+'">Edit</button></div>'
+              + '<div class="cd-comment-text">'+esc(t.description||"—")+'</div></div>';
+          }).join("") : '<p class="cd-caption">No open tasks.</p>');
+    } else if(drawerTab==="legal"){
+      if(!d.legalCase){
+        body = '<p class="cd-caption">No legal case on this deal.</p><button class="cd-savebtn" id="cdStartLegal" style="margin-top:8px;">Start Legal Case</button>';
+      } else {
+        const lc = d.legalCase;
+        const nf = legalNextFollowUp(d);
+        body = (lc.needsReview ? '<div class="cd-warn">This case was migrated from the old system — stage and documents are a best guess. Please review and correct.</div>' : "")
+          + '<div class="cd-drsect">Firm &amp; Stage</div>'
+          + '<select class="cd-select" id="cdLegalFirmSelect" style="margin-bottom:6px;">'
+            + Object.keys(KNOWN_FIRMS).map(f=>'<option value="'+esc(f)+'" '+((lc.firm===f || (!Object.keys(KNOWN_FIRMS).includes(lc.firm) && f==="Other"))?"selected":"")+'>'+esc(f)+'</option>').join("")
+          + '</select>'
+          + (!Object.keys(KNOWN_FIRMS).includes(lc.firm)
+              ? '<input class="cd-note" id="cdLegalFirmOther" value="'+esc(lc.firm||"")+'" placeholder="Firm name" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+              : '')
+          + '<select class="cd-select" id="cdLegalStage" style="margin-bottom:10px;">'+Object.keys(LEGAL_STAGES).map(k=>'<option value="'+k+'" '+(lc.stage===k?'selected':'')+'>'+LEGAL_STAGES[k].label+'</option>').join("")+'</select>'
+          + '<div class="cd-tlrow"><span>Filed</span><span>'+fmtDate(lc.filedDate)+'</span></div>'
+          + '<div class="cd-tlrow"><span>Last Contact</span><span>'+fmtDate(lc.lastContactDate)+'</span></div>'
+          + '<div class="cd-tlrow"><span>Next Follow-up</span><span style="'+(legalIsStale(d)?'color:var(--red);':'')+'">'+(nf?fmtDate(nf):"—")+'</span></div>'
+          + '<button class="cd-inlinebtn" data-legalcontacttoday="'+d.id+'" style="margin-top:6px;">Log contact today</button> '
+          + '<select class="cd-select" id="cdLegalSnooze" style="display:inline-block;width:auto;margin-top:6px;"><option value="0">Snooze...</option><option value="1">+1 week</option><option value="2">+2 weeks</option><option value="3">+3 weeks</option><option value="4">+4 weeks</option></select>'
+          + sectionHtml("legaldocs","Document Checklist ("+Object.keys(LEGAL_DOC_LABELS).filter(k=>(lc.docs||{})[k]&&(lc.docs||{})[k]!=="pending").length+"/"+Object.keys(LEGAL_DOC_LABELS).length+")",
+              Object.keys(LEGAL_DOC_LABELS).map(k=>{
+                const v = (lc.docs||{})[k]||"pending";
+                return '<div class="cd-docrow"><span>'+LEGAL_DOC_LABELS[k]+'</span><div class="cd-docstate">'
+                  + '<button class="cd-docbtn '+(v==="sent"?"on":"")+'" data-doctoggle="'+d.id+'|'+k+'|sent">Sent</button>'
+                  + '<button class="cd-docbtn na '+(v==="na"?"on":"")+'" data-doctoggle="'+d.id+'|'+k+'|na">N/A</button>'
+                  + '</div></div>';
+              }).join(""))
+          + '<div class="cd-drsect">Case Notes</div>'
+          + '<div class="cd-comment-text" style="color:var(--ink-dim);">'+esc(lc.caseStatusLegacy||"—")+'</div>';
+      }
+    } else if(drawerTab==="pending"){
+      body = (d.pending||[]).length ? d.pending.map((p,i)=>'<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(p.date||"")+'</span></div><div class="cd-comment-text" style="'+(p.done?"text-decoration:line-through;color:var(--ink-faint);":"")+'">'+esc(p.text)+'</div></div>').join("") : '<p class="cd-caption">Nothing legacy-pending on this deal.</p>';
+    }
+
+    return '<button class="cd-drclose" data-drclose="1">×</button>'
+      + '<div class="cd-drtitle">'+esc(d.name)+'</div>'
+      + '<div class="cd-drsub">'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+' · <span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span></div>'
+      + '<div class="cd-drtabbar">'
+        + tab("overview","Overview")
+        + tab("notes","Notes",(d.notesLog||[]).length)
+        + tab("commitments","Commitments",dealCommitments.filter(c=>c.status==="open").length)
+        + tab("tasks","Tasks",dealTasks.filter(t=>t.status==="open").length)
+        + tab("legal","Legal")
+        + tab("pending","Legacy",(d.pending||[]).filter(p=>!p.done).length)
+      + '</div>'
+      + body;
+  }
+
+  function wireDrawer(d){
+    document.querySelectorAll("[data-drclose]").forEach(b=>b.onclick=closeDrawer);
+    document.querySelectorAll("[data-drtab]").forEach(b=>b.onclick=()=>{ drawerTab=b.dataset.drtab; commitEditingId=null; taskEditingId=null; renderDrawer(dealById(drawerDealId)); });
+    wireDatePickers(()=>renderDrawer(d));
+    document.querySelectorAll("[data-sectiontoggle]").forEach(el=>el.onclick=()=>{
+      const key = el.dataset.sectiontoggle;
+      if(collapsedSections.has(key)) collapsedSections.delete(key); else collapsedSections.add(key);
+      renderDrawer(d);
+    });
+
+    // Contact info
+    document.querySelectorAll("[data-addcontact]").forEach(b=>b.onclick=()=>{
+      drawerEditingContact = true;
+      renderDrawer(d);
+    });
+    const saveContactBtn = document.getElementById("cdSaveContact");
+    if(saveContactBtn) saveContactBtn.onclick = ()=>{
+      const name = document.getElementById("cdContactName").value.trim();
+      const phone = document.getElementById("cdContactPhone").value.trim();
+      const email = document.getElementById("cdContactEmail").value.trim();
+      d.contact = {name, phone, email};
+      logEvent(d.name+": contact info added/updated", d.id);
+      drawerEditingContact = false;
+      save(); renderDrawer(d); render();
+    };
+    const cancelContactBtn = document.getElementById("cdCancelContact");
+    if(cancelContactBtn) cancelContactBtn.onclick = ()=>{
+      drawerEditingContact = false;
+      renderDrawer(d);
+    };
+
+    // Ownership
+    const ownerSel = document.querySelector("[data-ownerchange]");
+    if(ownerSel) ownerSel.onchange = ()=>{
+      d.owner = d.owner || {isOurs:true, ownerId:null, ownerName:""};
+      const wasOurs = d.owner.isOurs;
+      d.owner.isOurs = ownerSel.value==="ours";
+      if(wasOurs && !d.owner.isOurs){
+        // Close out (not delete) any open tasks/commitments — Yaakov doesn't want to see
+        // this deal's work items anywhere once it's marked as someone else's.
+        let cleared = 0;
+        DB.tasks.filter(t=>t.dealId===d.id && t.status==="open").forEach(t=>{ t.status="done"; cleared++; });
+        DB.commitments.filter(c=>c.dealId===d.id && c.status==="open").forEach(c=>{ c.status="fulfilled"; cleared++; });
+        logEvent(d.name+": marked as not our deal (on our platform) — closed out "+cleared+" open task(s)/commitment(s)", d.id);
+      } else {
+        logEvent(d.name+": marked as "+(d.owner.isOurs?"our deal":"not our deal (on our platform)"), d.id);
+      }
+      save(); renderDrawer(d); render();
+    };
+    const ownerPickSel = document.querySelector("[data-ownerpick]");
+    if(ownerPickSel) ownerPickSel.onchange = ()=>{
+      if(ownerPickSel.value==="__new__"){
+        addingOwnerFor = d.id;
+        renderDrawer(d);
+        return;
+      }
+      d.owner = d.owner || {isOurs:false, ownerId:null, ownerName:""};
+      d.owner.ownerId = ownerPickSel.value || null;
+      const o = DB.owners.find(x=>x.id===d.owner.ownerId);
+      d.owner.ownerName = o ? o.name : "";
+      logEvent(d.name+": owner set to "+(o?o.name:"none"), d.id);
+      save(); renderDrawer(d); render();
+    };
+    const ownerCancelBtn = document.querySelector("[data-ownercancel]");
+    if(ownerCancelBtn) ownerCancelBtn.onclick = ()=>{ addingOwnerFor = null; renderDrawer(d); };
+    const ownerSaveBtn = document.querySelector("[data-ownersave]");
+    if(ownerSaveBtn) ownerSaveBtn.onclick = ()=>{
+      const name = document.getElementById("cdNewOwnerName").value.trim();
+      if(!name){
+        document.getElementById("cdNewOwnerName").style.borderColor = "var(--red)";
+        return;
+      }
+      const newOwner = {id: uid("owner"), name};
+      DB.owners = DB.owners || [];
+      DB.owners.push(newOwner);
+      d.owner = d.owner || {isOurs:false, ownerId:null, ownerName:""};
+      d.owner.ownerId = newOwner.id;
+      d.owner.ownerName = name;
+      logEvent(d.name+": added owner "+name+" and linked", d.id);
+      addingOwnerFor = null;
+      save(); renderDrawer(d); render();
+    };
+
+    // Broker
+    const brokerSel = document.querySelector("[data-brokerchange]");
+    if(brokerSel) brokerSel.onchange = ()=>{
+      if(brokerSel.value==="__new__"){
+        addingBrokerFor = d.id;
+        renderDrawer(d);
+        return;
+      }
+      d.brokerId = brokerSel.value || null;
+      const b = DB.brokers.find(x=>x.id===d.brokerId);
+      logEvent(d.name+": broker set to "+(b?b.name:"none"), d.id);
+      save(); renderDrawer(d); render();
+    };
+    const brokerCancelBtn = document.querySelector("[data-brokercancel]");
+    if(brokerCancelBtn) brokerCancelBtn.onclick = ()=>{ addingBrokerFor = null; renderDrawer(d); };
+    const brokerSaveBtn = document.querySelector("[data-brokersave]");
+    if(brokerSaveBtn) brokerSaveBtn.onclick = ()=>{
+      const name = document.getElementById("cdNewBrokerName").value.trim();
+      if(!name){
+        document.getElementById("cdNewBrokerName").style.borderColor = "var(--red)";
+        return;
+      }
+      const phone = document.getElementById("cdNewBrokerPhone").value.trim();
+      const email = document.getElementById("cdNewBrokerEmail").value.trim();
+      const newBroker = {id: uid("broker"), name, phone, email};
+      DB.brokers = DB.brokers || [];
+      DB.brokers.push(newBroker);
+      d.brokerId = newBroker.id;
+      logEvent("Added broker "+name+" and linked to "+d.name, d.id);
+      addingBrokerFor = null;
+      save(); renderDrawer(d); render();
+    };
+
+    // Clawback
+    const clawSel = document.querySelector("[data-clawback]");
+    if(clawSel) clawSel.onchange = ()=>{
+      d.clawback = clawSel.value;
+      logEvent(d.name+": clawback state set to "+(CLAWBACK[clawSel.value]||{}).label, d.id);
+      if(clawSel.value==="bounced" && !isOtherOwnerDeal(d)){
+        DB.tasks.push({id:uid("task"), dealId:d.id, type:"iso_in_touch", waitingOn:"iso", stage:"open", description:"Clawback bounced — needs ISO to wire directly", dueDate:null, status:"open", createdDate:todayStr()});
+        logEvent(d.name+": auto-created ISO In Touch task (clawback bounced)", d.id);
+      }
+      save(); render();
+    };
+
+    // Status change
+    const statusSel = document.querySelector("[data-statuschange]");
+    if(statusSel) statusSel.onchange = ()=>{
+      const from = d.status;
+      d.status = statusSel.value;
+      d.statusLocked = true;
+      logEvent(d.name+": moved from "+(statusOf(from).label)+" to "+(statusOf(d.status).label), d.id);
+      save(); render();
+    };
+
+    // Notes
+    function addNoteFromField(){
+      const el = document.getElementById("cdNewNote");
+      const txt = el.value.trim();
+      if(!txt) return;
+      d.notes = (d.notes?d.notes+"\n\n":"") + "["+todayStr()+"] "+txt;
+      d.notesLog = d.notesLog || [];
+      const now = new Date();
+      d.notesLog.push({text:txt, stamp: now.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}), date:todayStr()});
+      logEvent(d.name+": note added — \""+(txt.length>100?txt.slice(0,100)+"…":txt)+"\"", d.id);
+      save(); renderDrawer(d); render();
+    }
+    const addNoteBtn = document.getElementById("cdAddNote");
+    if(addNoteBtn) addNoteBtn.onclick = addNoteFromField;
+    const newNoteEl = document.getElementById("cdNewNote");
+    if(newNoteEl) newNoteEl.onkeydown = (e)=>{
+      if((e.ctrlKey || e.metaKey) && e.key==="Enter"){ e.preventDefault(); addNoteFromField(); }
+    };
+
+    // Commitments
+    const addCommitBtn = document.getElementById("cdAddCommit");
+    if(addCommitBtn) addCommitBtn.onclick = ()=>{
+      const desc = document.getElementById("cdNewCommitDesc").value.trim();
+      const by = document.getElementById("cdNewCommitBy").value;
+      const date = datePickerValues["newCommit"];
+      const recur = parseInt(document.getElementById("cdNewCommitRecur").value, 10) || 0;
+      if(!desc || !date){
+        if(!desc) document.getElementById("cdNewCommitDesc").style.borderColor = "var(--red)";
+        if(!date) document.querySelector('[data-datetoggle="newCommit"]').style.borderColor = "var(--red)";
+        return;
+      }
+      const newCommit = {id:uid("commit"), dealId:d.id, description:desc, promisedBy:by, dueDate:date, status:"open", history:[], createdDate:todayStr()};
+      if(recur) newCommit.recurrenceDays = recur;
+      DB.commitments.push(newCommit);
+      logEvent(d.name+": commitment added — "+desc+" (due "+date+")"+(recur?" — repeats every "+recur+" days":""), d.id);
+      delete datePickerValues["newCommit"]; delete datePickerMonth["newCommit"]; datePickerOpenFor=null;
+      save(); renderDrawer(d); render();
+    };
+    document.querySelectorAll("[data-commitfulfill]").forEach(b=>b.onclick=()=>{
+      const c = DB.commitments.find(x=>x.id===b.dataset.commitfulfill);
+      if(!c) return;
+      c.status="fulfilled";
+      let logMsg = d.name+": commitment fulfilled — "+c.description;
+      if(c.recurrenceDays){
+        const nextDue = addDays(c.dueDate, c.recurrenceDays);
+        DB.commitments.push({id:uid("commit"), dealId:c.dealId, description:c.description, promisedBy:c.promisedBy, dueDate:nextDue, status:"open", history:[], createdDate:todayStr(), recurrenceDays:c.recurrenceDays});
+        logMsg += " — next check-in auto-scheduled for "+fmtDateShort(nextDue);
+      }
+      logEvent(logMsg, d.id);
+      save(); renderDrawer(d); render();
+    });
+    document.querySelectorAll("[data-commitedit]").forEach(b=>b.onclick=()=>{
+      commitEditingId = b.dataset.commitedit;
+      const c = DB.commitments.find(x=>x.id===commitEditingId);
+      if(c) datePickerValues["editCommit-"+commitEditingId] = c.dueDate;
+      renderDrawer(d);
+    });
+    document.querySelectorAll("[data-commitcancel]").forEach(b=>b.onclick=()=>{
+      if(commitEditingId){ delete datePickerValues["editCommit-"+commitEditingId]; delete datePickerMonth["editCommit-"+commitEditingId]; }
+      commitEditingId = null;
+      datePickerOpenFor = null;
+      renderDrawer(d);
+    });
+    document.querySelectorAll("[data-commitsave]").forEach(b=>b.onclick=()=>{
+      const cid = b.dataset.commitsave;
+      const c = DB.commitments.find(x=>x.id===cid);
+      if(!c) return;
+      const newDesc = document.getElementById("cdEditCommitDesc-"+cid).value.trim();
+      const newBy = document.getElementById("cdEditCommitBy-"+cid).value;
+      const newDate = datePickerValues["editCommit-"+cid];
+      if(!newDesc || !newDate){
+        if(!newDesc) document.getElementById("cdEditCommitDesc-"+cid).style.borderColor = "var(--red)";
+        if(!newDate) document.querySelector('[data-datetoggle="editCommit-'+cid+'"]').style.borderColor = "var(--red)";
+        return;
+      }
+      const changes = [];
+      if(newDesc !== c.description) changes.push("description updated");
+      if(newBy !== c.promisedBy) changes.push("promised by changed from "+WAITING_ON[c.promisedBy]+" to "+WAITING_ON[newBy]);
+      if(newDate !== c.dueDate) changes.push("due date changed from "+fmtDateShort(c.dueDate)+" to "+fmtDateShort(newDate));
+      if(changes.length){
+        c.history = c.history || [];
+        c.history.push({date:todayStr(), note:changes.join("; ")});
+        c.description = newDesc; c.promisedBy = newBy; c.dueDate = newDate;
+        logEvent(d.name+": commitment edited — "+changes.join("; "), d.id);
+      }
+      delete datePickerValues["editCommit-"+cid]; delete datePickerMonth["editCommit-"+cid]; datePickerOpenFor=null;
+      commitEditingId = null;
+      save(); renderDrawer(d); render();
+    });
+    document.querySelectorAll("[data-commitbreak]").forEach(b=>b.onclick=()=>{
+      const c = DB.commitments.find(x=>x.id===b.dataset.commitbreak);
+      if(!c) return;
+      c.status = "broken";
+      if(!isOtherOwnerDeal(d)){
+        DB.tasks.push({id:uid("task"), dealId:d.id, type: c.promisedBy==="iso"?"iso_in_touch":c.promisedBy==="merchant"?"contact_merchant":"internal_followup", waitingOn:c.promisedBy, stage:"open", description:"Broken commitment: "+c.description, dueDate:null, status:"open", createdDate:todayStr()});
+        logEvent(d.name+": commitment marked broken — "+c.description+" (auto-created follow-up task)", d.id);
+      } else {
+        logEvent(d.name+": commitment marked broken — "+c.description, d.id);
+      }
+      save(); renderDrawer(d); render();
+    });
+
+    // Tasks
+    const addTaskBtn = document.getElementById("cdAddTask");
+    if(addTaskBtn) addTaskBtn.onclick = ()=>{
+      const type = document.getElementById("cdNewTaskType").value;
+      const waitingOn = document.getElementById("cdNewTaskWaiting").value;
+      const desc = document.getElementById("cdNewTaskDesc").value.trim();
+      const date = datePickerValues["newTask"] || null;
+      DB.tasks.push({id:uid("task"), dealId:d.id, type, waitingOn, stage:"open", description:desc, dueDate:date, status:"open", createdDate:todayStr()});
+      logEvent(d.name+": task added — "+(TASK_TYPES[type]||type)+" (waiting on "+(WAITING_ON[waitingOn]||waitingOn)+")", d.id);
+      delete datePickerValues["newTask"]; delete datePickerMonth["newTask"]; datePickerOpenFor=null;
+      save(); renderDrawer(d); render();
+    };
+    document.querySelectorAll("[data-taskcompletebox]").forEach(cb=>cb.onchange=()=>{
+      const t = DB.tasks.find(x=>x.id===cb.dataset.taskcompletebox);
+      if(t){ t.status="done"; logEvent(d.name+": task completed — "+(TASK_TYPES[t.type]||t.type), d.id); save(); renderDrawer(d); render(); }
+    });
+    document.querySelectorAll("[data-taskedit]").forEach(b=>b.onclick=()=>{
+      taskEditingId = b.dataset.taskedit;
+      const t = DB.tasks.find(x=>x.id===taskEditingId);
+      if(t) datePickerValues["editTask-"+taskEditingId] = t.dueDate;
+      renderDrawer(d);
+    });
+    document.querySelectorAll("[data-taskcancel]").forEach(b=>b.onclick=()=>{
+      if(taskEditingId){ delete datePickerValues["editTask-"+taskEditingId]; delete datePickerMonth["editTask-"+taskEditingId]; }
+      taskEditingId = null;
+      datePickerOpenFor = null;
+      renderDrawer(d);
+    });
+    document.querySelectorAll("[data-tasksave]").forEach(b=>b.onclick=()=>{
+      const tid = b.dataset.tasksave;
+      const t = DB.tasks.find(x=>x.id===tid);
+      if(!t) return;
+      const newType = document.getElementById("cdEditTaskType-"+tid).value;
+      const newWaiting = document.getElementById("cdEditTaskWaiting-"+tid).value;
+      const newDesc = document.getElementById("cdEditTaskDesc-"+tid).value.trim();
+      const newDate = datePickerValues["editTask-"+tid] || null;
+      const changes = [];
+      if(newType!==t.type) changes.push("type changed to "+TASK_TYPES[newType]);
+      if(newWaiting!==t.waitingOn) changes.push("now waiting on "+WAITING_ON[newWaiting]);
+      if(newDesc!==t.description) changes.push("description updated");
+      if(newDate!==t.dueDate) changes.push("due date changed to "+(newDate?fmtDateShort(newDate):"none"));
+      t.type=newType; t.waitingOn=newWaiting; t.description=newDesc; t.dueDate=newDate;
+      if(changes.length) logEvent(d.name+": task edited — "+changes.join("; "), d.id);
+      delete datePickerValues["editTask-"+tid]; delete datePickerMonth["editTask-"+tid]; datePickerOpenFor=null;
+      taskEditingId = null;
+      save(); renderDrawer(d); render();
+    });
+
+    // Legal
+    const startLegalBtn = document.getElementById("cdStartLegal");
+    if(startLegalBtn) startLegalBtn.onclick = ()=>{
+      d.legalCase = {
+        firm:"Madeb Law", track:"madeb", stage:"assembling_packet", filedDate:null, lastContactDate:todayStr(),
+        snoozeWeeks:0, caseStatusLegacy:"",
+        docs:{statements:"pending",application:"pending",dlvc:"pending",ucc:"pending",wireScreenshot:"pending",payrunScreenshot:"pending",pdfPayrun:"pending",arInvoices:"pending",settlementAgreement:"pending"},
+        needsReview:false
+      };
+      logEvent(d.name+": legal case started", d.id);
+      save(); renderDrawer(d); render();
+    };
+    const firmSelectEl = document.getElementById("cdLegalFirmSelect");
+    if(firmSelectEl) firmSelectEl.onchange = ()=>{
+      const chosen = firmSelectEl.value;
+      d.legalCase.track = KNOWN_FIRMS[chosen];
+      d.legalCase.firm = chosen==="Other" ? "" : chosen;
+      logEvent(d.name+": legal firm set to "+chosen, d.id);
+      save(); renderDrawer(d); render();
+    };
+    const firmOtherEl = document.getElementById("cdLegalFirmOther");
+    if(firmOtherEl) firmOtherEl.onchange = ()=>{
+      d.legalCase.firm = firmOtherEl.value;
+      save(); render();
+    };
+    const stageEl = document.getElementById("cdLegalStage");
+    if(stageEl) stageEl.onchange = ()=>{
+      d.legalCase.stage = stageEl.value;
+      logEvent(d.name+": legal stage moved to "+(LEGAL_STAGES[stageEl.value]||{}).label, d.id);
+      save(); renderDrawer(d); render();
+    };
+    document.querySelectorAll("[data-legalcontacttoday]").forEach(b=>b.onclick=()=>{
+      d.legalCase.lastContactDate = todayStr();
+      d.legalCase.snoozeWeeks = 0;
+      logEvent(d.name+": logged legal contact today", d.id);
+      save(); renderDrawer(d); render();
+    });
+    const snoozeEl = document.getElementById("cdLegalSnooze");
+    if(snoozeEl) snoozeEl.onchange = ()=>{
+      const wk = parseInt(snoozeEl.value,10);
+      if(wk>0){
+        d.legalCase.snoozeWeeks = (d.legalCase.snoozeWeeks||0) + wk;
+        logEvent(d.name+": legal follow-up snoozed "+wk+" more week(s)", d.id);
+        save(); renderDrawer(d); render();
+      }
+    };
+    document.querySelectorAll("[data-doctoggle]").forEach(b=>b.onclick=()=>{
+      const [dealId, docKey, val] = b.dataset.doctoggle.split("|");
+      const deal = dealById(dealId);
+      const current = deal.legalCase.docs[docKey];
+      deal.legalCase.docs[docKey] = current===val ? "pending" : val;
+      const nowMissing = deal.legalCase.docs[docKey]==="pending";
+      logEvent(deal.name+": "+LEGAL_DOC_LABELS[docKey]+" marked "+(nowMissing?"missing":deal.legalCase.docs[docKey]), dealId);
+      syncMissingDocTask(deal, docKey, nowMissing);
+      save(); renderDrawer(deal); render();
+    });
+  }
+
+  // A missing legal doc gets its own follow-up task, due tomorrow, so it shows on the
+  // calendar exactly like Yaakov described — "reminder like this file was missing from
+  // the deal". Once the doc is marked Sent or N/A, that task auto-resolves.
+  function tomorrowStr(){
+    const t = new Date(TODAY); t.setDate(t.getDate()+1);
+    return t.toISOString().slice(0,10);
+  }
+  function missingDocTaskDesc(docKey){ return "Missing: "+LEGAL_DOC_LABELS[docKey]; }
+  function syncMissingDocTask(deal, docKey, nowMissing){
+    const desc = missingDocTaskDesc(docKey);
+    const existing = DB.tasks.find(t=>t.dealId===deal.id && t.status==="open" && t.type==="legal_followup" && t.description===desc);
+    if(nowMissing && !existing){
+      DB.tasks.push({id:uid("task"), dealId:deal.id, type:"legal_followup", waitingOn:"legal_firm", stage:"open", description:desc, dueDate:tomorrowStr(), status:"open", createdDate:todayStr()});
+      logEvent(deal.name+": follow-up reminder set for tomorrow — "+desc, deal.id);
+    } else if(!nowMissing && existing){
+      existing.status = "done";
+      logEvent(deal.name+": follow-up reminder cleared — "+desc+" received", deal.id);
+    }
+  }
+
+  // ---------------- REPORTS: generation & export ----------------
+  async function generateReport(){
+    const since = DB.lastReportAt;
+    const events = (DB.eventLog||[]).filter(e=> !since || e.date >= since);
+    const genBtn = document.getElementById("cdGenReport");
+    const spinner = document.getElementById("cdReportGenerating");
+    const outEl = document.getElementById("cdReportOutput");
+
+    if(!events.length){
+      outEl.innerHTML = '<p class="cd-caption">Nothing logged '+(since?'since the last report.':'yet.')+'</p>';
+      DB.lastReportAt = todayStr(); await save(); return;
+    }
+
+    genBtn.disabled = true; spinner.style.display = "inline"; outEl.innerHTML = "";
+
+    const touchedIds = [...new Set(events.map(e=>e.dealId).filter(Boolean))];
+    const dealContext = touchedIds.map(id=>{
+      const d = dealById(id);
+      if(!d) return null;
+      const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
+      return "- "+d.name+(idBits?" ("+idBits+")":"")+" — status: "+statusOf(d.status).label+", remaining: "+money(Math.max(0,(d.original||0)-(d.recovered||0)));
+    }).filter(Boolean).join("\n");
+    const logText = events.map(e=>"["+(e.stamp||e.date)+"] "+e.text).join("\n");
+
+    const prompt = "Write a collections update for David, the owner of an MCA funding company, from his collections person. "
+      + "Make it sound like a real person wrote it: plain, easy to read, human — not a generic AI summary. Group loosely under themes if it helps "
+      + "(filed/legal, escalations, resolved, new deals, other) but don't force rigid headers if the update is short. No hyphens or em dashes. "
+      + "Always include MCHT/lead ID when mentioning a deal, using the context below. Don't invent facts not in the log.\n\n"
+      + "DEAL CONTEXT:\n" + (dealContext||"(none)") + "\n\nRAW LOG:\n" + logText;
+
+    try{
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, messages:[{role:"user", content:prompt}]})
+      });
+      const data = await response.json();
+      const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+      if(!text) throw new Error("empty");
+      outEl.innerHTML = '<div class="cd-drsect" style="margin-top:14px;">Report'+(since?' since '+since:' — full history')+'</div>'
+        + '<textarea class="cd-note" readonly style="min-height:220px;" onclick="this.select()">'+esc(text)+'</textarea>'
+        + '<p class="cd-caption" style="margin-top:6px;">Click to select all, then copy.</p>';
+    } catch(err){
+      outEl.innerHTML = '<p class="cd-warn">Couldn\'t reach the summary writer. Raw log:</p>'
+        + events.map(e=>'<div class="cd-logrow"><span>'+esc(e.stamp||e.date)+'</span><span>'+esc(e.text)+'</span></div>').join("");
+    } finally {
+      genBtn.disabled = false; spinner.style.display = "none";
+    }
+    DB.lastReportAt = todayStr(); await save();
+  }
+
+  // Where each number actually comes from, and where it doesn't. Written down because
+  // reading a stale or incomplete source is how wrong calls get made — a deal can look
+  // current in one system and be days behind in another.
+  function dataSourcesHtml(){
+    const rows = [
+      ["LendSaaS — Breeze", "Live and readable. Breeze deals only.",
+       "Read-only. Any change (recurrence, pause, clawback pull, record edit) is routed to Gabriela or Anusha, never made directly."],
+      ["LendSaaS — Emberstone", "Separate instance. NOT connected.",
+       "Emberstone deals have to be supplied by hand. Don't look them up and don't assume the Breeze instance covers them."],
+      ["MCATrack / Legacy", "Not connected, and these deals aren't in LendSaaS either.",
+       "The Legacy-platform deals have no lead ID and can't get one from LendSaaS. Their data comes from ACHWorks and MCATrack email only."],
+      ["MCA Pay", "Deals exist in LendSaaS, but the LendSaaS view is NOT authoritative.",
+       "Payments are logged into LendSaaS by hand, so it lags. Bounces never appear there at all — only MCA Pay reports them. A LendSaaS balance on an MCA Pay deal can look healthier than reality."],
+      ["Gmail", "Connected, with one hard limit.",
+       "Search returns only the five OLDEST messages of a thread and there's no way to fetch the newest. On long threads the current state is invisible — screenshot the last message instead."]
+    ];
+    const counts = {};
+    (DB.deals||[]).forEach(d=>{ if(!isOtherOwnerDeal(d)) counts[d.platform] = (counts[d.platform]||0)+1; });
+    return '<div class="cd-panel" style="margin-top:16px;"><h3>Where the data comes from</h3>'
+      + '<p class="cd-caption">Current book: '
+      + Object.keys(counts).sort().map(k=>esc(k)+" "+counts[k]).join(" \u00B7 ")
+      + '</p>'
+      + rows.map(r=>'<div style="border-top:1px solid var(--line);padding:10px 0;">'
+          + '<div><b>'+esc(r[0])+'</b> \u2014 '+esc(r[1])+'</div>'
+          + '<div class="cd-caption" style="margin-top:3px;">'+esc(r[2])+'</div></div>').join("")
+      + '</div>';
+  }
+
+  function saveSnapshot(){
+    // May be called from the storage-failure banner while some other page is open,
+    // in which case there's no output element to write status into.
+    const outEl = document.getElementById("cdExportOutput") || {set innerHTML(v){}};
+    const text = JSON.stringify(DB, null, 2);
+    const filename = "collections-hq-snapshot-"+todayStr()+".json";
+    try{
+      const blob = new Blob([text], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      outEl.innerHTML = '<p class="cd-caption" style="margin-top:10px;color:var(--green);">Saved as '+esc(filename)+' — check your Downloads folder. Drag that file into a chat with Claude any time to hand off everything currently in this app.</p>';
+    } catch(e){
+      // Download blocked for some reason — fall back to a copyable textarea so nothing is lost
+      outEl.innerHTML = '<p class="cd-caption" style="margin-top:10px;color:var(--yellow);">Download didn\'t go through — here\'s the data to copy manually instead:</p>'
+        + '<textarea class="cd-note" readonly style="min-height:160px;margin-top:6px;" onclick="this.select()">'+esc(text)+'</textarea>';
+    }
+  }
+
+  // ---------------- QUICK TASK MODAL ----------------
+  let quickTaskDealId = null;
+  let quickTaskSearch = "";
+
+  function openQuickTaskModal(){
+    quickTaskDealId = null;
+    quickTaskSearch = "";
+    delete datePickerValues["quickTask"]; delete datePickerMonth["quickTask"]; datePickerOpenFor=null;
+    renderQuickTaskModal();
+    document.getElementById("cdModalOverlay").classList.add("on");
+  }
+  function closeQuickTaskModal(){
+    delete datePickerValues["quickTask"]; delete datePickerMonth["quickTask"]; datePickerOpenFor=null;
+    document.getElementById("cdModalOverlay").classList.remove("on");
+  }
+
+  function renderQuickTaskModal(){
+    const picked = quickTaskDealId ? dealById(quickTaskDealId) : null;
+    const matches = quickTaskSearch.length
+      ? DB.deals.filter(d=>(d.name||"").toLowerCase().includes(quickTaskSearch.toLowerCase()) || (d.mcht||"").toLowerCase().includes(quickTaskSearch.toLowerCase())).slice(0,8)
+      : [];
+
+    let html = '<button class="cd-modalclose" id="cdModalClose">×</button>'
+      + '<h3>New Task</h3>'
+      + '<div class="cd-drsect" style="margin-top:0;">Deal</div>';
+
+    if(picked){
+      html += '<div class="cd-dealpickrow picked">'+esc(picked.name)+' <button class="cd-inlinebtn" id="cdQuickTaskChangeDeal" style="margin-left:8px;">Change</button></div>';
+    } else {
+      html += '<input class="cd-search" id="cdQuickTaskSearch" placeholder="Search deal by name or MCHT..." value="'+esc(quickTaskSearch)+'" style="max-width:none;">'
+        + (matches.length ? '<div class="cd-dealpick">'+matches.map(d=>'<div class="cd-dealpickrow" data-quickpick="'+d.id+'">'+esc(d.name)+' <span style="color:var(--ink-faint);">'+esc(d.mcht||"")+'</span></div>').join("")+'</div>' : (quickTaskSearch?'<p class="cd-caption">No matches.</p>':''));
+    }
+
+    if(picked){
+      html += '<div class="cd-drsect">Details</div>'
+        + '<select class="cd-select" id="cdQuickTaskType" style="margin-bottom:6px;">'+Object.keys(TASK_TYPES).map(k=>'<option value="'+k+'">'+TASK_TYPES[k]+'</option>').join("")+'</select>'
+        + '<select class="cd-select" id="cdQuickTaskWaiting" style="margin-bottom:6px;">'+Object.keys(WAITING_ON).map(k=>'<option value="'+k+'">Waiting on '+WAITING_ON[k]+'</option>').join("")+'</select>'
+        + '<input class="cd-note" id="cdQuickTaskDesc" placeholder="Details (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
+        + dateFieldHtml("quickTask")
+        + '<button class="cd-savebtn" id="cdQuickTaskAdd">Add Task</button>';
+    }
+
+    document.getElementById("cdModal").innerHTML = html;
+    wireQuickTaskModal();
+  }
+
+  function wireQuickTaskModal(){
+    const closeBtn = document.getElementById("cdModalClose");
+    if(closeBtn) closeBtn.onclick = closeQuickTaskModal;
+    wireDatePickers(renderQuickTaskModal);
+    const searchEl = document.getElementById("cdQuickTaskSearch");
+    if(searchEl){
+      searchEl.oninput = ()=>{ quickTaskSearch = searchEl.value; renderQuickTaskModal(); const el=document.getElementById("cdQuickTaskSearch"); if(el){ el.focus(); el.selectionStart=el.value.length; } };
+    }
+    document.querySelectorAll("[data-quickpick]").forEach(el=>el.onclick=()=>{ quickTaskDealId = el.dataset.quickpick; renderQuickTaskModal(); });
+    const changeBtn = document.getElementById("cdQuickTaskChangeDeal");
+    if(changeBtn) changeBtn.onclick = ()=>{ quickTaskDealId = null; renderQuickTaskModal(); };
+    const addBtn = document.getElementById("cdQuickTaskAdd");
+    if(addBtn) addBtn.onclick = async ()=>{
+      const d = dealById(quickTaskDealId);
+      if(!d) return;
+      const type = document.getElementById("cdQuickTaskType").value;
+      const waitingOn = document.getElementById("cdQuickTaskWaiting").value;
+      const desc = document.getElementById("cdQuickTaskDesc").value.trim();
+      const date = datePickerValues["quickTask"] || null;
+      DB.tasks.push({id:uid("task"), dealId:d.id, type, waitingOn, stage:"open", description:desc, dueDate:date, status:"open", createdDate:todayStr()});
+      logEvent(d.name+": task added — "+(TASK_TYPES[type]||type)+" (waiting on "+(WAITING_ON[waitingOn]||waitingOn)+")", d.id);
+      delete datePickerValues["quickTask"]; delete datePickerMonth["quickTask"]; datePickerOpenFor=null;
+      await save();
+      closeQuickTaskModal();
+      render();
+    };
+  }
+})();
+</script>
+</body>
+</html>
