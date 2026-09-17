@@ -287,31 +287,55 @@
     padding:30px 28px 80px; box-shadow:-40px 0 100px -30px rgba(0,0,0,.9);
   }
   #cdDrawer.on{ transform:translateX(0); }
-  /* Global search. Sits above everything, opens on Cmd/Ctrl+K or the sidebar button. */
-  #cdSearchOverlay{
-    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:70; display:none;
-    align-items:flex-start; justify-content:center; padding-top:11vh;
+  /* Global search — lives in the sidebar, not in a modal.
+     Two layouts are on trial and switch from the control at the foot of the sidebar:
+       results "inline"  — the hit list drops down inside the 260px column
+       results "widen"   — the whole sidebar expands while a query is active, so the
+                           snippets have room to be read
+     The box itself is either permanently open or a row that turns into a field on click.
+     Both choices persist per browser in localStorage; neither touches state.json. */
+  .cd-navsearch{ padding:0 2px 4px; }
+  .cd-navsearchbar{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 12px; border-radius:var(--r-sm);
+    background:var(--fill-4); border:0.5px solid transparent;
+    cursor:text; transition:background .15s ease, border-color .15s ease;
   }
-  #cdSearchOverlay.on{ display:flex; }
-  #cdSearchBox{
-    width:min(720px,92vw); max-height:74vh; display:flex; flex-direction:column;
-    background:linear-gradient(165deg, rgba(40,46,56,.99), rgba(24,28,36,.99));
-    border:0.5px solid var(--stroke); border-radius:var(--r-xl);
-    box-shadow:0 40px 90px -24px rgba(0,0,0,.8); overflow:hidden;
+  .cd-navsearchbar:hover{ background:var(--fill-3); }
+  .cd-navsearchbar.focused{ background:var(--fill-3); border-color:rgba(10,132,255,.55); }
+  .cd-navsearchbar svg{ width:17px; height:17px; flex:none; stroke:var(--label-3); fill:none; stroke-width:2; }
+  .cd-navsearchbar.focused svg{ stroke:var(--sys-blue); }
+  #cdNavSearchInput{
+    flex:1; min-width:0; background:transparent; border:none; outline:none;
+    color:var(--label); font-size:15px; font-family:inherit; letter-spacing:-.016em; padding:0;
   }
-  #cdSearchInput{
-    width:100%; box-sizing:border-box; background:transparent; border:none; outline:none;
-    color:var(--label); font-size:19px; padding:20px 22px; letter-spacing:-.02em;
-    font-family:inherit;
+  #cdNavSearchInput::placeholder{ color:var(--label-3); }
+  .cd-navsearchlabel{ flex:1; color:var(--label-2); font-size:15px; letter-spacing:-.016em; }
+  .cd-navsearchclear{
+    background:none; border:none; color:var(--label-3); font-size:15px; cursor:pointer;
+    padding:0 2px; line-height:1; flex:none;
   }
-  #cdSearchInput::placeholder{ color:var(--label-3); }
-  .cd-searchhead{ display:flex; align-items:center; border-bottom:0.5px solid var(--stroke); }
-  .cd-searchhead svg{ width:19px; height:19px; margin-left:20px; flex:none;
-    stroke:var(--label-3); fill:none; stroke-width:2; }
-  .cd-searchcount{ padding-right:20px; font-size:12px; color:var(--label-3); white-space:nowrap; }
-  #cdSearchResults{ overflow-y:auto; padding:6px; }
-  .cd-sgroup{ font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--label-3); padding:12px 16px 6px; }
+  .cd-navsearchclear:hover{ color:var(--label); }
+  .cd-navsearchcount{ font-size:12px; color:var(--label-3); white-space:nowrap; flex:none; }
+
+  #cdNavSearchResults{ max-height:52vh; overflow-y:auto; margin-top:6px; }
+  #cdNavSearchResults:empty{ display:none; }
+  /* In the narrow column the hit rows have to give up some air to stay legible. */
+  #cdNavSearchResults .cd-sres{ padding:8px 10px; border-radius:var(--r-sm); font-size:14px; }
+  #cdNavSearchResults .cd-sres .meta{ font-size:11px; }
+  #cdNavSearchResults .cd-sres .snip{ font-size:11.5px; -webkit-line-clamp:2; }
+  #cdNavSearchResults .cd-sgroup{ padding:10px 10px 4px; }
+  #cdNavSearchResults .cd-searchempty{ padding:14px 10px; text-align:left; font-size:12.5px; line-height:1.45; }
+
+  /* Widen layout: the column grows while a query is live. */
+  #cdNav{ transition:width .22s cubic-bezier(.32,.72,0,1); }
+  #cdNav.searching-widen{ width:470px; }
+  #cdNav.searching-widen #cdNavSearchResults .cd-sres{ padding:10px 14px; font-size:15px; }
+  #cdNav.searching-widen #cdNavSearchResults .cd-sres .meta{ font-size:12px; }
+  #cdNav.searching-widen #cdNavSearchResults .cd-sres .snip{ font-size:12.5px; -webkit-line-clamp:3; }
+  #cdNav.searching-widen #cdNavSearchResults{ max-height:66vh; }
+  @media (prefers-reduced-motion: reduce){ #cdNav{ transition:none; } }
+
   .cd-sres{
     display:block; width:100%; text-align:left; background:transparent; border:none;
     color:inherit; font:inherit; padding:10px 16px; border-radius:var(--r-md); cursor:pointer;
@@ -323,9 +347,19 @@
   .cd-sres .snip{ font-size:12.5px; color:var(--label-2); margin-top:3px;
     overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
   .cd-sres mark{ background:rgba(10,132,255,.32); color:var(--label); border-radius:3px; padding:0 2px; }
-  .cd-searchfoot{ border-top:0.5px solid var(--stroke); padding:9px 18px; font-size:11.5px;
-    color:var(--label-3); display:flex; gap:16px; }
+  .cd-sgroup{ font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--label-3); padding:12px 16px 6px; }
   .cd-searchempty{ padding:34px 20px; text-align:center; color:var(--label-2); font-size:14px; }
+
+  /* Trial switches. Temporary — delete this block and cdTrialHtml() once a layout is chosen. */
+  .cd-trialrow{ display:flex; gap:4px; padding:0 2px 6px; }
+  .cd-trialrow button{
+    flex:1; background:var(--fill-4); border:0.5px solid transparent; color:var(--label-2);
+    font-family:inherit; font-size:11.5px; letter-spacing:-.008em; padding:6px 4px;
+    border-radius:var(--r-sm); cursor:pointer; transition:background .15s ease, color .15s ease;
+  }
+  .cd-trialrow button:hover{ background:var(--fill-3); color:var(--label); }
+  .cd-trialrow button.on{ background:rgba(10,132,255,.22); color:var(--label); border-color:rgba(10,132,255,.45); }
 
   #cdDrawerOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; display:none; }
   #cdDrawerOverlay.on{ display:block; }
@@ -547,17 +581,6 @@
 <body>
 <div id="cdBackdrop"></div>
 <div id="cdApp"><div style="padding:40px;color:#9CA1AC">Loading Collections HQ...</div></div>
-<div id="cdSearchOverlay">
-  <div id="cdSearchBox">
-    <div class="cd-searchhead">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input id="cdSearchInput" placeholder="Search deals, notes, reminders, tasks, contacts…" autocomplete="off" spellcheck="false">
-      <span class="cd-searchcount" id="cdSearchCount"></span>
-    </div>
-    <div id="cdSearchResults"></div>
-    <div class="cd-searchfoot"><span>↑↓ to move</span><span>↵ to open</span><span>esc to close</span></div>
-  </div>
-</div>
 <div id="cdDrawerOverlay"></div>
 <div id="cdDrawer"></div>
 <div id="cdModalOverlay"><div id="cdModal"></div></div>
@@ -697,6 +720,22 @@
   let ghSha = null;
   let saveBannerEl = null;
 
+  // Search layout preferences. Per browser, deliberately not in state.json — this is a
+  // view choice, not collections data, and it should not follow the file to other machines.
+  const SEARCH_PREF_KEY = "collections_hq_search_layout";
+  let searchPrefs = { box:"always", results:"inline" };
+  let searchQuery = "";
+  let searchExpanded = false;
+  function loadSearchPrefs(){
+    try{
+      const raw = localStorage.getItem(SEARCH_PREF_KEY);
+      if(raw) searchPrefs = Object.assign(searchPrefs, JSON.parse(raw));
+    }catch(e){}
+  }
+  function saveSearchPrefs(){
+    try{ localStorage.setItem(SEARCH_PREF_KEY, JSON.stringify(searchPrefs)); }catch(e){}
+  }
+
   function ghConfigured(){ return !!(ghCfg.owner && ghCfg.repo && ghCfg.token); }
 
   function loadCfg(){
@@ -831,40 +870,62 @@
     return out;
   }
 
-  // Bound once, not per render, or every redraw stacks another handler.
-  (function bindSearchOnce(){
-    const inp = document.getElementById("cdSearchInput");
-    const ov  = document.getElementById("cdSearchOverlay");
-    if(!inp || !ov || inp.dataset.bound) return;
-    inp.dataset.bound = "1";
+  // The search field now lives inside the sidebar, which is rebuilt on every render, so the
+  // field is a new element each time and has to be rebound. Document-level keys bind once.
+  function bindNavSearch(){
+    const openRow = document.getElementById("cdNavSearchOpen");
+    if(openRow) openRow.onclick = () => { searchExpanded = true; render(); openSearch(); };
 
-    inp.addEventListener("input", () => { searchSel = 0; renderSearchResults(inp.value); });
+    const clear = document.getElementById("cdNavSearchClear");
+    if(clear) clear.onclick = (e) => { e.stopPropagation(); closeSearch(); render(); };
 
+    const bar = document.getElementById("cdNavSearchBar");
+    const inp = document.getElementById("cdNavSearchInput");
+    if(!inp) return;
+    if(bar) bar.onclick = () => inp.focus();
+    inp.onfocus = () => { if(bar) bar.classList.add("focused"); };
+    inp.onblur  = () => { if(bar && !searchQuery) bar.classList.remove("focused"); };
+
+    inp.addEventListener("input", () => {
+      searchQuery = inp.value; searchSel = 0; renderSearchResults(inp.value);
+    });
     inp.addEventListener("keydown", e => {
       if(e.key === "ArrowDown"){ e.preventDefault(); searchSel = Math.min(searchSel + 1, searchHits.length - 1); renderSearchResults(inp.value); scrollSel(); }
       else if(e.key === "ArrowUp"){ e.preventDefault(); searchSel = Math.max(searchSel - 1, 0); renderSearchResults(inp.value); scrollSel(); }
       else if(e.key === "Enter"){ e.preventDefault(); openSearchHit(searchHits[searchSel]); }
-      else if(e.key === "Escape"){ e.preventDefault(); closeSearch(); }
+      else if(e.key === "Escape"){ e.preventDefault(); closeSearch(); render(); }
     });
-
     function scrollSel(){
-      const el = document.querySelector(".cd-sres.sel");
+      const el = document.querySelector("#cdNavSearchResults .cd-sres.sel");
       if(el) el.scrollIntoView({ block: "nearest" });
     }
+    if(searchQuery) renderSearchResults(searchQuery);
+  }
 
-    // Clicking the backdrop closes; clicking inside the box must not.
-    ov.addEventListener("click", e => { if(e.target === ov) closeSearch(); });
+  function bindTrialSwitches(){
+    document.querySelectorAll("[data-searchpref]").forEach(b => b.onclick = () => {
+      const [group, val] = b.dataset.searchpref.split(":");
+      searchPrefs[group] = val;
+      if(group === "box" && val === "always") searchExpanded = false;
+      saveSearchPrefs();
+      render();
+      if(searchQuery) openSearch();
+    });
+  }
 
+  (function bindGlobalSearchKeys(){
     document.addEventListener("keydown", e => {
       if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); openSearch(); }
-      else if(e.key === "Escape" && ov.classList.contains("on")) closeSearch();
-      else if(e.key === "/" && !/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName || "")
-              && !ov.classList.contains("on")){ e.preventDefault(); openSearch(); }
+      else if(e.key === "Escape" && searchQuery){ closeSearch(); render(); }
+      else if(e.key === "/" && !/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName || "")){
+        e.preventDefault(); openSearch();
+      }
     });
   })();
 
   async function load(){
     loadCfg();
+    loadSearchPrefs();
     if(!ghConfigured()){ renderSetup(); return; }
     try{
       const remote = await ghRead();
@@ -1363,16 +1424,20 @@
   }
 
   function renderSearchResults(q){
-    const box = document.getElementById("cdSearchResults");
-    const cnt = document.getElementById("cdSearchCount");
+    const box = document.getElementById("cdNavSearchResults");
+    const cnt = document.getElementById("cdNavSearchCount");
+    if(!box) return;
+    const nav = document.getElementById("cdNav");
+    // Only the widen layout changes the column; inline leaves it alone.
+    if(nav) nav.classList.toggle("searching-widen",
+      searchPrefs.results === "widen" && q.trim().length >= 2);
     searchHits = runSearch(q);
     if(searchSel >= searchHits.length) searchSel = 0;
-    cnt.textContent = q.trim().length < 2 ? "" :
-      (searchHits.length ? searchHits.length + (searchHits.length === 60 ? "+ results" : " results") : "");
+    if(cnt) cnt.textContent = q.trim().length < 2 ? "" :
+      (searchHits.length ? searchHits.length + (searchHits.length === 60 ? "+" : "") : "0");
     if(q.trim().length < 2){
-      box.innerHTML = '<div class="cd-searchempty">Type at least two characters.<br>'
-        + 'Searches deal names, MCHT and lead IDs, notes, contacts, reminders, tasks, '
-        + 'watch conditions, commitments, inbox items and brokers.</div>';
+      box.innerHTML = q.trim().length
+        ? '<div class="cd-searchempty">Keep typing \u2014 two characters minimum.</div>' : "";
       return;
     }
     if(!searchHits.length){
@@ -1397,6 +1462,7 @@
   function openSearchHit(it){
     if(!it) return;
     closeSearch();
+    render();
     if(it.dealId && dealById(it.dealId)){ openDrawer(it.dealId); return; }
     // No deal attached — send the user to the page that owns this record type.
     const page = { "Reminder":"notifications", "Task":"tasks", "Watch condition":"watchlist",
@@ -1405,15 +1471,25 @@
   }
 
   function openSearch(){
-    const ov = document.getElementById("cdSearchOverlay");
-    ov.classList.add("on");
-    const inp = document.getElementById("cdSearchInput");
     searchSel = 0;
+    let inp = document.getElementById("cdNavSearchInput");
+    if(!inp){ searchExpanded = true; render(); inp = document.getElementById("cdNavSearchInput"); }
+    if(!inp) return;
     renderSearchResults(inp.value);
     inp.focus(); inp.select();
   }
   function closeSearch(){
-    document.getElementById("cdSearchOverlay").classList.remove("on");
+    searchQuery = "";
+    searchHits = [];
+    if(searchPrefs.box === "expand") searchExpanded = false;
+    const nav = document.getElementById("cdNav");
+    if(nav) nav.classList.remove("searching-widen");
+    const box = document.getElementById("cdNavSearchResults");
+    if(box) box.innerHTML = "";
+    const inp = document.getElementById("cdNavSearchInput");
+    if(inp) inp.value = "";
+    const cnt = document.getElementById("cdNavSearchCount");
+    if(cnt) cnt.textContent = "";
   }
 
   function inboxUnread(){
@@ -1494,6 +1570,37 @@
   // ---------------- NAV & RENDER ----------------
   let currentPage = "today";
 
+  const SEARCH_ICON = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+
+  function navSearchHtml(){
+    const open = searchPrefs.box === "always" || searchExpanded;
+    if(!open){
+      return '<div class="cd-navsearch">'
+        + '<div class="cd-navsearchbar" id="cdNavSearchOpen">' + SEARCH_ICON
+        + '<span class="cd-navsearchlabel">Search</span></div>'
+        + '<div id="cdNavSearchResults"></div></div>';
+    }
+    return '<div class="cd-navsearch">'
+      + '<div class="cd-navsearchbar' + (searchQuery ? " focused" : "") + '" id="cdNavSearchBar">' + SEARCH_ICON
+      + '<input id="cdNavSearchInput" placeholder="Search deals, notes, tasks\u2026" autocomplete="off" spellcheck="false" value="' + esc(searchQuery) + '">'
+      + '<span class="cd-navsearchcount" id="cdNavSearchCount"></span>'
+      + (searchQuery ? '<button class="cd-navsearchclear" id="cdNavSearchClear" title="Clear">\u00D7</button>' : '')
+      + '</div>'
+      + '<div id="cdNavSearchResults"></div></div>';
+  }
+
+  // TEMPORARY: layout trial switches. Remove with the .cd-trialrow CSS once chosen.
+  function cdTrialHtml(){
+    function row(group, opts){
+      return '<div class="cd-trialrow">' + opts.map(o =>
+        '<button class="' + (searchPrefs[group] === o[0] ? "on" : "") + '" data-searchpref="'
+        + group + ':' + o[0] + '">' + o[1] + '</button>').join("") + '</div>';
+    }
+    return '<div class="cd-navsec">Search layout \u2014 trial</div>'
+      + row("box", [["always","Always open"],["expand","Click to open"]])
+      + row("results", [["inline","List in sidebar"],["widen","Sidebar widens"]]);
+  }
+
   function navHtml(){
     const missingContact = dealsMissingContact().length;
     const overdue = overdueCommitments().length + DB.deals.filter(d=>legalIsStale(d)).length;
@@ -1517,14 +1624,12 @@
     }
     return '<div id="cdNav">'
       + '<div class="cd-brand"><b>Collections HQ</b><span>Breeze / Emberstone</span></div>'
+      + navSearchHtml()
       + '<div class="cd-navsec">Daily</div>'
       + item("today","Today", (inboxUnread().length + overdue) || null, inboxUnread().length>0 || overdue>0)
       + item("calendar","Calendar")
       + item("notifications","Notifications", firedReminders().length || null, firedReminders().length>0)
       + '<div class="cd-navsec">Work</div>'
-      + '<button class="cd-navbtn" id="cdSearchBtn">'
-        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px;height:19px;flex:none;"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
-        + '<span>Search</span><span style="margin-left:auto;font-size:11px;color:var(--label-3);">\u2318K</span></button>'
       + item("watchlist","Watchlist", dueWatch().length || null, dueWatch().length>0)
       + item("tasks","Tasks", openTaskCount)
       + item("legal","Legal", DB.deals.filter(d=>d.legalCase && legalIsStale(d)).length, DB.deals.filter(d=>d.legalCase && legalIsStale(d)).length>0)
@@ -1535,6 +1640,7 @@
       + item("otherdeals","Other Deals", DB.deals.filter(isOtherOwnerDeal).length)
       + item("brokers","Brokers")
       + item("reports","Reports")
+      + cdTrialHtml()
       + '</div>';
   }
 
@@ -1581,6 +1687,8 @@
   }
 
   function wire(){
+    bindNavSearch();
+    bindTrialSwitches();
     document.querySelectorAll(".cd-nagbanner[data-viewmode-hint]").forEach(el=>el.onclick=()=>{
       currentPage="deals"; dealViewMode=el.dataset.viewmodeHint; render();
     });
@@ -1680,10 +1788,6 @@
       logEvent("Tried emergency contact "+(ec.name||""), d.id);
       await save(); renderDrawer();
     });
-
-    // Global search
-    const sBtn = document.getElementById("cdSearchBtn");
-    if(sBtn) sBtn.onclick = openSearch;
 
     // Watchlist actions
     document.querySelectorAll("[data-watchmet]").forEach(b=>b.onclick=async()=>{
