@@ -287,6 +287,46 @@
     padding:30px 28px 80px; box-shadow:-40px 0 100px -30px rgba(0,0,0,.9);
   }
   #cdDrawer.on{ transform:translateX(0); }
+  /* Global search. Sits above everything, opens on Cmd/Ctrl+K or the sidebar button. */
+  #cdSearchOverlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:70; display:none;
+    align-items:flex-start; justify-content:center; padding-top:11vh;
+  }
+  #cdSearchOverlay.on{ display:flex; }
+  #cdSearchBox{
+    width:min(720px,92vw); max-height:74vh; display:flex; flex-direction:column;
+    background:linear-gradient(165deg, rgba(40,46,56,.99), rgba(24,28,36,.99));
+    border:0.5px solid var(--stroke); border-radius:var(--r-xl);
+    box-shadow:0 40px 90px -24px rgba(0,0,0,.8); overflow:hidden;
+  }
+  #cdSearchInput{
+    width:100%; box-sizing:border-box; background:transparent; border:none; outline:none;
+    color:var(--label); font-size:19px; padding:20px 22px; letter-spacing:-.02em;
+    font-family:inherit;
+  }
+  #cdSearchInput::placeholder{ color:var(--label-3); }
+  .cd-searchhead{ display:flex; align-items:center; border-bottom:0.5px solid var(--stroke); }
+  .cd-searchhead svg{ width:19px; height:19px; margin-left:20px; flex:none;
+    stroke:var(--label-3); fill:none; stroke-width:2; }
+  .cd-searchcount{ padding-right:20px; font-size:12px; color:var(--label-3); white-space:nowrap; }
+  #cdSearchResults{ overflow-y:auto; padding:6px; }
+  .cd-sgroup{ font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--label-3); padding:12px 16px 6px; }
+  .cd-sres{
+    display:block; width:100%; text-align:left; background:transparent; border:none;
+    color:inherit; font:inherit; padding:10px 16px; border-radius:var(--r-md); cursor:pointer;
+  }
+  .cd-sres:hover, .cd-sres.sel{ background:var(--fill-3); }
+  .cd-sres b{ font-weight:600; }
+  .cd-sres .meta{ font-size:12px; color:var(--label-2); margin-top:2px;
+    font-family:"SF Mono",ui-monospace,monospace; }
+  .cd-sres .snip{ font-size:12.5px; color:var(--label-2); margin-top:3px;
+    overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .cd-sres mark{ background:rgba(10,132,255,.32); color:var(--label); border-radius:3px; padding:0 2px; }
+  .cd-searchfoot{ border-top:0.5px solid var(--stroke); padding:9px 18px; font-size:11.5px;
+    color:var(--label-3); display:flex; gap:16px; }
+  .cd-searchempty{ padding:34px 20px; text-align:center; color:var(--label-2); font-size:14px; }
+
   #cdDrawerOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; display:none; }
   #cdDrawerOverlay.on{ display:block; }
 
@@ -507,6 +547,17 @@
 <body>
 <div id="cdBackdrop"></div>
 <div id="cdApp"><div style="padding:40px;color:#9CA1AC">Loading Collections HQ...</div></div>
+<div id="cdSearchOverlay">
+  <div id="cdSearchBox">
+    <div class="cd-searchhead">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="cdSearchInput" placeholder="Search deals, notes, reminders, tasks, contacts…" autocomplete="off" spellcheck="false">
+      <span class="cd-searchcount" id="cdSearchCount"></span>
+    </div>
+    <div id="cdSearchResults"></div>
+    <div class="cd-searchfoot"><span>↑↓ to move</span><span>↵ to open</span><span>esc to close</span></div>
+  </div>
+</div>
 <div id="cdDrawerOverlay"></div>
 <div id="cdDrawer"></div>
 <div id="cdModalOverlay"><div id="cdModal"></div></div>
@@ -779,6 +830,38 @@
       .forEach(k=>{ if(!Array.isArray(out[k])) out[k] = []; });
     return out;
   }
+
+  // Bound once, not per render, or every redraw stacks another handler.
+  (function bindSearchOnce(){
+    const inp = document.getElementById("cdSearchInput");
+    const ov  = document.getElementById("cdSearchOverlay");
+    if(!inp || !ov || inp.dataset.bound) return;
+    inp.dataset.bound = "1";
+
+    inp.addEventListener("input", () => { searchSel = 0; renderSearchResults(inp.value); });
+
+    inp.addEventListener("keydown", e => {
+      if(e.key === "ArrowDown"){ e.preventDefault(); searchSel = Math.min(searchSel + 1, searchHits.length - 1); renderSearchResults(inp.value); scrollSel(); }
+      else if(e.key === "ArrowUp"){ e.preventDefault(); searchSel = Math.max(searchSel - 1, 0); renderSearchResults(inp.value); scrollSel(); }
+      else if(e.key === "Enter"){ e.preventDefault(); openSearchHit(searchHits[searchSel]); }
+      else if(e.key === "Escape"){ e.preventDefault(); closeSearch(); }
+    });
+
+    function scrollSel(){
+      const el = document.querySelector(".cd-sres.sel");
+      if(el) el.scrollIntoView({ block: "nearest" });
+    }
+
+    // Clicking the backdrop closes; clicking inside the box must not.
+    ov.addEventListener("click", e => { if(e.target === ov) closeSearch(); });
+
+    document.addEventListener("keydown", e => {
+      if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); openSearch(); }
+      else if(e.key === "Escape" && ov.classList.contains("on")) closeSearch();
+      else if(e.key === "/" && !/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName || "")
+              && !ov.classList.contains("on")){ e.preventDefault(); openSearch(); }
+    });
+  })();
 
   async function load(){
     loadCfg();
@@ -1146,6 +1229,193 @@
     return h;
   }
 
+  // ---------------------------------------------------------------------------
+  // Global search.
+  //
+  // Searches every record type, not just deal names — notes, contacts, reminder text,
+  // task descriptions, watch conditions, commitments, inbox items, broker names. The
+  // point is that if it was typed into the app it can be found again, because the
+  // thing you remember about a deal is rarely its name.
+  //
+  // Scoring is deliberately blunt: exact identifier match first, then name, then body
+  // text. Sorting by relevance a hundred results is worse than showing the obvious one
+  // at the top and letting the eye do the rest.
+  // ---------------------------------------------------------------------------
+  let searchSel = 0, searchHits = [];
+
+  function searchIdent(d){
+    return [d.mcht, d.leadId ? ("Lead " + d.leadId) : null].filter(Boolean).join(" \u00B7 ");
+  }
+
+  function collectSearchable(){
+    const out = [];
+    const dealName = id => { const d = dealById(id); return d ? d.name : ""; };
+
+    (DB.deals || []).forEach(d => {
+      const notes = (d.notesLog || []).map(n => n.text).join(" \u00B7 ");
+      const pend  = (d.pending || []).filter(p => !p.done).map(p => p.text).join(" \u00B7 ");
+      const ec    = (d.emergencyContacts || []).map(c =>
+                      [c.name, c.relationship, c.phone, c.email, c.note].filter(Boolean).join(" ")).join(" \u00B7 ");
+      const c     = d.contact || {};
+      out.push({
+        kind: "Deal", id: d.id, dealId: d.id,
+        title: d.name,
+        meta: [searchIdent(d), statusOf(d.status).label, d.platform, d.source].filter(Boolean).join("  \u00B7  "),
+        ident: searchIdent(d) + " " + (d.mcht || "") + " " + (d.leadId || ""),
+        body: [notes, pend, ec, c.name, c.phone, c.email, d.notes, d.dba,
+               (d.legalCase || {}).firm, (d.legalCase || {}).caseStatusLegacy].filter(Boolean).join("  \u00B7  ")
+      });
+    });
+
+    (DB.reminders || []).filter(r => r.status === "open").forEach(r => out.push({
+      kind: "Reminder", id: r.id, dealId: r.dealId,
+      title: r.text.split("\n")[0].slice(0, 110),
+      meta: [fmtDateShort((r.dueAt || "").slice(0,10)), dealName(r.dealId)].filter(Boolean).join("  \u00B7  "),
+      ident: "", body: r.text
+    }));
+
+    (DB.tasks || []).filter(x => x.status === "open").forEach(x => out.push({
+      kind: "Task", id: x.id, dealId: x.dealId,
+      title: x.description.split("\n")[0].slice(0, 110),
+      meta: [x.waitingOn ? ("waiting on " + x.waitingOn) : null, dealName(x.dealId)].filter(Boolean).join("  \u00B7  "),
+      ident: "", body: x.description
+    }));
+
+    (DB.watch || []).filter(w => w.status === "open").forEach(w => out.push({
+      kind: "Watch condition", id: w.id, dealId: w.dealId,
+      title: w.condition,
+      meta: [fmtDateShort(w.checkOn), dealName(w.dealId)].filter(Boolean).join("  \u00B7  "),
+      ident: "", body: [w.ifMet, w.ifFailed, w.source].filter(Boolean).join("  \u00B7  ")
+    }));
+
+    (DB.commitments || []).filter(c => c.status === "Open").forEach(c => out.push({
+      kind: "Commitment", id: c.id, dealId: c.dealId,
+      title: c.what,
+      meta: [fmtDateShort(c.dueDate), c.who, dealName(c.dealId)].filter(Boolean).join("  \u00B7  "),
+      ident: "", body: [c.what, c.who, c.notes].filter(Boolean).join("  \u00B7  ")
+    }));
+
+    (DB.inbox || []).forEach(i => out.push({
+      kind: "Inbox", id: i.id, dealId: i.dealId,
+      title: i.title,
+      meta: [i.source, (i.receivedAt || "").slice(5,10)].filter(Boolean).join("  \u00B7  "),
+      ident: "", body: [i.title, i.detail].filter(Boolean).join("  \u00B7  ")
+    }));
+
+    (DB.brokers || []).forEach(b => out.push({
+      kind: "Broker", id: b.id || b.name, dealId: null,
+      title: b.name,
+      meta: [b.contact, b.phone, b.email].filter(Boolean).join("  \u00B7  "),
+      ident: "", body: [b.name, b.contact, b.phone, b.email, b.notes].filter(Boolean).join("  \u00B7  ")
+    }));
+
+    return out;
+  }
+
+  function runSearch(q){
+    q = (q || "").trim().toLowerCase();
+    if(q.length < 2) return [];
+    // Every term must appear somewhere, so "rice r29" narrows rather than widens.
+    const terms = q.split(/\s+/);
+    const scored = [];
+    collectSearchable().forEach(item => {
+      const hay = (item.title + " " + item.meta + " " + item.ident + " " + item.body).toLowerCase();
+      if(!terms.every(t => hay.includes(t))) return;
+      let score = 0;
+      const title = item.title.toLowerCase(), ident = item.ident.toLowerCase();
+      if(ident.includes(q)) score += 100;                       // typed an MCHT or lead id
+      if(title.includes(q)) score += 60;
+      if(title.startsWith(q)) score += 30;
+      if(item.kind === "Deal") score += 12;                     // deals over their own notes
+      if(item.meta.toLowerCase().includes(q)) score += 8;
+      scored.push({ item, score });
+    });
+    scored.sort((a,b)=> b.score - a.score || a.item.title.localeCompare(b.item.title));
+    const top = scored.slice(0, 60);
+    // Group by kind so the headers read as sections rather than repeating every few rows,
+    // but order the groups by their best hit so the most relevant type stays at the top.
+    const order = [], buckets = {};
+    top.forEach(s => {
+      if(!buckets[s.item.kind]){ buckets[s.item.kind] = []; order.push(s.item.kind); }
+      buckets[s.item.kind].push(s.item);
+    });
+    return order.flatMap(k => buckets[k]);
+  }
+
+  function highlight(text, q){
+    const safe = esc(text || "");
+    const terms = (q || "").trim().split(/\s+/).filter(x => x.length > 1);
+    if(!terms.length) return safe;
+    // Escape regex metacharacters — merchant names contain & and ( ) often enough.
+    const rx = new RegExp("(" + terms.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "gi");
+    return safe.replace(rx, "<mark>$1</mark>");
+  }
+
+  function snippetAround(body, q){
+    const terms = (q || "").trim().split(/\s+/).filter(x => x.length > 1);
+    if(!body || !terms.length) return "";
+    const low = body.toLowerCase();
+    let at = -1;
+    for(const t of terms){ const i = low.indexOf(t); if(i >= 0 && (at < 0 || i < at)) at = i; }
+    if(at < 0) return "";
+    const start = Math.max(0, at - 70);
+    return (start > 0 ? "\u2026" : "") + body.slice(start, start + 240).replace(/\s+/g, " ").trim() + "\u2026";
+  }
+
+  function renderSearchResults(q){
+    const box = document.getElementById("cdSearchResults");
+    const cnt = document.getElementById("cdSearchCount");
+    searchHits = runSearch(q);
+    if(searchSel >= searchHits.length) searchSel = 0;
+    cnt.textContent = q.trim().length < 2 ? "" :
+      (searchHits.length ? searchHits.length + (searchHits.length === 60 ? "+ results" : " results") : "");
+    if(q.trim().length < 2){
+      box.innerHTML = '<div class="cd-searchempty">Type at least two characters.<br>'
+        + 'Searches deal names, MCHT and lead IDs, notes, contacts, reminders, tasks, '
+        + 'watch conditions, commitments, inbox items and brokers.</div>';
+      return;
+    }
+    if(!searchHits.length){
+      box.innerHTML = '<div class="cd-searchempty">Nothing found for &ldquo;' + esc(q) + '&rdquo;.</div>';
+      return;
+    }
+    let html = "", lastKind = null;
+    searchHits.forEach((it, i) => {
+      if(it.kind !== lastKind){ html += '<div class="cd-sgroup">' + esc(it.kind) + '</div>'; lastKind = it.kind; }
+      const snip = snippetAround(it.body, q);
+      html += '<button class="cd-sres' + (i === searchSel ? " sel" : "") + '" data-sidx="' + i + '">'
+        + '<b>' + highlight(it.title, q) + '</b>'
+        + (it.meta ? '<div class="meta">' + highlight(it.meta, q) + '</div>' : '')
+        + (snip ? '<div class="snip">' + highlight(snip, q) + '</div>' : '')
+        + '</button>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll("[data-sidx]").forEach(b =>
+      b.onclick = () => openSearchHit(searchHits[Number(b.dataset.sidx)]));
+  }
+
+  function openSearchHit(it){
+    if(!it) return;
+    closeSearch();
+    if(it.dealId && dealById(it.dealId)){ openDrawer(it.dealId); return; }
+    // No deal attached — send the user to the page that owns this record type.
+    const page = { "Reminder":"notifications", "Task":"tasks", "Watch condition":"watchlist",
+                   "Commitment":"calendar", "Inbox":"today", "Broker":"brokers" }[it.kind];
+    if(page){ currentPage = page; render(); }
+  }
+
+  function openSearch(){
+    const ov = document.getElementById("cdSearchOverlay");
+    ov.classList.add("on");
+    const inp = document.getElementById("cdSearchInput");
+    searchSel = 0;
+    renderSearchResults(inp.value);
+    inp.focus(); inp.select();
+  }
+  function closeSearch(){
+    document.getElementById("cdSearchOverlay").classList.remove("on");
+  }
+
   function inboxUnread(){
     return (DB.inbox||[]).filter(x=>x.status!=="read")
       .sort((a,b)=> a.receivedAt < b.receivedAt ? 1 : -1);
@@ -1252,6 +1522,9 @@
       + item("calendar","Calendar")
       + item("notifications","Notifications", firedReminders().length || null, firedReminders().length>0)
       + '<div class="cd-navsec">Work</div>'
+      + '<button class="cd-navbtn" id="cdSearchBtn">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px;height:19px;flex:none;"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+        + '<span>Search</span><span style="margin-left:auto;font-size:11px;color:var(--label-3);">\u2318K</span></button>'
       + item("watchlist","Watchlist", dueWatch().length || null, dueWatch().length>0)
       + item("tasks","Tasks", openTaskCount)
       + item("legal","Legal", DB.deals.filter(d=>d.legalCase && legalIsStale(d)).length, DB.deals.filter(d=>d.legalCase && legalIsStale(d)).length>0)
@@ -1407,6 +1680,10 @@
       logEvent("Tried emergency contact "+(ec.name||""), d.id);
       await save(); renderDrawer();
     });
+
+    // Global search
+    const sBtn = document.getElementById("cdSearchBtn");
+    if(sBtn) sBtn.onclick = openSearch;
 
     // Watchlist actions
     document.querySelectorAll("[data-watchmet]").forEach(b=>b.onclick=async()=>{
