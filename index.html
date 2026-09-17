@@ -1427,8 +1427,8 @@
   function openSearchHit(it){
     if(!it) return;
     closeSearch();
-    render();
-    if(it.dealId && dealById(it.dealId)){ openDrawer(it.dealId); return; }
+    const hitDeal = it.dealId && dealById(it.dealId);
+    if(hitDeal){ openDrawer(hitDeal); return; }
     // No deal attached — send the user to the page that owns this record type.
     const page = { "Reminder":"notifications", "Task":"tasks", "Watch condition":"watchlist",
                    "Commitment":"calendar", "Inbox":"today", "Broker":"brokers" }[it.kind];
@@ -2638,6 +2638,10 @@
   }
 
   function openDrawer(d){
+    // Callers have passed both a deal and a deal id here. Accept either: getting it wrong
+    // used to open a blank drawer with no error, which is a miserable thing to debug.
+    if(typeof d === "string") d = dealById(d);
+    if(!d) return;
     drawerDealId = d.id;
     drawerTab = "overview";
     drawerEditingContact = false;
