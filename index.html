@@ -310,6 +310,9 @@
     color:var(--label); font-size:15px; font-family:inherit; letter-spacing:-.016em; padding:0;
   }
   #cdNavSearchInput::placeholder{ color:var(--label-3); }
+  /* The global :focus-visible ring would draw a blue lozenge around the field inside the
+     bar. The bar's own border already shows focus, so suppress the ring here only. */
+  #cdNavSearchInput:focus, #cdNavSearchInput:focus-visible{ outline:none; box-shadow:none; }
   .cd-navsearchlabel{ flex:1; color:var(--label-2); font-size:15px; letter-spacing:-.016em; }
   .cd-navsearchclear{
     background:none; border:none; color:var(--label-3); font-size:15px; cursor:pointer;
@@ -351,15 +354,6 @@
     color:var(--label-3); padding:12px 16px 6px; }
   .cd-searchempty{ padding:34px 20px; text-align:center; color:var(--label-2); font-size:14px; }
 
-  /* Trial switches. Temporary — delete this block and cdTrialHtml() once a layout is chosen. */
-  .cd-trialrow{ display:flex; gap:4px; padding:0 2px 6px; }
-  .cd-trialrow button{
-    flex:1; background:var(--fill-4); border:0.5px solid transparent; color:var(--label-2);
-    font-family:inherit; font-size:11.5px; letter-spacing:-.008em; padding:6px 4px;
-    border-radius:var(--r-sm); cursor:pointer; transition:background .15s ease, color .15s ease;
-  }
-  .cd-trialrow button:hover{ background:var(--fill-3); color:var(--label); }
-  .cd-trialrow button.on{ background:rgba(10,132,255,.22); color:var(--label); border-color:rgba(10,132,255,.45); }
 
   #cdDrawerOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; display:none; }
   #cdDrawerOverlay.on{ display:block; }
@@ -720,21 +714,9 @@
   let ghSha = null;
   let saveBannerEl = null;
 
-  // Search layout preferences. Per browser, deliberately not in state.json — this is a
-  // view choice, not collections data, and it should not follow the file to other machines.
-  const SEARCH_PREF_KEY = "collections_hq_search_layout";
-  let searchPrefs = { box:"always", results:"inline" };
+  // Search layout, settled 9/17 after trialling the alternatives: the field is always open
+  // in the sidebar, and the column widens while a query is live so snippets have room.
   let searchQuery = "";
-  let searchExpanded = false;
-  function loadSearchPrefs(){
-    try{
-      const raw = localStorage.getItem(SEARCH_PREF_KEY);
-      if(raw) searchPrefs = Object.assign(searchPrefs, JSON.parse(raw));
-    }catch(e){}
-  }
-  function saveSearchPrefs(){
-    try{ localStorage.setItem(SEARCH_PREF_KEY, JSON.stringify(searchPrefs)); }catch(e){}
-  }
 
   function ghConfigured(){ return !!(ghCfg.owner && ghCfg.repo && ghCfg.token); }
 
@@ -873,9 +855,6 @@
   // The search field now lives inside the sidebar, which is rebuilt on every render, so the
   // field is a new element each time and has to be rebound. Document-level keys bind once.
   function bindNavSearch(){
-    const openRow = document.getElementById("cdNavSearchOpen");
-    if(openRow) openRow.onclick = () => { searchExpanded = true; render(); openSearch(); };
-
     const clear = document.getElementById("cdNavSearchClear");
     if(clear) clear.onclick = (e) => { e.stopPropagation(); closeSearch(); render(); };
 
@@ -902,17 +881,6 @@
     if(searchQuery) renderSearchResults(searchQuery);
   }
 
-  function bindTrialSwitches(){
-    document.querySelectorAll("[data-searchpref]").forEach(b => b.onclick = () => {
-      const [group, val] = b.dataset.searchpref.split(":");
-      searchPrefs[group] = val;
-      if(group === "box" && val === "always") searchExpanded = false;
-      saveSearchPrefs();
-      render();
-      if(searchQuery) openSearch();
-    });
-  }
-
   (function bindGlobalSearchKeys(){
     document.addEventListener("keydown", e => {
       if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); openSearch(); }
@@ -925,7 +893,6 @@
 
   async function load(){
     loadCfg();
-    loadSearchPrefs();
     if(!ghConfigured()){ renderSetup(); return; }
     try{
       const remote = await ghRead();
@@ -1428,9 +1395,7 @@
     const cnt = document.getElementById("cdNavSearchCount");
     if(!box) return;
     const nav = document.getElementById("cdNav");
-    // Only the widen layout changes the column; inline leaves it alone.
-    if(nav) nav.classList.toggle("searching-widen",
-      searchPrefs.results === "widen" && q.trim().length >= 2);
+    if(nav) nav.classList.toggle("searching-widen", q.trim().length >= 2);
     searchHits = runSearch(q);
     if(searchSel >= searchHits.length) searchSel = 0;
     if(cnt) cnt.textContent = q.trim().length < 2 ? "" :
@@ -1472,8 +1437,7 @@
 
   function openSearch(){
     searchSel = 0;
-    let inp = document.getElementById("cdNavSearchInput");
-    if(!inp){ searchExpanded = true; render(); inp = document.getElementById("cdNavSearchInput"); }
+    const inp = document.getElementById("cdNavSearchInput");
     if(!inp) return;
     renderSearchResults(inp.value);
     inp.focus(); inp.select();
@@ -1481,7 +1445,6 @@
   function closeSearch(){
     searchQuery = "";
     searchHits = [];
-    if(searchPrefs.box === "expand") searchExpanded = false;
     const nav = document.getElementById("cdNav");
     if(nav) nav.classList.remove("searching-widen");
     const box = document.getElementById("cdNavSearchResults");
@@ -1573,13 +1536,6 @@
   const SEARCH_ICON = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
 
   function navSearchHtml(){
-    const open = searchPrefs.box === "always" || searchExpanded;
-    if(!open){
-      return '<div class="cd-navsearch">'
-        + '<div class="cd-navsearchbar" id="cdNavSearchOpen">' + SEARCH_ICON
-        + '<span class="cd-navsearchlabel">Search</span></div>'
-        + '<div id="cdNavSearchResults"></div></div>';
-    }
     return '<div class="cd-navsearch">'
       + '<div class="cd-navsearchbar' + (searchQuery ? " focused" : "") + '" id="cdNavSearchBar">' + SEARCH_ICON
       + '<input id="cdNavSearchInput" placeholder="Search deals, notes, tasks\u2026" autocomplete="off" spellcheck="false" value="' + esc(searchQuery) + '">'
@@ -1587,18 +1543,6 @@
       + (searchQuery ? '<button class="cd-navsearchclear" id="cdNavSearchClear" title="Clear">\u00D7</button>' : '')
       + '</div>'
       + '<div id="cdNavSearchResults"></div></div>';
-  }
-
-  // TEMPORARY: layout trial switches. Remove with the .cd-trialrow CSS once chosen.
-  function cdTrialHtml(){
-    function row(group, opts){
-      return '<div class="cd-trialrow">' + opts.map(o =>
-        '<button class="' + (searchPrefs[group] === o[0] ? "on" : "") + '" data-searchpref="'
-        + group + ':' + o[0] + '">' + o[1] + '</button>').join("") + '</div>';
-    }
-    return '<div class="cd-navsec">Search layout \u2014 trial</div>'
-      + row("box", [["always","Always open"],["expand","Click to open"]])
-      + row("results", [["inline","List in sidebar"],["widen","Sidebar widens"]]);
   }
 
   function navHtml(){
@@ -1640,7 +1584,6 @@
       + item("otherdeals","Other Deals", DB.deals.filter(isOtherOwnerDeal).length)
       + item("brokers","Brokers")
       + item("reports","Reports")
-      + cdTrialHtml()
       + '</div>';
   }
 
@@ -1688,7 +1631,6 @@
 
   function wire(){
     bindNavSearch();
-    bindTrialSwitches();
     document.querySelectorAll(".cd-nagbanner[data-viewmode-hint]").forEach(el=>el.onclick=()=>{
       currentPage="deals"; dealViewMode=el.dataset.viewmodeHint; render();
     });
