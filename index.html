@@ -431,6 +431,10 @@
     padding:10px 14px; font-size:15px; width:100%; -webkit-appearance:none; appearance:none;
   }
   .cd-select:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
+  /* Native dropdown lists: solid dark background + white text (Windows renders the translucent fill as light grey) */
+  #cdApp select option, #cdApp select optgroup,
+  #cdDrawer select option, #cdDrawer select optgroup{ background-color:#1c1c1e !important; color:#fff !important; }
+  #cdApp select option:checked, #cdDrawer select option:checked{ background-color:#0a84ff !important; color:#fff !important; }
   .cd-datebtn{ display:flex; cursor:pointer; }
   .cd-minical{
     background:linear-gradient(165deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
