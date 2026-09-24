@@ -567,6 +567,44 @@
   }
   .cd-input:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
 
+  /* ---- Tiered Today / David / Underwriting ---- */
+  .hq-compact{ padding:8px 12px; margin-bottom:5px; align-items:center; gap:12px; }
+  .hq-tierrow{ display:grid; grid-template-columns:minmax(200px,1.1fr) minmax(220px,1.6fr) minmax(200px,1.4fr) auto auto; cursor:pointer; font-size:13px; }
+  .hq-tierrow:hover{ background:var(--fill-3); }
+  .hq-c1{ display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; min-width:0; }
+  .hq-c1 b{ font-size:14px; letter-spacing:-.012em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .hq-ids{ font-size:11px; color:var(--label-2); white-space:nowrap; }
+  .hq-plat{ font-size:10px; color:var(--label-3); border:0.5px solid var(--stroke); padding:0 6px; border-radius:var(--r-pill); white-space:nowrap; }
+  .hq-c2{ color:var(--label-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .hq-c3{ display:flex; gap:6px; align-items:center; min-width:0; }
+  .hq-c3 span:last-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+  .hq-c3 .cd-badge{ font-size:11px; padding:1px 7px; flex:none; }
+  .hq-c4{ display:flex; flex-direction:column; align-items:flex-end; gap:0; font-size:13px; }
+  .hq-due{ font-size:11px; color:var(--label-3); }
+  .hq-due.over{ color:var(--sys-red); }
+  .hq-c5{ display:flex; gap:4px; }
+  .hq-c5 .cd-inlinebtn{ padding:4px 10px; font-size:12px; }
+  .hq-c5 .hq-done{ background:var(--sys-blue); color:#fff; }
+  .hq-uwrow{ grid-template-columns:minmax(260px,1.4fr) minmax(240px,2fr) auto; }
+  .hq-uwrow .hq-c1{ flex-wrap:nowrap; align-items:center; }
+  #cdModal.hq-pop, #cdModal.hq-pop h3{ color:#F5F6F8; }
+  #cdModal.hq-pop .hq-plat{ color:#C9CED8; border-color:rgba(255,255,255,.35); }
+  .hq-popsect{ margin-top:14px; font-size:15px; line-height:1.5; color:#ECEEF2; }
+  .hq-poplab{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#AEB4BF; font-weight:700; margin-bottom:4px; }
+  .hq-popnote{ font-size:13.5px; color:#D5D9E0; padding:5px 0; border-top:0.5px solid rgba(255,255,255,.12); }
+  .hq-popnote:first-child{ border-top:none; }
+  .hq-popnote .mono{ color:#AEB4BF !important; }
+  .hq-popids{ color:#C9CED8 !important; }
+  .hq-popids b{ color:#F5F6F8; }
+  .hq-davact{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding-top:6px; border-top:0.5px solid var(--separator); }
+  .hq-davact .cd-inlinebtn{ padding:4px 10px; font-size:12px; }
+  .hq-davnotebox{ padding-top:4px; }
+  .hq-t4grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px 18px; color:var(--label-2); font-size:14px; }
+  .hq-t4grid > div{ cursor:pointer; }
+  .hq-t4grid > div:hover{ color:var(--label); }
+  @media (max-width:1100px){ .hq-tierrow{ grid-template-columns:minmax(180px,1fr) minmax(200px,1.4fr) auto auto; } .hq-c3{ display:none; } }
+  @media (max-width:760px){ .hq-tierrow{ grid-template-columns:1fr auto; } .hq-c2,.hq-c3{ display:none; } }
+
   @media (max-width: 900px){
     #cdApp{ flex-direction:column; }
     #cdNav{ width:100%; height:auto; position:relative; border-right:none; border-bottom:0.5px solid var(--stroke); }
@@ -587,7 +625,7 @@
 (function(){
   "use strict";
   const STORE_KEY = "collections_hq_v2";
-  const DATA_VERSION = "v2-2026-09-10h";
+  const DATA_VERSION = "v3-2026-09-24";
   // Live clock. This used to be a frozen constant, which meant "today" drifted out of
   // date between sessions and reminders could never actually come due. TODAY is now
   // refreshed by a ticker (see startClock) so the app tracks real time.
@@ -804,10 +842,25 @@
   }
 
   async function ghRead(){
-    const r = await ghFetch(ghUrl() + "?t=" + Date.now(), { headers: ghHeaders(), cache:"no-store" });
-    if(r.status === 404){ ghSha = null; return null; }
-    ghSha = r.body.sha;
-    try{ return JSON.parse(b64decode(r.body.content)); }
+    const meta = await ghFetch(ghUrl() + "?t=" + Date.now(), { headers: ghHeaders(), cache:"no-store" });
+    if(meta.status === 404){ ghSha = null; return null; }
+    ghSha = meta.body.sha;
+    let text = null;
+    if(meta.body.content && meta.body.encoding === "base64"){
+      text = b64decode(meta.body.content);
+    } else {
+      // Over 1 MiB: the JSON response carries no content. Fetch the raw bytes.
+      const rawHeaders = Object.assign({}, ghHeaders(), { "Accept": "application/vnd.github.raw" });
+      let raw = null, lastErr = null;
+      for(let i=0; i<3; i++){
+        try{ raw = await fetch(ghUrl() + "?t=" + Date.now(), { headers: rawHeaders, cache:"no-store" }); if(raw.ok) break; lastErr = {code:"http", message:"GitHub returned "+raw.status+" for the raw read."}; }
+        catch(e){ lastErr = e; }
+        await new Promise(res=>setTimeout(res, 500*(i+1)));
+      }
+      if(!raw || !raw.ok) throw lastErr || {code:"http", message:"Couldn't read state.json."};
+      text = await raw.text();
+    }
+    try{ return JSON.parse(text); }
     catch(e){ throw {code:"corrupt", message:"state.json isn't valid JSON. Earlier versions are in the repo's commit history."}; }
   }
 
@@ -844,15 +897,16 @@
 
   function emptyDb(){
     return { deals:[], commitments:[], tasks:[], reminders:[], inbox:[], watch:[],
-             brokers:[], owners:[], eventLog:[], version: DATA_VERSION,
+             brokers:[], owners:[], eventLog:[], david:[], uwNotes:[], todayState:{}, version: DATA_VERSION,
              thresholds:{daily:3, weeklyMonthly:10}, lastReportAt:null, appliedUpdates:[] };
   }
 
   function normalise(db){
     const base = emptyDb();
     const out = Object.assign(base, db || {});
-    ["deals","commitments","tasks","reminders","inbox","watch","brokers","owners","eventLog"]
+    ["deals","commitments","tasks","reminders","inbox","watch","brokers","owners","eventLog","david","uwNotes"]
       .forEach(k=>{ if(!Array.isArray(out[k])) out[k] = []; });
+    if(!out.todayState || typeof out.todayState!=="object") out.todayState = {};
     return out;
   }
 
@@ -1553,7 +1607,12 @@
     const missingContact = dealsMissingContact().length;
     const overdue = overdueCommitments().length + DB.deals.filter(d=>legalIsStale(d)).length;
     const openTaskCount = openTasks().length;
+    const tierCounts = tierCountsCached();
+    const openDavid = (DB.david||[]).filter(x=>x.status!=="done").length;
+    const openUw = (DB.uwNotes||[]).filter(x=>x.status!=="done").length;
     const ICONS = {
+      david:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5z"/><path d="M8 9h8M8 12h5"/></svg>',
+      uw:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
       today:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
       calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
       notifications:'<svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2H4.5L6 17z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>',
@@ -1574,7 +1633,9 @@
       + '<div class="cd-brand"><b>Collections HQ</b><span>Breeze / Emberstone</span></div>'
       + navSearchHtml()
       + '<div class="cd-navsec">Daily</div>'
-      + item("today","Today", (inboxUnread().length + overdue) || null, inboxUnread().length>0 || overdue>0)
+      + item("today","Today", tierCounts.t1 || null, tierCounts.t1>0)
+      + item("david","David", openDavid || null, openDavid>0)
+      + item("uw","Underwriting", openUw || null, false)
       + item("calendar","Calendar")
       + item("notifications","Notifications", firedReminders().length || null, firedReminders().length>0)
       + '<div class="cd-navsec">Work</div>'
@@ -1593,6 +1654,8 @@
 
   function pageHtml(){
     if(currentPage==="today") return todayHtml();
+    if(currentPage==="david") return davidHtml();
+    if(currentPage==="uw") return uwHtml();
     if(currentPage==="calendar") return calendarHtml();
     if(currentPage==="notifications") return notificationsHtml();
     if(currentPage==="watchlist") return watchlistHtml();
@@ -1644,8 +1707,9 @@
       const id = el.dataset.open; const d = dealById(id);
       if(d) openDrawer(d);
     });
-    document.getElementById("cdDrawerOverlay").onclick = closeDrawer;
-    document.getElementById("cdModalOverlay").onclick = (e)=>{ if(e.target.id==="cdModalOverlay") closeQuickTaskModal(); };
+    document.getElementById("cdDrawerOverlay").onclick = ()=>{ hqReturn=null; closeDrawer(); };
+    document.getElementById("cdModalOverlay").onclick = (e)=>{ if(e.target.id!=="cdModalOverlay") return; if(hqPopKey) closeSituation(); else closeQuickTaskModal(); };
+    wireHq();
     wirePageSpecific();
   }
 
@@ -1907,97 +1971,441 @@
       + '</div>';
   }
 
+  // ===================== TIERED TODAY =====================
+  // A deal lands in ONE tier, the highest that applies. Computed from the data every render;
+  // nothing here is set by hand. "Done" closes whatever raised the line (reminder, task,
+  // commitment, David instruction) and writes a note; "Later" pushes it to tomorrow.
+  const TIER_META = {
+    1:{label:"Tier 1", color:"var(--sys-red)",    why:"clock running — inside the window, deliberate stop, clawback in flight, or David is waiting"},
+    2:{label:"Tier 2", color:"var(--sys-orange)", why:"deteriorating — second or third miss, someone waiting on us, a promise or reminder due"},
+    3:{label:"Tier 3", color:"var(--sys-blue)",   why:"filing decisions and deals that need a status before anyone touches them"}
+  };
+  const DAVID_ST = {new:["New","var(--sys-red)"],prog:["In progress","var(--sys-orange)"],wait:["Waiting on Anusha","var(--sys-indigo)"],done:["Completed","var(--sys-green)"]};
+  const UW_KINDS = ["Renewal while missing","First pull failed","Contract template","File shopping","Stacking","Bank / statement issue","Other"];
+  let hqReturn = null, hqPopKey = null, hqShowSnoozed = false, hqTierCache = null, davidShowArchive = false, uwShowArchive = false, uwAdding = false;
+  const HQ_ARCHIVE_DAYS = 30;
+
+  function dealIds(d){ return d ? [d.mcht?("MCHT "+d.mcht):null, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ") : ""; }
+  function clawbackState(d){ return typeof d.clawback==="string" ? d.clawback : ((d.clawback&&d.clawback.state)||"none"); }
+  function inLegal(d){ if(d.status==="legal"||d.status==="debt_relief") return true; const lc=d.legalCase; return !!(lc && lc.stage && !(LEGAL_STAGES[lc.stage]||{}).terminal); }
+  function todayState(){ const t=todayStr(); DB.todayState=DB.todayState||{}; Object.keys(DB.todayState).forEach(k=>{ if(k<t) delete DB.todayState[k]; }); return DB.todayState[t]=DB.todayState[t]||{}; }
+  function whoFromText(s){ s=(s||"").toLowerCase(); if(/\banusha\b/.test(s)) return "Anusha"; if(/\bdavid\b/.test(s)) return "David"; if(/\bmendy\b/.test(s)) return "Mendy"; if(/\bmoshy\b/.test(s)) return "Moshy"; if(/\bclaude\b/.test(s)) return "Claude"; return "You"; }
+  function stripDealPrefix(text, d){
+    // Reminder text is often "MERCHANT NAME - Lead 123: do the thing". The row already shows the name.
+    const m = text.match(/^[^:]{3,80}:\s+(.*)$/s);
+    if(m && d && m[0].toLowerCase().indexOf((d.name||"").split(" ")[0].toLowerCase())>=0) return m[1];
+    return text;
+  }
+
+  function computeTiers(){
+    const t = todayStr(), ts = todayState();
+    const out = {1:[],2:[],3:[],legal:[],others:[],snoozed:[],done:[]};
+    const endOfToday = t+"T23:59";
+    ourDeals().forEach(d=>{
+      const st = statusOf(d.status);
+      const consec = d.consecutive||0;
+      const freq = d.freq||"";
+      const weeklyish = freq!=="daily";
+      // fundedDate is the real disbursement date. datePlaced is when the deal was placed with us for
+      // collections (or added to the app) and says nothing about the 30-day window.
+      const daysFunded = isoDaysAgo(d.fundedDate);
+      const inWindow = daysFunded!=null && daysFunded>=0 && daysFunded<=30;
+      const lastPaidDays = isoDaysAgo(d.lastPaymentDate);
+      const cb = clawbackState(d);
+      const cbInFlight = ["pulled_pending","bounced","needs_pull"].includes(cb);
+      const legal = inLegal(d);
+      const codes = new Set();
+      (d.notesLog||[]).forEach(n=>{ const age=isoDaysAgo(n.date); if(age!=null && age<=60){ (n.text.match(/\bR(02|08|29)\b/g)||[]).forEach(c=>codes.add(c)); } });
+      const rems = (DB.reminders||[]).filter(r=>r.dealId===d.id && r.status==="open" && r.dueAt<=endOfToday).sort((a,b)=>a.dueAt<b.dueAt?-1:1);
+      const tasks = (DB.tasks||[]).filter(x=>x.dealId===d.id && x.status==="open" && x.dueDate && x.dueDate<=t);
+      const commits = (DB.commitments||[]).filter(c=>c.dealId===d.id && c.status==="open" && c.dueDate && c.dueDate<=t);
+      const watches = (DB.watch||[]).filter(w=>w.dealId===d.id && w.status==="open" && (w.checkOn||"")<=t);
+      const david = (DB.david||[]).filter(x=>x.dealId===d.id && x.status!=="done");
+      const pausePast = d.pauseInfo && d.pauseInfo.nextCheckIn && d.pauseInfo.nextCheckIn<=t;
+      const mpPast = d.manualPay && d.manualPay.nextExpectedDate && d.manualPay.nextExpectedDate<t;
+      // Wire / Zelle payers never debit, so a consecutive-return count on them is stale, not a signal.
+      const filingAt = d.manualPay ? Infinity : (weeklyish?4:10);
+      const consecSignal = d.manualPay ? 0 : consec;
+      // A deliberate stop only counts while money was recently moving; an R08 from May on a deal
+      // dead since May is a filing decision, not a clock.
+      const recentlyPaying = (lastPaidDays!=null && lastPaidDays<=60) || (lastPaidDays==null && daysFunded!=null && daysFunded<=60);
+      const recentBounceNote = (d.notesLog||[]).some(n=>{ const age=isoDaysAgo(n.date); return age!=null && age<=14 && /\bR\d\d\b|bounc|fail|return/i.test(n.text||""); });
+      const drift = st.terminal && consec>=1 && recentBounceNote;
+      const hasDue = rems.length||tasks.length||commits.length||watches.length;
+      if(st.terminal && !drift && !hasDue && !david.length) return;
+
+      const reasons=[]; let tier=null;
+      if(!legal){
+        if(inWindow && consec>=1) reasons.push("inside the 30-day window");
+        if(codes.size && recentlyPaying && (consec>=1 || (lastPaidDays!=null && lastPaidDays>7))) reasons.push([...codes].join("/")+" in the last 60 days");
+        if(cbInFlight) reasons.push("clawback "+(CLAWBACK[cb]?CLAWBACK[cb].label.toLowerCase():cb));
+        if(david.length) reasons.push("David is waiting");
+        if(reasons.length) tier=1;
+        if(!tier){
+          if(consecSignal>=filingAt) { reasons.push(consec+" consecutive — filing decision"); tier=3; }
+          else if(d.status==="needs_file"){ reasons.push("marked needs to be filed"); tier=3; }
+          else if(d.status==="needs_review"){ reasons.push("needs review — ownership / firm status first"); tier=3; }
+        }
+        if(!tier){
+          if(drift) reasons.push("marked "+st.label+" but bouncing");
+          if((weeklyish && consecSignal>=2) || (!weeklyish && consecSignal>=4)) reasons.push(consec+" consecutive");
+          if(rems.length) reasons.push("reminder due");
+          if(tasks.length) reasons.push("task due");
+          if(commits.length) reasons.push("promise due");
+          if(watches.length) reasons.push("watch condition due");
+          if(pausePast) reasons.push("pause check-in passed");
+          if(mpPast) reasons.push("expected "+(d.manualPay.method||"payment")+" not received");
+          if(d.status==="contact_today"||d.status==="urgent") reasons.push("status: "+st.label);
+          if(reasons.length) tier=2;
+        }
+        if(!tier && d.settlement && (DB.commitments||[]).some(c=>c.dealId===d.id && c.status==="broken")){ reasons.push("settlement payment broken"); tier=3; }
+      } else {
+        // In legal: only surfaces as a firm chase, never as a merchant touch.
+        const stale = legalIsStale(d);
+        if(stale || hasDue || david.length){ out.legal.push({deal:d, stale, rems, tasks, commits, watches, david}); }
+        return;
+      }
+      if(!tier) return;
+
+      // ---- what happened
+      const what=[];
+      if(drift) what.push("marked "+st.label+" but bouncing");
+      if(consec>=1) what.push(consec+" consecutive"+(d.lifetime&&d.lifetime>consec?" ("+d.lifetime+" lifetime)":""));
+      if(codes.size) what.push([...codes].join(", "));
+      if(d.lastPaymentDate) what.push("last paid "+fmtDateShort(d.lastPaymentDate)+(lastPaidDays!=null?" ("+lastPaidDays+"d)":"")); else what.push("no payment on record");
+      if(inWindow) what.push("funded "+fmtDateShort(d.fundedDate)+" · day "+daysFunded+" of 30");
+      else if(d.fundedDate) what.push("funded "+fmtDateShort(d.fundedDate));
+      if(cb!=="none" && cb!=="not_eligible" && cb!=="not_applicable") what.push("clawback: "+(CLAWBACK[cb]?CLAWBACK[cb].label:cb));
+      if(pausePast) what.push("paused since "+fmtDateShort(d.pauseInfo.since)+", check-in was "+fmtDateShort(d.pauseInfo.nextCheckIn));
+      if(mpPast) what.push((d.manualPay.method||"payment")+" of "+money(d.manualPay.expectedAmount)+" expected "+fmtDateShort(d.manualPay.nextExpectedDate));
+      if(commits.length) what.push("promised: "+commits[0].description);
+
+      // ---- who → action
+      let who="You", act="", due="", over=false;
+      if(david.length){ who="You"; act="David: "+david[0].text; due=david[0].when?david[0].when.slice(5,16).replace("T"," "):""; }
+      else if(rems.length){ const r=rems[0]; act=stripDealPrefix(r.text,d); who=whoFromText(r.text); const sp=splitDueAt(r.dueAt); if(sp.date<t){ due=(isoDaysAgo(sp.date))+"d over"; over=true; } else due=sp.time?fmtTime(sp.time):"today"; }
+      else if(tasks.length){ const x=tasks[0]; who=WAITING_ON[x.waitingOn]||x.waitingOn||"You"; act=(TASK_TYPES[x.type]||x.type)+(x.description?": "+stripDealPrefix(x.description,d):""); if(x.dueDate<t){ due=isoDaysAgo(x.dueDate)+"d over"; over=true; } else due="today"; }
+      else if(commits.length){ const c=commits[0]; who="You"; act="Promise was due "+fmtDateShort(c.dueDate)+" — confirm it landed or mark it broken."; if(c.dueDate<t){ due=isoDaysAgo(c.dueDate)+"d over"; over=true; } else due="today"; }
+      else if(watches.length){ const w=watches[0]; who="You"; act="Check: "+w.condition+" — met → "+(w.ifMet||"")+" / not → "+(w.ifFailed||""); due=w.checkOn<t?(isoDaysAgo(w.checkOn)+"d over"):"today"; over=w.checkOn<t; }
+      else if(tier===1){
+        if(cbInFlight){ who="Anusha"; act=cb==="needs_pull"?"Pull the clawback — confirm commission was actually paid first.":cb==="bounced"?"Clawback bounced — wire from the ISO, or re-pull.":"Did the clawback land? Watch for the bounce-back (R29)."; }
+        else if(codes.size){ who="You"; act="Deliberate stop ("+[...codes].join("/")+") — legal-threat call: get in touch today or it goes to a firm."; }
+        else { who="You"; act="Inside the window — call the merchant and tell the broker today. Check clawback eligibility."; }
+      }
+      else if(tier===3){
+        if(d.status==="needs_review") act="Confirm ownership and whether a firm already has it before anyone touches it.";
+        else if(d.status==="needs_file") act="File. Which firm — Madeb (plan) or L&K (freeze/lien)?";
+        else if(d.settlement) act="Settlement payment missed — call the firm.";
+        else act="Which firm — or file. "+consec+" consecutive, nothing since "+(d.lastPaymentDate?fmtDateShort(d.lastPaymentDate):"funding")+".";
+      }
+      else { // tier 2 defaults
+        if(pausePast) act="Pause check-in passed — get the recurrence back on or agree a new date.";
+        else if(mpPast) act="Expected "+(d.manualPay.method||"payment")+" not received — chase the merchant.";
+        else if(drift) act="Status is wrong — reopen it and make first touch.";
+        else act="Call the merchant, tell the broker."+(weeklyish?"":" (daily — "+consec+" misses)");
+      }
+      const hasContact = d.contact && d.contact.name && (d.contact.phone||d.contact.email);
+      if(!hasContact && !legal) act += " No contact on file — pull the principal from the application.";
+
+      const item = {key:"t:"+d.id, deal:d, tier, reasons, what:what.join(" · "), who, act, due, over,
+        remIds:rems.map(r=>r.id), taskIds:tasks.map(x=>x.id), commitIds:commits.map(c=>c.id), watchIds:watches.map(w=>w.id), davidIds:david.map(x=>x.id),
+        sort:[david.length?0:1, inWindow?0:1, over?0:1, -(Math.max(0,(d.original||0)-(d.recovered||0)))]};
+      const state = ts[d.id];
+      if(state==="later") out.snoozed.push(item);
+      else if(state==="done" && !hasDue && !david.length) out.done.push(item);
+      else out[tier].push(item);
+    });
+    [1,2,3].forEach(k=>out[k].sort((a,b)=>{ for(let i=0;i<a.sort.length;i++){ if(a.sort[i]!==b.sort[i]) return a.sort[i]-b.sort[i]; } return 0; }));
+    // Tier 4 extras: things Anusha / UW own, hygiene
+    out.anusha = openTasks().filter(x=>["anusha","david","legal_firm"].includes(x.waitingOn) && !(x.dueDate && x.dueDate<=t));
+    out.uw = (DB.uwNotes||[]).filter(x=>x.status!=="done");
+    out.missingContact = dealsMissingContact().filter(d=>!inLegal(d));
+    out.needsReviewLegal = DB.deals.filter(d=>d.legalCase && d.legalCase.needsReview);
+    return out;
+  }
+  function tierCountsCached(){ if(!DB) return {t1:0,t2:0,t3:0}; const T=computeTiers(); return {t1:T[1].length,t2:T[2].length,t3:T[3].length}; }
+  function tierItemByKey(key){ const T=computeTiers(); for(const k of [1,2,3,"snoozed"]){ const f=T[k].find(x=>x.key===key); if(f) return f; } return null; }
+
+  function whoPill(w){
+    const c = w==="You"?"var(--sys-blue)": w==="Anusha"?"var(--sys-indigo)": w==="David"?"var(--sys-orange)":"var(--sys-gray)";
+    return '<span class="cd-badge" style="background:'+c+'22;color:'+c+';font-size:12px;padding:2px 9px;">'+esc(w)+'</span>';
+  }
+  function tierRowHtml(it){
+    const d = it.deal, tier = it.tier;
+    const bal = money((d.original||0)-(d.recovered||0));
+    return '<div class="cd-remrow hq-tierrow hq-compact" data-hqpop="'+it.key+'" style="border-left:3px solid '+TIER_META[tier].color+';">'
+      + '<div class="hq-c1"><b>'+esc(d.name)+'</b>'+(dealIds(d)?'<span class="mono hq-ids">'+esc(dealIds(d))+'</span>':'')+(d.platform?'<span class="hq-plat">'+esc(d.platform)+'</span>':'')+'</div>'
+      + '<div class="hq-c2">'+esc(it.what)+'</div>'
+      + '<div class="hq-c3">'+whoPill(it.who)+'<span>'+esc(it.act)+'</span></div>'
+      + '<div class="hq-c4"><span class="mono">'+bal+'</span>'+(it.due?'<span class="mono hq-due'+(it.over?' over':'')+'">'+esc(it.due)+'</span>':'')+'</div>'
+      + '<div class="hq-c5">'+(it.who!=="Claude"?'<button class="cd-inlinebtn hq-done" data-hqdone="'+it.key+'">Done</button>':'')+'<button class="cd-inlinebtn hq-later" data-hqlater="'+it.key+'" style="background:var(--fill-3);color:var(--label);">Later</button></div>'
+    + '</div>';
+  }
+  function tierPanelHtml(t, items){
+    return '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">'
+      + '<h3 style="margin:0;color:'+TIER_META[t].color+';">'+TIER_META[t].label+' <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">'+TIER_META[t].why+'</span></h3>'
+      + '</div><div style="height:6px;"></div>'
+      + '<div class="hq-tierbody">' + (items.length ? items.map(tierRowHtml).join('') : '<div class="cd-empty" style="padding:14px 0;">Nothing here.</div>') + '</div></div>';
+  }
+
   function todayHtml(){
+    const T = computeTiers();
     const unread = inboxUnread();
-    const overdueC = overdueCommitments();
-    const dueTodayC = dueTodayCommitments();
-    const overdueTasks = openTasks().filter(t=>t.dueDate && t.dueDate < todayStr());
-    const dueTodayTasks = openTasks().filter(t=>t.dueDate === todayStr());
-    const staleLegal = DB.deals.filter(d=>d.legalCase && legalIsStale(d));
-    const missingContact = dealsMissingContact();
-    const t = totals();
-
-    let html = '<div class="cd-h1">Today — '+fmtDate(todayStr())+'</div>'
-      + '<p class="cd-sub">What has come in since you last looked, then everything overdue, then what\'s due today.</p>';
-
-    if(missingContact.length){
-      html += '<div class="cd-nagbanner" data-page="deals" data-viewmode-hint="missingcontact"><b>'+missingContact.length+' deal'+(missingContact.length===1?'':'s')+' missing contact info</b><span style="color:var(--ink-dim);">— '+missingContact.slice(0,3).map(d=>esc(d.name)).join(", ")+(missingContact.length>3?" and "+(missingContact.length-3)+" more":"")+'. Click to fix.</span></div>';
-    }
-    const needsReviewLegal = DB.deals.filter(d=>d.legalCase && d.legalCase.needsReview);
-    if(needsReviewLegal.length){
-      html += '<div class="cd-nagbanner" data-page="legal"><b>'+needsReviewLegal.length+' legal case'+(needsReviewLegal.length===1?'':'s')+' migrated with guessed stage/docs</b><span style="color:var(--ink-dim);">— worth confirming against reality before relying on them. Click to review.</span></div>';
-    }
-
+    const t = todayStr();
+    let html = '<div class="cd-h1">'+fmtDate(t)+'</div>'
+      + '<p class="cd-sub">Work top to bottom. Each line is one call or one message. Click a line for the full situation; Done when you’ve reported the outcome.</p>';
+    const t4 = T.legal.length + T.anusha.length + T.uw.length;
     html += '<div class="cd-kpirow">'
-      + '<div class="cd-kpi"><span>New</span><b class="mono" style="color:var(--amber);">'+unread.length+'</b></div>'
-      + '<div class="cd-kpi"><span>Overdue</span><b class="mono" style="color:var(--red);">'+(overdueC.length+overdueTasks.length+staleLegal.length)+'</b></div>'
-      + '<div class="cd-kpi"><span>Due today</span><b class="mono" style="color:var(--blue);">'+(dueTodayC.length+dueTodayTasks.length)+'</b></div>'
-      + '<div class="cd-kpi"><span>Remaining balance</span><b class="mono">'+money(t.remaining)+'</b><div class="cd-kpisub">'+DB.deals.length+' deals</div></div>'
+      + [1,2,3].map(k=>'<div class="cd-kpi"><span>'+TIER_META[k].label+'</span><b class="mono" style="color:'+TIER_META[k].color+';">'+T[k].length+'</b></div>').join('')
+      + '<div class="cd-kpi"><span>Tier 4</span><b class="mono" style="color:var(--sys-gray);">'+t4+'</b><div class="cd-kpisub">legal chases + others’ work</div></div>'
+      + '</div>';
+    [1,2,3].forEach(k=>{ html += tierPanelHtml(k, T[k]); });
+
+    // Tier 4
+    const byFirm = {};
+    T.legal.forEach(x=>{ const f=(x.deal.legalCase&&x.deal.legalCase.firm)||"No firm recorded"; (byFirm[f]=byFirm[f]||[]).push(x); });
+    html += '<div class="cd-panel"><h3 style="color:var(--sys-gray);">Tier 4 <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">only on a slow day — batched, not chased one by one</span></h3><div class="hq-t4grid">'
+      + Object.keys(byFirm).sort().map(f=>'<div data-page="legal"><b class="mono">'+byFirm[f].length+'</b> '+esc(f)+' — '+byFirm[f].filter(x=>x.stale).length+' quiet 14+ days'+(byFirm[f].some(x=>x.rems.length||x.tasks.length||x.david.length)?', '+byFirm[f].filter(x=>x.rems.length||x.tasks.length||x.david.length).length+' with something due':'')+'</div>').join('')
+      + (T.anusha.length?'<div data-page="tasks"><b class="mono">'+T.anusha.length+'</b> waiting on Anusha / David / a firm — '+esc(T.anusha.slice(0,2).map(x=>(dealById(x.dealId)||{}).name||"").join(", "))+(T.anusha.length>2?' and more':'')+'</div>':'')
+      + (T.uw.length?'<div data-page="uw"><b class="mono">'+T.uw.length+'</b> for underwriting</div>':'')
+      + (T.missingContact.length?'<div data-page="deals" data-viewmode-hint="missingcontact"><b class="mono">'+T.missingContact.length+'</b> active deals with no contact on file</div>':'')
+      + (T.needsReviewLegal.length?'<div data-page="legal"><b class="mono">'+T.needsReviewLegal.length+'</b> legal cases migrated with guessed stage — confirm</div>':'')
+      + (!Object.keys(byFirm).length && !T.anusha.length && !T.uw.length && !T.missingContact.length ? '<div style="cursor:default;">Nothing batched.</div>':'')
+      + '</div></div>';
+
+    // Coming up: next 7 days
+    const week = addDays(t,7);
+    const upW = openWatch().filter(w=>w.checkOn>t && w.checkOn<=week);
+    const upC = openCommitments().filter(c=>c.dueDate>t && c.dueDate<=week);
+    const upR = upcomingReminders().filter(r=>splitDueAt(r.dueAt).date>t && splitDueAt(r.dueAt).date<=week).slice(0,8);
+    const ups = [].concat(upW.map(w=>({date:w.checkOn, dealId:w.dealId, text:w.condition})), upC.map(c=>({date:c.dueDate, dealId:c.dealId, text:"promise: "+c.description})), upR.map(r=>({date:splitDueAt(r.dueAt).date, dealId:r.dealId, text:r.text}))).sort((a,b)=>a.date.localeCompare(b.date));
+    html += '<div class="cd-panel"><h3 style="color:var(--label-2);">Coming up <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">next 7 days — watched, nothing to do unless it fails</span></h3>'
+      + (ups.length ? '<div style="display:flex;flex-direction:column;gap:4px;color:var(--label-2);font-size:14px;">'+ups.slice(0,12).map(u=>{const d=u.dealId?dealById(u.dealId):null;return '<div '+(d?'data-open="'+d.id+'" style="cursor:pointer;"':'')+'><span class="mono" style="color:var(--label-3);">'+fmtDateShort(u.date)+'</span> · '+(d?'<b>'+esc(d.name)+'</b> · ':'')+esc(u.text.length>140?u.text.slice(0,140)+"…":u.text)+'</div>';}).join('')+(ups.length>12?'<div class="cd-caption">and '+(ups.length-12)+' more — see Calendar</div>':'')+'</div>' : '<div class="cd-empty" style="padding:14px 0;">Nothing scheduled in the next week.</div>')
       + '</div>';
 
-    // Conditional items whose check date has arrived
-    const dueW = dueWatch();
-    if(dueW.length){
-      html += '<div class="cd-panel"><h3>Conditions to check ('+dueW.length+')</h3>'
-        + '<p class="cd-caption">Each of these was parked on an outcome. The outcome is now due.</p>'
-        + dueW.map(w=>watchRowHtml(w,true)).join("") + '</div>';
+    if(T.snoozed.length){
+      html += '<div class="cd-panel" style="opacity:.8;"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--label-2);">Pushed to tomorrow ('+T.snoozed.length+')</h3><button class="cd-inlinebtn" id="hqToggleSnoozed" style="background:var(--fill-3);color:var(--label);">'+(hqShowSnoozed?'hide':'show')+'</button></div>'
+        + (hqShowSnoozed?'<div style="height:6px;"></div><div class="hq-tierbody">'+T.snoozed.map(tierRowHtml).join('')+'</div>':'')+'</div>';
     }
 
-    // New since you last looked — inbound only
-    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;">'
-      + '<h3 style="margin:0;">New since you last looked ('+unread.length+')</h3>'
-      + (unread.length ? '<button class="cd-savebtn secondary" id="cdInboxAllRead">Mark all read</button>' : '')
-      + '</div>'
-      + '<p class="cd-caption">Reports, emails and messages that have arrived. Your own updates never appear here — a note you wrote is not news. Reading an item clears it.</p>';
-    html += unread.length ? unread.map(x=>{
-      const d = x.dealId ? dealById(x.dealId) : null;
-      const idBits = d ? [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ") : "";
-      return '<div class="cd-remrow fired">'
-        + '<div style="flex:1;min-width:0;">'
-          + '<div style="font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);">'
-            + esc(x.source)+' · '+esc(fmtReceived(x.receivedAt))+(idBits?' · '+esc(idBits):'')+'</div>'
-          + '<div style="margin-top:2px;"><b'+(x.dealId?' data-open="'+x.dealId+'" style="cursor:pointer;"':'')+'>'+esc(x.title)+'</b></div>'
-          + (x.detail?'<div class="cd-remmeta" style="margin-top:3px;">'+esc(x.detail)+'</div>':'')
-          + '<div class="cd-remacts"><button class="primary" data-inboxread="'+x.id+'">Mark read</button></div>'
-        + '</div></div>';
-    }).join("") : '<div class="cd-empty">Nothing new. Everything that has come in has been read.</div>';
-    html += '</div>';
+    html += '<div class="cd-panel" style="opacity:.75;"><h3 style="font-size:15px;color:var(--label-2);">How a deal lands in a tier <span style="font-weight:400;">— computed, not set by hand</span></h3>'
+      + '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;color:var(--label-2);">'
+      + '<b style="color:var(--sys-red);">Tier 1</b><span>funded &lt; 30 days with any miss · R08 / R02 / R29 in a note from the last 60 days · a clawback pulled, bounced or waiting to be pulled · an open instruction from David</span>'
+      + '<b style="color:var(--sys-orange);">Tier 2</b><span>2nd or 3rd consecutive miss (weekly), 4th+ (daily) · a reminder, task, promise or watch condition due · a paused or wire-paying deal past its date · status Contact Today · marked resolved but bouncing</span>'
+      + '<b style="color:var(--sys-blue);">Tier 3</b><span>4+ consecutive weekly / 10+ daily → filing decision · Needs to Be Filed · Needs Review · broken settlement</span>'
+      + '<b style="color:var(--sys-gray);">Tier 4</b><span>deals in legal or debt relief — firm quiet 14+ days, batched by firm · tasks waiting on Anusha, David or a firm · underwriting notes · missing contact info</span>'
+      + '</div></div>';
 
-    // Overdue commitments
-    if(overdueC.length){
-      html += '<div class="cd-panel"><h3 style="color:var(--red);">Overdue commitments ('+overdueC.length+')</h3><p class="cd-caption">Promises that came due and haven\'t been marked fulfilled.</p>';
-      html += overdueC.map(c=>commitmentRowHtml(c)).join("");
-      html += '</div>';
-    }
-
-    // Overdue tasks
-    if(overdueTasks.length){
-      html += '<div class="cd-panel"><h3 style="color:var(--red);">Overdue tasks ('+overdueTasks.length+')</h3>';
-      html += overdueTasks.map(taskRowHtml).join("");
-      html += '</div>';
-    }
-
-    // Stale legal
-    if(staleLegal.length){
-      html += '<div class="cd-panel"><h3 style="color:var(--red);">Legal gone quiet ('+staleLegal.length+')</h3><p class="cd-caption">No contact logged in 2+ weeks (plus any snooze).</p>';
-      html += staleLegal.map(d=>{
-        const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
-        const nf = legalNextFollowUp(d);
-        return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.name)+'</b><small>'+esc(idBits)+' — '+esc(d.legalCase.firm||"firm TBD")+', follow-up was due '+fmtDateShort(nf)+'</small></div></div>';
-      }).join("");
-      html += '</div>';
-    }
-
-    // Due today
-    if(dueTodayC.length || dueTodayTasks.length){
-      html += '<div class="cd-panel"><h3>Due today</h3>';
-      html += dueTodayC.map(c=>commitmentRowHtml(c)).join("");
-      html += dueTodayTasks.map(taskRowHtml).join("");
-      html += '</div>';
-    }
-
+    // Inbox — the one thing that is still its own list: things that ARRIVED.
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;">New since you last looked ('+unread.length+')</h3>'
+      + (unread.length?'<button class="cd-savebtn secondary" id="cdInboxAllRead">Mark all read</button>':'')+'</div>'
+      + '<p class="cd-caption">Reports, emails and messages that have arrived. Your own updates never appear here. Reading an item clears it.</p>'
+      + (unread.length ? unread.map(x=>{const d=x.dealId?dealById(x.dealId):null;
+          return '<div class="cd-remrow fired hq-compact"><div style="flex:1;min-width:0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;"><b '+(d?'data-open="'+d.id+'" style="cursor:pointer;"':'')+'>'+esc(x.title||"")+'</b>'+(d&&dealIds(d)?'<span class="mono" style="font-size:12px;color:var(--label-2);">'+esc(dealIds(d))+'</span>':'')+'<span style="color:var(--label-2);font-size:13px;">'+esc((x.detail||"").slice(0,140))+'</span></div><span class="mono" style="font-size:12px;color:var(--label-3);flex:none;">'+esc(x.source||"")+' · '+esc(fmtReceived(x.receivedAt))+'</span><button class="cd-inlinebtn" data-inboxread="'+x.id+'" style="flex:none;">Read</button></div>';}).join('')
+        : '<div class="cd-empty">Nothing new.</div>')
+      + '</div>';
     return html;
   }
+
+  // ---- Done / Later on a tier line
+  async function hqMarkDone(key, note){
+    const it = tierItemByKey(key); if(!it) return;
+    const d = it.deal, ts = todayState();
+    let closed = [];
+    it.remIds.forEach(id=>{ const r=reminderById(id); if(!r) return; r.status="done"; r.history=r.history||[]; r.history.push({date:nowStamp(), note:"Marked done from Today"}); closed.push("reminder"); const next=nextReminderOccurrence(r); if(next) DB.reminders.push(next); });
+    it.taskIds.forEach(id=>{ const x=DB.tasks.find(y=>y.id===id); if(x){ x.status="done"; x.closedDate=todayStr(); closed.push("task"); } });
+    it.commitIds.forEach(id=>{ const c=DB.commitments.find(y=>y.id===id); if(c){ c.status="fulfilled"; c.history=c.history||[]; c.history.push({date:todayStr(), note:"Marked fulfilled from Today"}); closed.push("commitment"); } });
+    it.davidIds.forEach(id=>{ const x=DB.david.find(y=>y.id===id); if(x){ x.status="done"; x.log=x.log||[]; x.log.push({who:"Yaakov", when:nowStamp(), text:"Marked completed from Today."+(note?" "+note:"")}); closed.push("David instruction"); } });
+    // Watch conditions need a met/failed answer, not a Done — left open, the popup has the buttons.
+    d.notesLog = d.notesLog||[];
+    d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:"[Today · "+TIER_META[it.tier].label+"] Done — "+it.act+(note?"\nOutcome: "+note:"")+(closed.length?"\nClosed: "+closed.join(", "):"")});
+    ts[d.id]="done";
+    logEvent(d.name+": Today line done — "+it.act.slice(0,80), d.id);
+    await save("Today: done "+d.name); render();
+  }
+  async function hqLater(key){
+    const it = tierItemByKey(key); if(!it) return;
+    const d = it.deal, ts = todayState();
+    const nd = new Date(TODAY.getTime()+86400000); const tomorrow = localDateStr(nd)+"T09:00";
+    it.remIds.forEach(id=>{ const r=reminderById(id); if(!r) return; r.history=r.history||[]; r.history.push({date:nowStamp(), note:"Rescheduled from "+r.dueAt+" to "+tomorrow+" (Later on Today)"}); r.dueAt=tomorrow; });
+    ts[d.id]="later";
+    logEvent(d.name+": pushed to tomorrow from Today", d.id);
+    await save("Today: later "+d.name); render();
+  }
+
+  // ---- Situation popup: full text behind a Today / UW line, plus the deal's quick facts
+  function openSituation(key){
+    let it=null, d=null, kind=key[0];
+    if(kind==='t'){ it=tierItemByKey(key); if(!it) return; d=it.deal; }
+    else { it=(DB.uwNotes||[]).find(x=>"u:"+x.id===key); if(!it) return; d=it.dealId?dealById(it.dealId):null; }
+    hqPopKey = key;
+    const st = d ? statusOf(d.status) : null;
+    const c = (d && d.contact) || {};
+    const notes = d ? (d.notesLog||[]).slice(-3).reverse() : [];
+    const bal = d ? money((d.original||0)-(d.recovered||0)) : "";
+    const accent = kind==='t' ? TIER_META[it.tier].color : 'var(--sys-orange)';
+    const watches = kind==='t' ? it.watchIds.map(watchById).filter(Boolean) : [];
+    let h = '<button class="cd-modalclose" data-hqpopclose="1" style="position:absolute;top:18px;right:18px;">×</button>';
+    h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+accent+';font-weight:600;margin-bottom:4px;">'+(kind==='t'?TIER_META[it.tier].label+' · '+esc(it.reasons.join(" ·ⁿ").replace(/ⁿ/g,"")):esc(it.kind||""))+'</div>';
+    h += '<h3 style="margin:0 0 4px;padding-right:36px;">'+esc(d?d.name:(it.title||""))+'</h3>';
+    h += '<div class="mono hq-popids" style="font-size:12.5px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'
+      + (d?esc(dealIds(d)):'') + (d&&d.platform?'<span class="hq-plat">'+esc(d.platform)+'</span>':'')
+      + (st?'<span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span>':'')
+      + (bal?'<span style="margin-left:auto;"><b>'+bal+'</b> <span style="font-weight:400;">left</span></span>':'')
+      + '</div>';
+    if(kind==='t'){
+      h += '<div class="hq-popsect"><div class="hq-poplab">What happened</div><div>'+esc(it.what)+'</div></div>';
+      h += '<div class="hq-popsect"><div class="hq-poplab">Next</div><div style="display:flex;gap:8px;align-items:flex-start;">'+whoPill(it.who)+'<div><b>'+esc(it.act)+'</b>'+(it.due?'<div class="mono" style="font-size:12px;color:#AEB4BF;margin-top:2px;">'+esc(it.due)+'</div>':'')+'</div></div></div>';
+      if(watches.length) h += '<div class="hq-popsect"><div class="hq-poplab">Watch condition</div>'+watches.map(w=>'<div style="margin-bottom:6px;">'+esc(w.condition)+'<div style="font-size:13px;color:#C9CED8;margin-top:3px;">met → '+esc(w.ifMet||"")+'<br>not met → '+esc(w.ifFailed||"")+'</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="cd-inlinebtn" data-watchmet="'+w.id+'" style="background:var(--sys-green);color:#fff;">Met</button><button class="cd-inlinebtn" data-watchfailed="'+w.id+'" style="background:var(--sys-red);color:#fff;">Not met</button></div></div>').join('')+'</div>';
+    } else {
+      h += '<div class="hq-popsect"><div style="font-weight:600;color:#F5F6F8;margin-bottom:6px;">'+esc(it.title||"")+'</div><div>'+esc(it.text||"")+'</div><div class="mono" style="font-size:12px;color:#AEB4BF;margin-top:6px;">'+esc(it.date||"")+(it.by?' · '+esc(it.by):'')+'</div></div>';
+    }
+    if(d){
+      const ec = (d.emergencyContacts||[]).length;
+      h += '<div class="hq-popsect"><div class="hq-poplab">Contact</div>'+((c.name||c.phone||c.email)?'<div>'+esc(c.name||"")+(c.phone?' · <span class="mono">'+esc(c.phone)+'</span>':'')+(c.email?' · '+esc(c.email):'')+'</div>':'<div style="color:#FF6B6B;font-weight:600;">None on file'+(ec?' — '+ec+' emergency contact'+(ec>1?'s':'')+' in the drawer':'')+'</div>')+'</div>';
+      h += '<div class="hq-popsect"><div class="hq-poplab">Last notes</div>'+(notes.length?notes.map(n=>'<div class="hq-popnote"><span class="mono">'+esc(n.date||"")+'</span> '+esc((n.text||"").length>240?(n.text||"").slice(0,240)+"…":(n.text||""))+'</div>').join(''):'<div style="color:#AEB4BF;">No notes yet.</div>')+'</div>';
+      h += '<div class="hq-popsect"><div class="hq-poplab">Note</div><textarea class="cd-input" id="hqPopNote" rows="2" placeholder="What happened on the call, what they said, what’s next"></textarea></div>';
+    }
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">'
+      + (kind==='t'&&it.who!=="Claude"?'<button class="cd-savebtn" id="hqPopDone">Done</button>':'')
+      + (kind==='t'?'<button class="cd-savebtn secondary" id="hqPopLater">Later</button>':'')
+      + (kind==='u'&&it.status!=="done"?'<button class="cd-savebtn" id="hqPopUwDone">Acknowledged</button>':'')
+      + (d?'<button class="cd-savebtn secondary" id="hqPopSaveNote">Save note</button>':'')
+      + (d?'<button class="cd-savebtn secondary" id="hqPopDrawer" style="margin-left:auto;">Drawer →</button>':'')
+      + '</div>';
+    const m = document.getElementById("cdModal");
+    m.innerHTML = h; m.style.position='relative'; m.style.width='560px'; m.classList.add('hq-pop');
+    document.getElementById("cdModalOverlay").classList.add("on");
+    m.querySelector('[data-hqpopclose]').onclick = ()=>closeSituation();
+    const noteVal = ()=>{ const el=document.getElementById('hqPopNote'); return el?el.value.trim():""; };
+    const done = document.getElementById('hqPopDone'); if(done) done.onclick=async()=>{ const n=noteVal(); closeSituation(); await hqMarkDone(key, n); };
+    const later = document.getElementById('hqPopLater'); if(later) later.onclick=async()=>{ const n=noteVal(); if(n && d){ d.notesLog=d.notesLog||[]; d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:n}); } closeSituation(); await hqLater(key); };
+    const uwd = document.getElementById('hqPopUwDone'); if(uwd) uwd.onclick=async()=>{ it.status="done"; it.closedDate=todayStr(); if(d){ d.notesLog=d.notesLog||[]; d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:"[UW] Acknowledged: "+(it.title||"")+(noteVal()?" — "+noteVal():"")}); } logEvent("UW note acknowledged — "+(it.title||""), it.dealId); closeSituation(); await save("UW note acknowledged"); render(); };
+    const sn = document.getElementById('hqPopSaveNote'); if(sn) sn.onclick=async()=>{ const n=noteVal(); if(!n||!d) return; d.notesLog=d.notesLog||[]; d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:n}); logEvent(d.name+": note added from Today", d.id); await save("Note: "+d.name); openSituation(key); };
+    const dr = document.getElementById('hqPopDrawer'); if(dr) dr.onclick=()=>{ hqReturn = key; closeSituation(true); openDrawer(d); };
+    m.querySelectorAll('[data-watchmet]').forEach(b=>b.onclick=async()=>{ const w=watchById(b.dataset.watchmet); if(!w) return; w.status="met"; w.closedOn=todayStr(); logEvent("Condition met: "+w.condition+" → "+(w.ifMet||""), w.dealId); closeSituation(); await save(); render(); });
+    m.querySelectorAll('[data-watchfailed]').forEach(b=>b.onclick=async()=>{ const w=watchById(b.dataset.watchfailed); if(!w) return; w.status="failed"; w.closedOn=todayStr(); logEvent("Condition NOT met: "+w.condition+" → "+(w.ifFailed||""), w.dealId); closeSituation(); await save(); render(); });
+  }
+  function closeSituation(keepKey){
+    document.getElementById("cdModalOverlay").classList.remove("on");
+    const m = document.getElementById("cdModal"); m.style.width=''; m.style.position=''; m.classList.remove('hq-pop');
+    if(!keepKey) hqPopKey = null;
+  }
+
+  // ===================== DAVID =====================
+  function davidItemHtml(i, compact){
+    const [lab,col]=DAVID_ST[i.status]||DAVID_ST.new;
+    const d = i.dealId ? dealById(i.dealId) : null;
+    const when = (i.when||"").replace("T"," ");
+    return '<div class="cd-remrow hq-davrow" '+(d&&!compact?'data-open="'+d.id+'"':'')+' style="flex-direction:column;align-items:stretch;gap:6px;'+(d&&!compact?'cursor:pointer;':'')+(i.status==="done"?'opacity:.55;':'')+'">'
+      + '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;"><div style="font-size:'+(compact?'14':'16')+'px;">'+esc(i.text)+'</div><span class="cd-badge" style="background:'+col+'22;color:'+col+';flex:none;">'+lab+'</span></div>'
+      + '<div class="mono" style="font-size:'+(compact?'11':'12')+'px;color:var(--label-2);">'+(compact?'':esc(d?d.name+(dealIds(d)?' · '+dealIds(d):''):(i.dealLabel||"General"))+' · ')+esc(when)+'</div>'
+      + (i.answer?'<div style="color:var(--label-2);border-top:0.5px solid var(--separator);padding-top:8px;font-size:'+(compact?'13':'14')+'px;">'+esc(i.answer)+'</div>':'')
+      + (i.log&&i.log.length?i.log.map(l=>'<div style="font-size:13px;color:var(--label-2);padding-left:10px;border-left:2px solid var(--stroke);"><span class="mono" style="font-size:11px;color:var(--label-3);">'+esc(l.who||"")+' · '+esc((l.when||"").replace("T"," "))+'</span><br>'+esc(l.text||"")+'</div>').join(''):'')
+      + '<div class="hq-davact" data-stop="1">'
+        + (i.status!=="done"?'<button class="cd-inlinebtn hq-davdone" data-n="'+i.id+'" style="background:var(--sys-green);color:#fff;">Mark completed</button>':'<button class="cd-inlinebtn hq-davreopen" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Reopen</button>')
+        + '<select class="cd-input hq-davst" data-n="'+i.id+'" style="width:auto;padding:4px 8px;font-size:12px;">'+Object.keys(DAVID_ST).map(k=>'<option value="'+k+'"'+(k===i.status?' selected':'')+'>'+DAVID_ST[k][0]+'</option>').join('')+'</select>'
+        + '<button class="cd-inlinebtn hq-davnote" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Note</button>'
+        + (d&&!compact?'<span class="cd-caption" style="margin:0 0 0 auto;font-size:11px;">click row → deal</span>':'')
+      + '</div>'
+      + '<div class="hq-davnotebox" data-n="'+i.id+'" hidden data-stop="1"><textarea class="cd-input" rows="2" placeholder="Update for David — what happened, what’s next"></textarea><div style="display:flex;gap:8px;margin-top:6px;"><button class="cd-inlinebtn hq-davnotesave" data-n="'+i.id+'">Save note</button><button class="cd-inlinebtn hq-davnotecancel" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Cancel</button></div></div>'
+      + '</div>';
+  }
+  function davidHtml(){
+    const items = (DB.david||[]).slice().sort((a,b)=>(b.when||"").localeCompare(a.when||""));
+    const cutoff = addDays(todayStr(), -HQ_ARCHIVE_DAYS);
+    const open = items.filter(i=>i.status!=="done");
+    const done = items.filter(i=>i.status==="done" && (i.closedDate||i.when||"").slice(0,10)>=cutoff);
+    const archived = items.filter(i=>i.status==="done" && (i.closedDate||i.when||"").slice(0,10)<cutoff);
+    let html = '<div class="cd-h1">David</div><p class="cd-sub">Write the instruction against the deal. It lands in the next sweep; the status shows here. Click an instruction to open the deal.</p>';
+    html += '<div class="cd-panel"><div class="cd-formrow"><label>Deal</label><input class="cd-input" id="hqDavidDeal" placeholder="Start typing a merchant, MCHT or lead ID…" autocomplete="off"><div id="hqDavidSugg" style="display:none;background:var(--fill-4);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
+      + '<div class="cd-formrow"><label>Instruction</label><textarea class="cd-input" id="hqDavidText" rows="3" placeholder="e.g. send to madeb. ensure anusha clawback"></textarea></div>'
+      + '<div style="display:flex;gap:12px;align-items:center;"><button class="cd-savebtn" id="hqDavidPost">Post instruction</button><span class="cd-caption" style="margin:0;">Timestamped · goes on the deal as a note · shows in Tier 1 until it’s completed</span></div></div>';
+    html += '<div class="cd-panel"><h3>Open ('+open.length+')</h3>' + (open.length?open.map(i=>davidItemHtml(i,false)).join(''):'<div class="cd-empty">Nothing open.</div>') + '</div>';
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--label-2);">Completed ('+done.length+')</h3>'+(archived.length?'<button class="cd-inlinebtn" id="hqDavidArchive" style="background:var(--fill-3);color:var(--label);">'+(davidShowArchive?'hide':'show')+' '+archived.length+' older than '+HQ_ARCHIVE_DAYS+' days</button>':'')+'</div><div style="height:6px;"></div>' + done.map(i=>davidItemHtml(i,false)).join('') + (davidShowArchive?archived.map(i=>davidItemHtml(i,false)).join(''):'') + '</div>';
+    return html;
+  }
+  function wireDavidItems(rerender){
+    const find = n => (DB.david||[]).find(i=>i.id===n);
+    const touch = async (i, text, msg)=>{ i.log=i.log||[]; i.log.push({who:"Yaakov", when:nowStamp(), text}); const d=i.dealId?dealById(i.dealId):null; if(d){ d.notesLog=d.notesLog||[]; d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:"[David] "+text+" — re: “"+i.text.slice(0,80)+"”"}); } logEvent((d?d.name+": ":"")+"David instruction — "+text, i.dealId); await save(msg); rerender(); };
+    document.querySelectorAll('[data-stop]').forEach(el=>el.onclick=(e)=>e.stopPropagation());
+    document.querySelectorAll('.hq-davdone').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const i=find(b.dataset.n); if(!i) return; i.status='done'; i.closedDate=todayStr(); await touch(i,'Marked completed.','David item completed');});
+    document.querySelectorAll('.hq-davreopen').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const i=find(b.dataset.n); if(!i) return; i.status='prog'; delete i.closedDate; await touch(i,'Reopened.','David item reopened');});
+    document.querySelectorAll('.hq-davst').forEach(s=>{s.onclick=(e)=>e.stopPropagation();s.onchange=async(e)=>{e.stopPropagation();const i=find(s.dataset.n); if(!i) return; i.status=s.value; if(s.value==='done') i.closedDate=todayStr(); else delete i.closedDate; await touch(i,'Status → '+DAVID_ST[s.value][0]+'.','David item status');};});
+    document.querySelectorAll('.hq-davnote').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]');box.hidden=!box.hidden;if(!box.hidden)box.querySelector('textarea').focus();});
+    document.querySelectorAll('.hq-davnotecancel').forEach(b=>b.onclick=(e)=>{e.stopPropagation();document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]').hidden=true;});
+    document.querySelectorAll('.hq-davnotesave').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]');const t=box.querySelector('textarea').value.trim();if(!t)return;const i=find(b.dataset.n); if(!i) return; await touch(i,t,'David item note');});
+  }
+
+  // ===================== UNDERWRITING =====================
+  function uwRowHtml(n){
+    const d = n.dealId ? dealById(n.dealId) : null;
+    const bal = d ? money((d.original||0)-(d.recovered||0)) : "";
+    return '<div class="cd-remrow hq-tierrow hq-compact hq-uwrow" data-hqpop="u:'+n.id+'" style="border-left:3px solid var(--sys-orange);'+(n.status==="done"?'opacity:.5;':'')+'">'
+      + '<div class="hq-c1"><span class="cd-badge" style="background:var(--sys-orange)22;color:var(--sys-orange);font-size:11px;padding:1px 7px;flex:none;">'+esc(n.kind||"Note")+'</span><b>'+esc(n.title||(d?d.name:""))+'</b></div>'
+      + '<div class="hq-c2">'+esc(n.text||"")+'</div>'
+      + '<div class="hq-c4"><span class="mono">'+bal+'</span><span class="mono hq-due">'+esc(n.date||"")+'</span></div>'
+      + '</div>';
+  }
+  function uwHtml(){
+    const all = (DB.uwNotes||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    const cutoff = addDays(todayStr(), -HQ_ARCHIVE_DAYS);
+    const open = all.filter(n=>n.status!=="done");
+    const done = all.filter(n=>n.status==="done" && (n.closedDate||n.date||"")>=cutoff);
+    const archived = all.filter(n=>n.status==="done" && (n.closedDate||n.date||"")<cutoff);
+    let html = '<div class="cd-h1">Notes for Underwriting</div><p class="cd-sub">What collections learned that UW should see before the next funding or renewal. Click a line for the full note.</p>';
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"><h3 style="margin:0;color:var(--sys-orange);">Open <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">'+open.length+' note'+(open.length===1?'':'s')+'</span></h3><button class="cd-inlinebtn" id="hqUwAdd" style="background:var(--fill-3);color:var(--label);">'+(uwAdding?'Cancel':'+ Add note')+'</button></div><div style="height:6px;"></div>'
+      + (uwAdding ? '<div style="background:var(--fill-4);border-radius:var(--r-sm);padding:12px;margin-bottom:10px;"><div class="cd-formrow"><label>Deal</label><input class="cd-input" id="hqUwDeal" placeholder="Merchant, MCHT or lead ID…" autocomplete="off"><div id="hqUwSugg" style="display:none;background:var(--fill-3);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
+          + '<div class="cd-formrow"><label>Kind</label><select class="cd-input" id="hqUwKind">'+UW_KINDS.map(k=>'<option>'+k+'</option>').join('')+'</select></div>'
+          + '<div class="cd-formrow"><label>Note</label><textarea class="cd-input" id="hqUwText" rows="3" placeholder="What UW should know before the next funding or renewal"></textarea></div>'
+          + '<button class="cd-savebtn" id="hqUwSave">Save</button></div>' : '')
+      + '<div class="hq-tierbody">' + (open.length?open.map(uwRowHtml).join(''):'<div class="cd-empty" style="padding:14px 0;">Nothing open.</div>') + '</div></div>';
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--label-2);">Acknowledged ('+done.length+')</h3>'+(archived.length?'<button class="cd-inlinebtn" id="hqUwArchive" style="background:var(--fill-3);color:var(--label);">'+(uwShowArchive?'hide':'show')+' '+archived.length+' older than '+HQ_ARCHIVE_DAYS+' days</button>':'')+'</div><div style="height:6px;"></div><div class="hq-tierbody">' + done.map(uwRowHtml).join('') + (uwShowArchive?archived.map(uwRowHtml).join(''):'') + '</div></div>';
+    return html;
+  }
+
+  function dealPicker(inpId, sugId, onPick){
+    const inp=document.getElementById(inpId), sug=document.getElementById(sugId);
+    if(!inp||!sug) return;
+    inp.oninput=()=>{onPick(null);const q=inp.value.trim().toLowerCase();if(!q){sug.style.display='none';return;}const m=DB.deals.filter(d=>(d.name+' '+(d.dba||'')+' '+(d.mcht||'')+' '+(d.leadId||'')).toLowerCase().includes(q)).slice(0,8);sug.innerHTML=m.map(d=>'<div style="padding:8px 12px;cursor:pointer;" data-n="'+esc(d.name)+'" data-id="'+esc(d.id)+'">'+esc(d.name)+' <span class="mono" style="font-size:12px;color:var(--label-2);">'+esc(dealIds(d))+(d.platform?' · '+esc(d.platform):'')+'</span></div>').join('');sug.style.display=m.length?'block':'none';};
+    sug.onclick=(e)=>{const el=e.target.closest('[data-n]');if(el){inp.value=el.dataset.n;onPick(el.dataset.id);sug.style.display='none';}};
+  }
+
+  function wireHq(){
+    document.querySelectorAll('[data-hqpop]').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('button')) return; openSituation(r.dataset.hqpop); });
+    document.querySelectorAll('[data-hqdone]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); hqMarkDone(b.dataset.hqdone, ""); });
+    document.querySelectorAll('[data-hqlater]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); hqLater(b.dataset.hqlater); });
+    const ts=document.getElementById('hqToggleSnoozed'); if(ts) ts.onclick=()=>{ hqShowSnoozed=!hqShowSnoozed; render(); };
+    // David page
+    wireDavidItems(()=>render());
+    let davidPick=null;
+    dealPicker('hqDavidDeal','hqDavidSugg',id=>davidPick=id);
+    const post=document.getElementById('hqDavidPost'); if(post) post.onclick=async()=>{
+      const inp=document.getElementById('hqDavidDeal'); const t=document.getElementById('hqDavidText').value.trim(); if(!t) return;
+      const d=davidPick?dealById(davidPick):null;
+      DB.david=DB.david||[];
+      DB.david.push({id:uid("dav"), dealId:d?d.id:null, dealLabel:d?null:(inp.value.trim()||"General"), text:t, when:nowStamp(), status:"new", answer:"", log:[]});
+      if(d){ d.notesLog=d.notesLog||[]; d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:"DAVID ("+fmtDateShort(todayStr())+"): "+t}); }
+      logEvent((d?d.name+": ":"")+"David instruction posted — "+t.slice(0,80), d?d.id:null);
+      await save("David: "+t.slice(0,60)); render();
+    };
+    const da=document.getElementById('hqDavidArchive'); if(da) da.onclick=()=>{ davidShowArchive=!davidShowArchive; render(); };
+    // UW page
+    const ua=document.getElementById('hqUwAdd'); if(ua) ua.onclick=()=>{ uwAdding=!uwAdding; render(); };
+    const uar=document.getElementById('hqUwArchive'); if(uar) uar.onclick=()=>{ uwShowArchive=!uwShowArchive; render(); };
+    let uwPick=null;
+    dealPicker('hqUwDeal','hqUwSugg',id=>uwPick=id);
+    const us=document.getElementById('hqUwSave'); if(us) us.onclick=async()=>{
+      const t=document.getElementById('hqUwText').value.trim(); if(!t) return;
+      const d=uwPick?dealById(uwPick):null; const kind=document.getElementById('hqUwKind').value;
+      DB.uwNotes=DB.uwNotes||[];
+      DB.uwNotes.push({id:uid("uw"), dealId:d?d.id:null, kind, title:d?(d.name+(dealIds(d)?" — "+dealIds(d):"")):(document.getElementById('hqUwDeal').value.trim()||kind), text:t, date:todayStr(), by:"Yaakov", status:"open"});
+      if(d){ d.notesLog=d.notesLog||[]; d.notesLog.push({date:todayStr(), stamp:nowStamp(), text:"[UW note · "+kind+"] "+t}); }
+      logEvent((d?d.name+": ":"")+"UW note added — "+kind, d?d.id:null);
+      uwAdding=false; await save("UW note"); render();
+    };
+  }
+  // =====================================================================================
 
   function commitmentRowHtml(c){
     const d = dealById(c.dealId);
@@ -2848,11 +3256,16 @@
           + '<div class="cd-drsect">Case Notes</div>'
           + '<div class="cd-comment-text" style="color:var(--ink-dim);">'+esc(lc.caseStatusLegacy||"—")+'</div>';
       }
+    } else if(drawerTab==="david"){
+      const mine = (DB.david||[]).filter(i=>i.dealId===d.id).slice().sort((a,b)=>(b.when||"").localeCompare(a.when||""));
+      body = '<p class="cd-caption" style="margin-top:0;">Everything David has said about this deal and what was done about it. Mark completed here or on the David page — same record.</p>'
+        + (mine.length ? mine.map(i=>davidItemHtml(i,true)).join('') : '<div class="cd-empty">No instructions from David on this deal.</div>');
     } else if(drawerTab==="pending"){
       body = (d.pending||[]).length ? d.pending.map((p,i)=>'<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(p.date||"")+'</span></div><div class="cd-comment-text" style="'+(p.done?"text-decoration:line-through;color:var(--ink-faint);":"")+'">'+esc(p.text)+'</div></div>').join("") : '<p class="cd-caption">Nothing legacy-pending on this deal.</p>';
     }
 
     return '<button class="cd-drclose" data-drclose="1">×</button>'
+      + (hqReturn ? '<div style="margin-bottom:10px;"><button class="cd-inlinebtn" data-hqback="1" style="background:var(--fill-3);color:var(--label);">← Back to '+(hqReturn[0]==='u'?'underwriting':'today')+'</button></div>' : '')
       + '<div class="cd-drtitle">'+esc(d.name)+'</div>'
       + '<div class="cd-drsub">'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+' · <span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span></div>'
       + '<div class="cd-drtabbar">'
@@ -2861,13 +3274,16 @@
         + tab("commitments","Commitments",dealCommitments.filter(c=>c.status==="open").length)
         + tab("tasks","Tasks",dealTasks.filter(t=>t.status==="open").length)
         + tab("legal","Legal")
+        + tab("david","David",(DB.david||[]).filter(i=>i.dealId===d.id&&i.status!=="done").length)
         + tab("pending","Legacy",(d.pending||[]).filter(p=>!p.done).length)
       + '</div>'
       + body;
   }
 
   function wireDrawer(d){
-    document.querySelectorAll("[data-drclose]").forEach(b=>b.onclick=closeDrawer);
+    document.querySelectorAll("[data-drclose]").forEach(b=>b.onclick=()=>{ hqReturn=null; closeDrawer(); });
+    document.querySelectorAll("[data-hqback]").forEach(b=>b.onclick=()=>{ const k=hqReturn; hqReturn=null; closeDrawer(); if(k) openSituation(k); });
+    if(drawerTab==="david") wireDavidItems(()=>renderDrawer(dealById(drawerDealId)));
     document.querySelectorAll("[data-drtab]").forEach(b=>b.onclick=()=>{ drawerTab=b.dataset.drtab; commitEditingId=null; taskEditingId=null; renderDrawer(dealById(drawerDealId)); });
     wireDatePickers(()=>renderDrawer(d));
     document.querySelectorAll("[data-sectiontoggle]").forEach(el=>el.onclick=()=>{
