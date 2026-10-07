@@ -707,6 +707,10 @@
     .ov-status > div:last-child{ width:100%; }
     .ov-hbar{ grid-template-columns:96px 1fr auto; gap:8px; }
   }
+  /* David view-only login (10/7): Yaakov's controls on the David page are hidden; a pill says view only. */
+  .cd-davidmode .hq-davact, .cd-davidmode .hq-davnotebox { display:none !important; }
+  #cdDavidPill { position:fixed; top:10px; right:12px; z-index:300; font:600 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif; font-weight:600; padding:5px 11px;
+    border-radius:999px; background:rgba(255,159,10,.18); color:#FF9F0A; border:0.5px solid #FF9F0A; }
 </style>
 </head>
 <body>
@@ -855,7 +859,83 @@
   // in the sidebar, and the column widens while a query is live so snippets have room.
   let searchQuery = "";
 
-  function ghConfigured(){ return !!(ghCfg.owner && ghCfg.repo && ghCfg.token); }
+  function ghConfigured(){
+    if(ghCfg.mode === "david") return !!ghCfg.davidKey;
+    return !!(ghCfg.owner && ghCfg.repo && ghCfg.token);
+  }
+
+  // ---------------------------------------------------------------------------
+  // DAVID LOGIN (added 10/7). A view-only login: David sees the whole app, read through the
+  // relay with his own password, and can only post to / update items on the David page.
+  // The real lock is on the relay: his password can't write anything else. Everything here
+  // is just so the app behaves sensibly in that mode (other edits are discarded, with a note).
+  // ---------------------------------------------------------------------------
+  const RELAY_URL = "https://collections-relay.collections-bd3.workers.dev";
+  let DAVID_BASE = null;   // JSON of the state as last read, to undo edits outside the David page
+  function davidMode(){ return ghCfg.mode === "david"; }
+  async function davidApi(path, opts){
+    opts = opts || {};
+    const headers = { "x-relay-key": ghCfg.davidKey };
+    if(opts.body) headers["content-type"] = "application/json";
+    let r;
+    try{ r = await fetch(RELAY_URL + path, Object.assign({}, opts, { headers, cache:"no-store" })); }
+    catch(e){ throw {code:"blocked", message:"Couldn't reach the server. Check the connection and try again."}; }
+    let body = {}; try{ body = await r.json(); }catch(e){}
+    if(r.status === 401) throw {code:"bad_token", message:"Wrong password."};
+    if(!r.ok) throw {code:"http", message: body.error || ("Server returned " + r.status + ".")};
+    return body;
+  }
+  async function davidReload(){
+    const remote = await ghRead();
+    DB = normalise(remote);
+    DAVID_BASE = JSON.stringify(remote);
+    render();
+  }
+  async function davidSave(message){
+    const base = DAVID_BASE ? JSON.parse(DAVID_BASE) : { david: [] };
+    const baseIds = new Set((base.david || []).map(x => x.id));
+    const fresh = (DB.david || []).filter(x => !baseIds.has(x.id));
+    if(String(message || "").startsWith("David") && fresh.length){
+      try{
+        for(const it of fresh){
+          await davidApi("/david/items", { method:"POST", body: JSON.stringify({ dealId: it.dealId || null, label: it.dealLabel || "", text: it.text }) });
+        }
+        showBanner("Sent. It's on the David page as <b>New</b>.", "ok"); setTimeout(hideBanner, 2600);
+      }catch(e){
+        showBanner("<b>Not sent.</b> " + esc((e && e.message) || ""), "bad");
+      }
+      try{ await davidReload(); }catch(e){}
+      return;
+    }
+    // Anything else is outside what this login can change: put the data back as it was.
+    DB = normalise(base);
+    showBanner("View only. From this login only the David page can be changed, so that edit wasn't saved.", "warn");
+    setTimeout(hideBanner, 4200);
+    setTimeout(()=>render(), 0);
+  }
+  function renderDavidLogin(err){
+    const app = document.getElementById("cdApp");
+    app.innerHTML = '<div style="margin:auto;max-width:420px;padding:40px 24px;">'
+      + '<div class="cd-h1" style="font-size:26px;">Collections HQ</div>'
+      + '<p class="cd-sub" style="margin:8px 0 24px;">View-only sign in. You can see everything and post instructions on the David page.</p>'
+      + (err ? '<div class="cd-warn">' + esc(err) + '</div>' : '')
+      + '<div class="cd-formrow"><label>Password</label>'
+      + '<input class="cd-input" id="cfgDavidPw" type="password" autocomplete="current-password"></div>'
+      + '<button class="cd-savebtn" id="cfgDavidGo" style="margin-top:8px;">Sign in</button>'
+      + '<div id="cfgDavidStatus" class="cd-sub" style="margin-top:14px;"></div>'
+      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToGithub" style="color:var(--label-2);">Full access sign in</a></p></div>';
+    const go = async ()=>{
+      const pw = document.getElementById("cfgDavidPw").value.trim(); if(!pw) return;
+      const status = document.getElementById("cfgDavidStatus");
+      status.textContent = "Checking\u2026";
+      ghCfg = { owner:"", repo:"", token:"", mode:"david", davidKey: pw };
+      try{ await ghRead(); saveCfg(); currentPage = "david"; await load(); }
+      catch(e){ ghCfg = { owner:"", repo:"", token:"" }; status.innerHTML = '<span style="color:var(--sys-red);">' + esc((e && e.message) || "Couldn't sign in.") + '</span>'; }
+    };
+    document.getElementById("cfgDavidGo").onclick = go;
+    document.getElementById("cfgDavidPw").addEventListener("keydown", e=>{ if(e.key === "Enter") go(); });
+    document.getElementById("cfgToGithub").onclick = (e)=>{ e.preventDefault(); renderSetup(); };
+  }
 
   function loadCfg(){
     try{
@@ -937,6 +1017,12 @@
   }
 
   async function ghRead(){
+    if(davidMode()){
+      const body = await davidApi("/david/state?t=" + Date.now());
+      ghSha = body.sha || null;
+      try{ return JSON.parse(body.content); }
+      catch(e){ throw {code:"corrupt", message:"Couldn't read the data."}; }
+    }
     const meta = await ghFetch(ghUrl() + "?t=" + Date.now(), { headers: ghHeaders(), cache:"no-store" });
     if(meta.status === 404){ ghSha = null; return null; }
     ghSha = meta.body.sha;
@@ -1050,7 +1136,17 @@
     try{
       const remote = await ghRead();
       DB = normalise(remote);
-      if(remote === null){
+      if(davidMode()){
+        DAVID_BASE = JSON.stringify(remote);
+        document.body.classList.add("cd-davidmode");
+        if(!document.getElementById("cdDavidPill")){
+          const pill = document.createElement("div"); pill.id = "cdDavidPill";
+          pill.innerHTML = 'View only \u00b7 <a href="#" id="cdDavidOut" style="color:inherit;">Sign out</a>';
+          document.body.appendChild(pill);
+          document.getElementById("cdDavidOut").onclick = (e)=>{ e.preventDefault(); clearCfg(); document.body.classList.remove("cd-davidmode"); pill.remove(); renderDavidLogin(); };
+        }
+      }
+      if(remote === null && !davidMode()){
         // Repo has no state file yet — start empty and create it on first save.
         await save("Create state.json");
       }
@@ -1068,6 +1164,7 @@
   // in-flight one doesn't contain their change yet.
   async function save(message){
     if(!ghConfigured()) return;
+    if(davidMode()) return davidSave(message);
     if(saveInFlight){
       saveQueued = true;
       return new Promise(resolve => queuedWaiters.push(resolve));
@@ -1122,6 +1219,7 @@
   // First run on a device. Deliberately its own screen rather than a prompt() \u2014 those are
   // blocked in some contexts and give no room to explain what the token is for.
   function renderSetup(err){
+    if(/[?&]david\b/.test(location.search) && !renderSetup._skipDavid){ renderSetup._skipDavid = true; return renderDavidLogin(err); }
     const app = document.getElementById("cdApp");
     app.innerHTML = '<div style="margin:auto;max-width:460px;padding:40px 24px;">'
       + '<div class="cd-h1" style="font-size:26px;">Connect to GitHub</div>'
@@ -1135,7 +1233,9 @@
       + '<div class="cd-formrow"><label>Access token</label>'
       + '<input class="cd-input" id="cfgToken" type="password" placeholder="github_pat_..."></div>'
       + '<button class="cd-savebtn" id="cfgSave" style="margin-top:8px;">Connect</button>'
-      + '<div id="cfgStatus" class="cd-sub" style="margin-top:14px;"></div></div>';
+      + '<div id="cfgStatus" class="cd-sub" style="margin-top:14px;"></div>'
+      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToDavid" style="color:var(--label-2);">View-only sign in (David)</a></p></div>';
+    document.getElementById("cfgToDavid").onclick = (e)=>{ e.preventDefault(); renderDavidLogin(); };
     document.getElementById("cfgSave").onclick = async ()=>{
       const owner = document.getElementById("cfgOwner").value.trim();
       const repo  = document.getElementById("cfgRepo").value.trim();
@@ -2671,6 +2771,11 @@
         + '<button class="cd-inlinebtn hq-davnote" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Note</button>'
         + (d&&!compact?'<span class="cd-caption" style="margin:0 0 0 auto;font-size:11px;">click row → deal</span>':'')
       + '</div>'
+      + (davidMode()&&!compact?'<div class="hq-davupdwrap" data-stop="1"><button class="cd-inlinebtn hq-davupd" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Update this instruction</button>'
+        + '<div class="hq-davupdbox" data-n="'+i.id+'" hidden style="margin-top:8px;">'
+        + '<div style="display:flex;gap:6px;margin-bottom:6px;"><button class="cd-inlinebtn hq-davmode" data-n="'+i.id+'" data-mode="add" style="background:var(--sys-blue);color:#fff;">Add to it</button><button class="cd-inlinebtn hq-davmode" data-n="'+i.id+'" data-mode="replace" style="background:var(--fill-3);color:var(--label);">Replace it</button></div>'
+        + '<textarea class="cd-input" rows="2" placeholder="What changed?"></textarea>'
+        + '<div style="display:flex;gap:8px;margin-top:6px;align-items:center;"><button class="cd-inlinebtn hq-davupdsave" data-n="'+i.id+'">Save update</button><span class="cd-caption hq-davupdmsg" style="margin:0;"></span></div></div></div>':'')
       + '<div class="hq-davnotebox" data-n="'+i.id+'" hidden data-stop="1"><textarea class="cd-input" rows="2" placeholder="Update for David — what happened, what’s next"></textarea><div style="display:flex;gap:8px;margin-top:6px;"><button class="cd-inlinebtn hq-davnotesave" data-n="'+i.id+'">Save note</button><button class="cd-inlinebtn hq-davnotecancel" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Cancel</button></div></div>'
       + '</div>';
   }
@@ -2697,6 +2802,9 @@
     document.querySelectorAll('.hq-davst').forEach(s=>{s.onclick=(e)=>e.stopPropagation();s.onchange=async(e)=>{e.stopPropagation();const i=find(s.dataset.n); if(!i) return; i.status=s.value; if(s.value==='done') i.closedDate=todayStr(); else delete i.closedDate; await touch(i,'Status → '+DAVID_ST[s.value][0]+'.','David item status');};});
     document.querySelectorAll('.hq-davnote').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]');box.hidden=!box.hidden;if(!box.hidden)box.querySelector('textarea').focus();});
     document.querySelectorAll('.hq-davnotecancel').forEach(b=>b.onclick=(e)=>{e.stopPropagation();document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]').hidden=true;});
+    document.querySelectorAll('.hq-davupd').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');box.hidden=!box.hidden;b.textContent=box.hidden?'Update this instruction':'Cancel';if(!box.hidden)box.querySelector('textarea').focus();});
+    document.querySelectorAll('.hq-davmode').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');box.dataset.mode=b.dataset.mode;box.querySelectorAll('.hq-davmode').forEach(x=>{const on=x===b;x.style.background=on?'var(--sys-blue)':'var(--fill-3)';x.style.color=on?'#fff':'var(--label)';});});
+    document.querySelectorAll('.hq-davupdsave').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');const t=box.querySelector('textarea').value.trim();const msg=box.querySelector('.hq-davupdmsg');if(!t){msg.textContent='Write the update first.';return;}b.disabled=true;msg.textContent='Saving\u2026';try{await davidApi('/david/items/'+encodeURIComponent(b.dataset.n)+'/update',{method:'POST',body:JSON.stringify({text:t,mode:box.dataset.mode==='replace'?'replace':'add'})});await davidReload();}catch(err){msg.textContent='Not saved: '+((err&&err.message)||'');b.disabled=false;}});
     document.querySelectorAll('.hq-davnotesave').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]');const t=box.querySelector('textarea').value.trim();if(!t)return;const i=find(b.dataset.n); if(!i) return; await touch(i,t,'David item note');});
   }
 
