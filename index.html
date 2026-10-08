@@ -4,614 +4,435 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Collections HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* Collections HQ — Apple system design.
-     Uses Apple's own dark-mode semantic colours (systemBlue #0A84FF, systemRed #FF453A,
-     etc.), their label opacities (60% / 30% for secondary / tertiary), their fill tokens
-     (rgba(120,120,128,·)) and their separator (rgba(84,84,88,.6)), with the current Liquid
-     Glass material laid over an atmospheric wallpaper. Type is SF Pro via the system stack
-     so it renders in the OS's own face; SF Mono for identifiers. No web fonts are loaded. */
-  :root{
-    /* Apple dark-mode semantic colours */
-    --sys-blue:#0A84FF;   --sys-green:#30D158;  --sys-red:#FF453A;
-    --sys-orange:#FF9F0A; --sys-yellow:#FFD60A; --sys-purple:#BF5AF2;
-    --sys-teal:#64D2FF;   --sys-indigo:#5E5CE6; --sys-gray:#8E8E93;
-    --label:#FFFFFF;
-    --label-2:rgba(235,235,245,.60);
-    --label-3:rgba(235,235,245,.30);
-    --label-4:rgba(235,235,245,.18);
-    --fill-1:rgba(120,120,128,.36);
-    --fill-2:rgba(120,120,128,.32);
-    --fill-3:rgba(120,120,128,.24);
-    --fill-4:rgba(120,120,128,.18);
-    --separator:rgba(84,84,88,.60);
-    --separator-opaque:#38383A;
+/* Collections HQ — design tokens. One font, 6 type sizes, 6 spacing steps, 3 radii.
+   Dark is the default; [data-theme="light"] overrides the colour layer only. */
+:root, [data-theme="dark"]{
+  color-scheme: dark;
+  /* Font */
+  --font: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  /* Type scale (px) — the only six sizes in the app */
+  --fs-1: 11px;  /* eyebrow labels, tags */
+  --fs-2: 12px;  /* captions, pills, table headers */
+  --fs-3: 13px;  /* secondary text, buttons, dense rows */
+  --fs-4: 15px;  /* body, inputs, row titles */
+  --fs-5: 20px;  /* section titles, KPI numbers (small) */
+  --fs-6: 28px;  /* page titles, KPI numbers (large) */
+  --lh-tight: 1.2; --lh: 1.4;
+  /* Weights: 400 body · 500 emphasis / controls · 600 titles */
+  /* Spacing (px) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
+  /* Radii */
+  --r-sm: 6px;    /* buttons, inputs, tags, chips, list hover */
+  --r-lg: 14px;   /* cards, panels, sheets */
+  --r-pill: 999px;/* status pills, filter chips, counts */
+  /* Neutral surfaces */
+  --bg: oklch(0.17 0.008 270);
+  --bg-sunk: oklch(0.14 0.008 270);
+  --surface: oklch(0.21 0.009 270);
+  --surface-2: oklch(0.26 0.01 270);
+  --surface-3: oklch(0.31 0.012 270);
+  --line: oklch(1 0 0 / 0.08);
+  --line-strong: oklch(1 0 0 / 0.16);
+  /* Text */
+  --text: oklch(0.96 0.004 270);
+  --text-2: oklch(0.96 0.004 270 / 0.64);
+  --text-3: oklch(0.96 0.004 270 / 0.42);
+  --text-on-accent: #fff;
+  /* Accent + semantic (same lightness & chroma, hue varies) */
+  --accent:  oklch(0.72 0.15 268);
+  --success: oklch(0.76 0.15 150);
+  --warning: oklch(0.80 0.15 70);
+  --danger:  oklch(0.72 0.17 25);
+  --neutral: oklch(0.72 0.02 270);
+  /* Platforms */
+  --p-breeze:  oklch(0.78 0.11 205);
+  --p-ember:   oklch(0.78 0.14 48);
+  --p-mcapay:  oklch(0.76 0.14 320);
+  --p-legacy:  oklch(0.74 0.03 270);
+  /* Tints: use color-mix(in oklch, var(--x) 18%, transparent) for pill backgrounds */
+  --tint: 18%;
+  --shadow: 0 12px 32px -12px oklch(0 0 0 / 0.6);
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+[data-theme="light"]{
+  color-scheme: light;
+  --bg: oklch(0.975 0.003 270);
+  --bg-sunk: oklch(0.95 0.004 270);
+  --surface: #fff;
+  --surface-2: oklch(0.955 0.004 270);
+  --surface-3: oklch(0.92 0.005 270);
+  --line: oklch(0 0 0 / 0.08);
+  --line-strong: oklch(0 0 0 / 0.16);
+  --text: oklch(0.20 0.01 270);
+  --text-2: oklch(0.20 0.01 270 / 0.66);
+  --text-3: oklch(0.20 0.01 270 / 0.46);
+  --accent:  oklch(0.50 0.17 268);
+  --success: oklch(0.52 0.15 150);
+  --warning: oklch(0.58 0.14 65);
+  --danger:  oklch(0.55 0.19 25);
+  --neutral: oklch(0.52 0.02 270);
+  --p-breeze:  oklch(0.55 0.11 205);
+  --p-ember:   oklch(0.58 0.15 48);
+  --p-mcapay:  oklch(0.55 0.16 320);
+  --p-legacy:  oklch(0.52 0.03 270);
+  --tint: 14%;
+  --shadow: 0 12px 32px -12px oklch(0 0 0 / 0.25);
+}
+html, body{ margin:0; padding:0; }
+body{ font-family: var(--font); font-size: var(--fs-4); line-height: var(--lh); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+*{ box-sizing: border-box; }
+a{ color: var(--accent); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+button, input, select, textarea{ font: inherit; color: inherit; letter-spacing: inherit; }
+button{ cursor: pointer; }
+:focus-visible{ outline: none; box-shadow: var(--focus); }
+::placeholder{ color: var(--text-3); opacity: 1; }
+/* Viewport mode. [data-vp="phone"] is the one-handed iPhone layout; the same markup reflows. */
+[data-vp="phone"] [data-desk]{ display:none !important; }
+[data-vp="desktop"] [data-phone]{ display:none !important; }
+[data-vp="phone"] [data-grid-2]{ grid-template-columns: 1fr 1fr !important; }
+[data-vp="phone"] [data-grid-1]{ grid-template-columns: 1fr !important; }
+[data-vp="phone"] [data-stack]{ flex-direction: column !important; align-items: stretch !important; }
+[data-vp="phone"] [data-wrap]{ flex-wrap: wrap !important; }
+[data-vp="phone"] [data-btn], [data-vp="phone"] input, [data-vp="phone"] select{ min-height: 44px; }
+[data-vp="phone"] [data-pad]{ padding: var(--s-4) !important; }
+[data-vp="phone"] [data-scroll-x]{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+[data-vp="phone"] [data-cols]{ grid-template-columns: minmax(0,1fr) auto !important; }
+[data-vp="phone"] [data-cols] [data-hide-phone]{ display:none !important; }
 
-    /* Liquid Glass material */
-    --glass:linear-gradient(160deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.07) 45%, rgba(255,255,255,.04) 100%);
-    --glass-raised:linear-gradient(160deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.11) 50%, rgba(255,255,255,.06) 100%);
-    --glass-blur:blur(18px) saturate(150%);
-    --glass-edge:inset 0 1px 0 rgba(255,255,255,.28), inset 0 -0.5px 0 rgba(255,255,255,.06);
-    --glass-shadow:0 20px 44px -18px rgba(0,0,0,.75), 0 2px 8px -2px rgba(0,0,0,.45);
-    --glass-shadow-sm:0 8px 22px -12px rgba(0,0,0,.6);
-    --stroke:rgba(255,255,255,.14);
-    --stroke-soft:rgba(255,255,255,.08);
-
-    /* iOS radii */
-    --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px; --r-pill:999px;
-
-    /* aliases so existing inline styles and JS keep resolving */
-    --ink:var(--label); --ink-soft:var(--label-2); --ink-dim:var(--label-2); --ink-faint:var(--label-3);
-    --accent:var(--sys-blue); --accent-soft:rgba(10,132,255,.22); --accent-strong:#409CFF; --accent-bg:rgba(10,132,255,.22);
-    --red:var(--sys-red);       --red-bg:rgba(255,69,58,.20);     --brick:var(--sys-red);   --brick-soft:rgba(255,69,58,.20);
-    --amber:var(--sys-orange);  --amber-bg:rgba(255,159,10,.20);  --amber-soft:rgba(255,159,10,.20);
-    --yellow:var(--sys-yellow); --yellow-bg:rgba(255,214,10,.18);
-    --green:var(--sys-green);   --green-bg:rgba(48,209,88,.20);   --green-soft:rgba(48,209,88,.20);
-    --blue:var(--sys-blue);     --blue-bg:rgba(10,132,255,.22);
-    --purple:var(--sys-purple); --purple-bg:rgba(191,90,242,.20); --violet:var(--sys-purple); --violet-soft:rgba(191,90,242,.20);
-    --gray:var(--sys-gray);     --gray-bg:rgba(142,142,147,.22);  --slate:var(--sys-gray);  --slate-soft:rgba(142,142,147,.22);
-    --maroon:var(--sys-red);
-    --panel:var(--glass); --panel-hover:var(--glass-raised); --panel-border:var(--stroke);
-    --line:var(--separator); --line-soft:var(--stroke-soft);
-    --surface:var(--glass); --surface-2:var(--glass-raised); --surface-3:var(--fill-3); --bg2:var(--glass);
-    --hairline:var(--stroke); --hairline-soft:var(--stroke-soft); --mat:var(--glass); --mat-hi:var(--glass-raised); --mat-sunk:var(--fill-4);
-    --edge:var(--glass-edge); --lift:var(--glass-shadow); --lift-sm:var(--glass-shadow-sm);
-    --radius:var(--r-lg); --radius-sm:var(--r-md); --radius-xs:var(--r-sm); --r-card:var(--r-lg); --r-inner:var(--r-md);
-    --blur:var(--glass-blur); --blur-lite:blur(12px) saturate(140%);
-  }
-  .cd-glass{ backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); }
-  *{ box-sizing:border-box; }
-
-  #cdApp, #cdDrawer, #cdModal{
-    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Helvetica Neue", system-ui, sans-serif;
-  }
-  /* The wallpaper sits on its own fixed layer instead of on #cdApp with
-     background-attachment:fixed. Attached to the scrolling element, the browser had to
-     repaint four large radial gradients on every hover and scroll — that is what made the
-     tables feel sticky. On its own layer it is painted once and composited thereafter. */
-  #cdBackdrop{
-    position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background-color:#000;
-    background-image:
-      radial-gradient(ellipse 1300px 800px at 0% -20%, rgba(10,132,255,.30), transparent 60%),
-      radial-gradient(ellipse 1000px 700px at 100% -10%, rgba(191,90,242,.20), transparent 58%),
-      radial-gradient(ellipse 1200px 900px at 70% 115%, rgba(255,159,10,.14), transparent 60%),
-      radial-gradient(ellipse 900px 700px at -10% 110%, rgba(100,210,255,.12), transparent 60%);
-    transform:translateZ(0);
-  }
+  /* ===== Collections HQ — app styles. Every size, space, radius and colour is a token above. ===== */
+  #cdApp, #cdModal{ font-family:var(--font); }
   #cdApp{
-    background:transparent;
-    color:var(--label);
-    min-height:100vh; display:flex;
+    background:var(--bg); color:var(--text); min-height:100vh; display:flex;
+    font-size:var(--fs-4); line-height:var(--lh); font-variant-numeric:tabular-nums;
     -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    font-size:15px; line-height:1.4; letter-spacing:-.016em;   /* SF body: 15/20, -0.24pt */
-    color-scheme:dark;
   }
-  /* Default text colour without the ID-level specificity that was silently overriding every
-     component rule below. `:where()` carries zero specificity, so a plain class rule wins. */
-  :where(#cdApp, #cdDrawer){ color:var(--label); }
-  :where(#cdApp *, #cdDrawer *){ color:inherit; }
-
-  /* SF Mono for identifiers only */
-  .mono{ font-family:ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric:tabular-nums; letter-spacing:0; font-size:.94em; }
-
-  /* Form controls take the current text colour. No !important and no -webkit-text-fill-color:
-     both were forcing every button white, which hid the green "Sent" doc buttons, the blue
-     inline buttons and the red delete links. */
-  input, textarea, select, button{
-    color:inherit; background-color:transparent;
-    caret-color:var(--sys-blue); font-family:inherit; letter-spacing:inherit;
-  }
-  ::placeholder{ color:var(--label-3); opacity:1; }
-  ::selection{ background:rgba(10,132,255,.4); }
-  :focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.5); border-radius:var(--r-sm); }
+  :where(#cdApp, #cdModal){ color:var(--text); }
+  :where(#cdApp *, #cdModal *){ color:inherit; }
+  input, textarea, select, button{ color:inherit; background-color:transparent; caret-color:var(--accent); font-family:inherit; }
+  ::selection{ background:color-mix(in oklch, var(--accent) 35%, transparent); }
   #cdApp ::-webkit-scrollbar{ width:10px; height:10px; }
-  #cdApp ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:999px; border:3px solid transparent; background-clip:content-box; }
+  #cdApp ::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); border:3px solid transparent; background-clip:content-box; }
   #cdApp ::-webkit-scrollbar-track{ background:transparent; }
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+  .eyebrow{ font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); }
 
-  /* ---- iPadOS sidebar ---- */
+  /* ---- Sidebar ---- */
   #cdNav{
-    width:260px; flex:none; padding:22px 14px; height:100vh; position:sticky; top:0; overflow-y:auto;
-    background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
-    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-    border-right:0.5px solid var(--stroke);
+    width:232px; flex:none; padding:var(--s-4) var(--s-3); height:100vh; position:sticky; top:0; overflow-y:auto;
+    background:var(--bg); border-right:1px solid var(--line);
   }
-  .cd-brand{ padding:8px 12px 24px; }
-  .cd-brand b{ font-size:22px; font-weight:700; display:block; letter-spacing:-.026em; line-height:1.15; }
-  .cd-brand span{ font-size:13px; color:var(--label-2); letter-spacing:-.008em; }
-  .cd-navsec{
-    font-size:13px; font-weight:400; color:var(--label-2); padding:22px 12px 6px; letter-spacing:-.008em;
-    text-transform:uppercase; font-size:12px; letter-spacing:.02em;
-  }
+  .cd-brand{ padding:var(--s-1) var(--s-2) var(--s-4); }
+  .cd-brand b{ font-size:var(--fs-5); font-weight:600; display:block; line-height:var(--lh-tight); white-space:nowrap; }
+  .cd-brand span{ font-size:var(--fs-2); color:var(--text-2); }
+  .cd-navsec{ font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); padding:var(--s-4) var(--s-2) var(--s-1); }
   .cd-navbtn{
-    display:flex; align-items:center; gap:12px;
-    padding:9px 12px; border-radius:var(--r-sm); border:none; background:transparent;
-    color:var(--label); font-size:15px; font-weight:400; text-align:left; cursor:pointer;
-    width:100%; font-family:inherit; letter-spacing:-.016em; margin-bottom:1px;
-    transition:background .15s ease;
+    display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:var(--r-sm); border:none;
+    background:transparent; color:var(--text); font-size:var(--fs-3); font-weight:400; text-align:left; cursor:pointer;
+    width:100%; font-family:inherit; margin-bottom:1px;
   }
-  .cd-navicon{ width:20px; height:20px; flex:none; color:var(--sys-blue); }
-  .cd-navicon svg{ width:20px; height:20px; display:block; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .cd-navicon{ width:18px; height:18px; flex:none; color:var(--text-2); }
+  .cd-navicon svg{ width:18px; height:18px; display:block; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
   .cd-navbtn .cd-navdot{ display:none; }
-  .cd-navbtn:hover{ background:var(--fill-4); }
-  .cd-navbtn.on{ background:var(--fill-3); font-weight:500; }
-  .cd-navbtn .cd-navcount{
-    margin-left:auto; font-size:15px; font-variant-numeric:tabular-nums; color:var(--label-2); font-weight:400;
-  }
-  .cd-navbtn .cd-navcount.urgent{
-    color:#FFFFFF; background:var(--sys-red); border-radius:var(--r-pill); padding:1px 8px;
-    font-weight:500; font-size:13px; min-width:22px; text-align:center;
-  }
+  .cd-navbtn:hover{ background:var(--surface-2); }
+  .cd-navbtn.on{ background:var(--surface-2); font-weight:500; }
+  .cd-navbtn .cd-navcount{ margin-left:auto; min-width:20px; height:20px; padding:0 6px; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:var(--r-pill); font-size:var(--fs-2); color:var(--text-2); font-weight:400; }
+  .cd-navbtn .cd-navcount.urgent{ background:color-mix(in oklch, var(--danger) var(--tint), transparent); color:var(--danger); font-weight:600; }
 
   /* ---- Main ---- */
-  #cdMain{ flex:1; min-width:0; padding:38px 40px 90px; max-width:1320px; }
-  .cd-h1{ font-size:34px; font-weight:700; margin:0 0 6px; letter-spacing:-.037em; line-height:1.18; }   /* Large Title */
-  .cd-sub{ font-size:15px; color:var(--label-2); margin:0 0 28px; max-width:70ch; }
+  #cdMain{ flex:1; min-width:0; padding:var(--s-5) var(--s-6) 90px; max-width:1360px; }
+  .cd-h1{ font-size:var(--fs-6); font-weight:600; margin:0 0 var(--s-1); line-height:var(--lh-tight); letter-spacing:-.01em; }
+  .cd-sub{ font-size:var(--fs-3); color:var(--text-2); margin:0 0 var(--s-5); max-width:70ch; }
 
-  /* ---- Glass card ---- */
+  /* ---- Card ---- */
   .cd-panel{
-    background:var(--glass);
-    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-    border:0.5px solid var(--stroke); border-radius:var(--r-lg);
-    padding:0 20px 18px; margin-bottom:20px;
-    box-shadow:var(--glass-edge), var(--glass-shadow);
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
+    padding:var(--s-4); margin-bottom:var(--s-5); box-shadow:none;
   }
-  .cd-panel h3{
-    font-size:20px; font-weight:700; letter-spacing:-.026em;   /* Title 3 */
-    margin:0 -20px 14px; padding:18px 20px 14px;
-  }
-  .cd-panel > div:first-child > h3{ margin:0; padding:0; }
-  .cd-panel > div:first-child{ margin:0 -20px 14px; padding:18px 20px 12px; }
-  .cd-caption{ font-size:13px; color:var(--label-2); margin:-6px 0 14px; max-width:78ch; }
-  .cd-empty{ color:var(--label-3); font-size:15px; padding:34px 0; text-align:center; }
+  .cd-panel h3{ font-size:var(--fs-5); font-weight:600; margin:0 0 var(--s-3); line-height:var(--lh-tight); }
+  .cd-panel > div:first-child{ display:flex; align-items:baseline; gap:var(--s-2); flex-wrap:wrap; margin-bottom:var(--s-3); }
+  .cd-panel > div:first-child > h3{ margin:0; }
+  .cd-caption{ font-size:var(--fs-3); color:var(--text-2); margin:0 0 var(--s-3); max-width:78ch; }
+  .cd-empty{ color:var(--text-3); font-size:var(--fs-3); padding:var(--s-5); text-align:center; }
 
-  /* ---- Banner ---- */
   .cd-nagbanner{
-    background:rgba(255,69,58,.18); border:0.5px solid rgba(255,69,58,.35);
-    border-radius:var(--r-md); padding:14px 18px; margin-bottom:14px;
-    display:flex; align-items:center; gap:10px; cursor:pointer; font-size:15px;
-    transition:background .15s ease;
+    background:color-mix(in oklch, var(--danger) var(--tint), transparent); border:1px solid color-mix(in oklch, var(--danger) 40%, transparent);
+    border-radius:var(--r-lg); padding:var(--s-3) var(--s-4); margin-bottom:var(--s-3);
+    display:flex; align-items:center; gap:var(--s-2); cursor:pointer; font-size:var(--fs-4);
   }
-  .cd-nagbanner b{ color:var(--sys-red); font-weight:600; }
-  .cd-nagbanner:hover{ background:rgba(255,69,58,.26); }
+  .cd-nagbanner b{ color:var(--danger); font-weight:600; }
 
-  /* ---- Chips as iOS filter capsules ---- */
-  .cd-chiprow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  /* ---- Filter chips ---- */
+  .cd-chiprow{ display:flex; flex-wrap:wrap; gap:var(--s-2); margin-bottom:var(--s-4); }
   .cd-chip{
-    display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:var(--r-pill);
-    background:var(--fill-3); border:none; font-size:15px; font-weight:400;
-    cursor:pointer; white-space:nowrap; color:var(--label);
-    transition:background .15s ease;
+    display:inline-flex; align-items:center; gap:var(--s-2); height:28px; padding:0 12px; border-radius:var(--r-pill);
+    background:var(--surface-2); border:none; font-size:var(--fs-3); font-weight:500; cursor:pointer; white-space:nowrap; color:var(--text);
   }
-  .cd-chip:hover{ background:var(--fill-2); }
-  .cd-chip.on{ background:var(--label); color:#000; font-weight:500; }
+  .cd-chip:hover{ background:var(--surface-3); }
+  .cd-chip.on{ background:var(--text); color:var(--bg); }
   .cd-chip.on *{ color:inherit; }
-  .cd-chip b{ font-variant-numeric:tabular-nums; font-weight:500; }
-  .cd-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .cd-chip b{ font-weight:500; opacity:.7; }
+  .cd-dot{ width:8px; height:8px; border-radius:var(--r-pill); display:inline-block; }
 
   /* ---- Tables ---- */
-  .cd-table{ width:100%; border-collapse:separate; border-spacing:0; font-size:15px; }
-  .cd-table th{
-    text-align:right; font-size:13px; font-weight:400; color:var(--label-2);
-    padding:16px 16px 12px; border-bottom:0.5px solid var(--separator);
-    white-space:nowrap; cursor:pointer; user-select:none; letter-spacing:-.008em;
-  }
+  .cd-table{ width:100%; border-collapse:separate; border-spacing:0; font-size:var(--fs-4); }
+  .cd-table th{ text-align:right; font-size:var(--fs-2); font-weight:500; color:var(--text-2); padding:var(--s-2) var(--s-4);
+    border-bottom:1px solid var(--line); white-space:nowrap; cursor:pointer; user-select:none; }
   .cd-table th:first-child, .cd-table th:nth-child(2){ text-align:left; }
-  .cd-table th:hover{ color:var(--label); }
-  .cd-table td{
-    text-align:right; padding:14px 16px; border-bottom:0.5px solid var(--separator);
-    vertical-align:middle; font-variant-numeric:tabular-nums;
-  }
+  .cd-table th:hover{ color:var(--text); }
+  .cd-table td{ text-align:right; padding:var(--s-3) var(--s-4); border-bottom:1px solid var(--line); vertical-align:middle; }
   .cd-table td:first-child, .cd-table td:nth-child(2){ text-align:left; }
   .cd-table tbody tr{ cursor:pointer; }
-  .cd-table tbody tr:hover td{ background:var(--fill-4); }
+  .cd-table tbody tr:hover td{ background:var(--surface-2); }
   .cd-table tbody tr:last-child td{ border-bottom:none; }
-  .cd-namecell b{ display:block; font-size:15px; font-weight:500; letter-spacing:-.016em; }
-  .cd-namecell > span{
-    display:block; font-size:12px; color:var(--label-2); margin-top:2px;
-    font-family:ui-monospace,"SF Mono",Menlo,monospace; letter-spacing:0;
-  }
-  .cd-sortarrow{ margin-left:5px; color:var(--sys-blue); }
-  .cd-flagpill{
-    display:inline-block; font-size:12px; font-weight:500; background:rgba(255,159,10,.2);
-    color:var(--sys-orange); padding:2px 9px; border-radius:var(--r-pill); margin-left:8px; vertical-align:middle;
-  }
+  .cd-namecell b{ display:block; font-size:var(--fs-4); font-weight:500; }
+  .cd-namecell > span{ display:block; font-size:var(--fs-2); color:var(--text-2); margin-top:2px; }
+  .cd-sortarrow{ margin-left:var(--s-1); color:var(--accent); }
+  .cd-flagpill{ display:inline-flex; align-items:center; height:20px; padding:0 6px; border-radius:var(--r-sm); border:1px solid currentColor;
+    font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--warning); margin-left:var(--s-2); vertical-align:middle; }
+  .cd-badge{ display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:var(--r-pill); font-size:var(--fs-2); font-weight:500; white-space:nowrap; }
+  .cd-pctbar{ display:inline-block; width:56px; height:6px; border-radius:var(--r-pill); background:var(--surface-3); overflow:hidden; vertical-align:middle; margin-right:var(--s-2); }
+  .cd-pctbar i{ display:block; height:100%; border-radius:var(--r-pill); background:var(--accent); }
+  .cd-toolbar{ margin-bottom:var(--s-4); }
+  .cd-search{ height:36px; background:var(--bg-sunk); border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:0 12px; font-size:var(--fs-4); width:100%; max-width:380px; }
+  .cd-search:focus{ outline:none; box-shadow:var(--focus); }
+  .cd-savebtn{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; background:var(--accent); color:var(--text-on-accent); border:none;
+    border-radius:var(--r-sm); font-size:var(--fs-3); font-weight:500; cursor:pointer; font-family:inherit; }
+  .cd-savebtn:hover{ filter:brightness(1.06); }
+  .cd-savebtn:disabled{ opacity:.45; cursor:default; }
+  .cd-savebtn.secondary{ background:var(--surface-2); color:var(--text); }
+  .cd-saveok{ display:none; font-size:var(--fs-3); color:var(--success); margin-left:var(--s-2); }
+  .cd-listrow{ display:flex; justify-content:space-between; align-items:center; gap:var(--s-3); padding:var(--s-3) var(--s-4); margin:0 calc(-1 * var(--s-4));
+    border-top:1px solid var(--line); font-size:var(--fs-4); cursor:pointer; }
+  .cd-listrow:hover{ background:var(--surface-2); }
+  .cd-listrow b{ font-weight:500; }
+  .cd-listrow small{ color:var(--text-2); display:block; margin-top:2px; font-size:var(--fs-3); }
+  .cd-kpirow{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s-3); margin-bottom:var(--s-5); }
+  .cd-kpi{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-4); box-shadow:none; min-width:0; }
+  .cd-kpi span{ font-size:var(--fs-3); color:var(--text-2); display:block; margin-bottom:var(--s-1); font-weight:500; }
+  .cd-kpi b{ font-family:inherit; font-size:var(--fs-6); font-weight:600; line-height:var(--lh-tight); }
+  .cd-kpisub{ font-size:var(--fs-3); color:var(--text-3); margin-top:var(--s-1); }
 
-  /* ---- Badges: iOS tinted capsules ---- */
-  .cd-badge{
-    display:inline-block; padding:4px 11px; border-radius:var(--r-pill);
-    font-size:13px; font-weight:500; white-space:nowrap; letter-spacing:-.008em;
-  }
-  .cd-pctbar{
-    display:inline-block; width:56px; height:6px; border-radius:999px;
-    background:var(--fill-3); overflow:hidden; vertical-align:middle; margin-right:10px;
-  }
-  .cd-pctbar i{ display:block; height:100%; border-radius:999px; background:var(--sys-blue); }
-
-  .cd-toolbar{ margin-bottom:18px; }
-  .cd-search{
-    background:var(--fill-3); border:none; border-radius:var(--r-sm);
-    padding:9px 14px; font-size:15px; width:100%; max-width:380px;
-    transition:background .15s ease;
-  }
-  .cd-search:focus{ outline:none; background:var(--fill-2); box-shadow:0 0 0 3px rgba(10,132,255,.45); }
-
-  /* ---- Buttons ---- */
-  .cd-savebtn{
-    background:var(--sys-blue); color:#FFFFFF; border:none; border-radius:var(--r-pill);
-    padding:10px 20px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
-    letter-spacing:-.016em; transition:filter .15s ease, transform .1s ease;
-  }
-  .cd-savebtn:hover{ filter:brightness(1.08); }
-  .cd-savebtn:active{ transform:scale(.97); }
-  .cd-savebtn:disabled{ opacity:.4; cursor:default; }
-  .cd-savebtn.secondary{ background:rgba(10,132,255,.22); color:var(--sys-blue); }
-  .cd-savebtn.secondary:hover{ background:rgba(10,132,255,.3); filter:none; }
-  .cd-saveok{ display:none; font-size:13px; color:var(--sys-green); margin-left:10px; }
-
-  /* ---- Grouped list rows with disclosure chevron ---- */
-  .cd-listrow{
-    display:flex; justify-content:space-between; align-items:center; gap:14px;
-    padding:13px 34px 13px 14px; margin:0 -14px; position:relative;
-    border-bottom:0.5px solid var(--separator); font-size:15px; cursor:pointer;
-    transition:background .12s ease;
-  }
-  .cd-listrow::after{
-    content:"\203A"; position:absolute; right:14px; top:50%; transform:translateY(-50%);
-    color:var(--label-3); font-size:22px; line-height:1; font-weight:300;
-  }
-  .cd-listrow:hover{ background:var(--fill-4); border-radius:var(--r-sm); }
-  .cd-listrow:last-child{ border-bottom:none; }
-  .cd-listrow b{ font-weight:500; letter-spacing:-.016em; }
-  .cd-listrow small{ color:var(--label-2); display:block; margin-top:2px; font-size:13px; }
-
-  /* ---- KPI widgets ---- */
-  .cd-kpirow{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
-  .cd-kpi{
-    background:var(--glass); border:0.5px solid var(--stroke); border-radius:var(--r-lg);
-    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-    padding:18px 20px 20px; box-shadow:var(--glass-edge), var(--glass-shadow);
-  }
-  .cd-kpi span{ font-size:13px; color:var(--label-2); display:block; margin-bottom:8px; font-weight:500; letter-spacing:-.008em; }
-  .cd-kpi b, .cd-kpi b.mono{ font-family:inherit; font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.04em; line-height:1; }
-  .cd-kpisub{ font-size:13px; color:var(--label-2); margin-top:8px; }
-
-  /* ---- Drawer (sheet) ---- */
-  #cdDrawer{
-    position:fixed; top:0; right:0; width:520px; max-width:95vw; height:100vh;
-    background:linear-gradient(165deg, rgba(38,44,54,.985), rgba(22,26,33,.985) 55%, rgba(17,20,26,.985));
-    border-left:0.5px solid var(--stroke); transform:translateX(100%);
-    will-change:transform; contain:layout paint;
-    transition:transform .4s cubic-bezier(.32,.72,0,1); z-index:50; overflow-y:auto;
-    padding:30px 28px 80px; box-shadow:-40px 0 100px -30px rgba(0,0,0,.9);
-  }
+  /* ---- Drawer (replaced by the deal page in step 12) ---- */
+  #cdDrawer{ position:fixed; top:0; right:0; width:560px; max-width:100vw; height:100vh; background:var(--surface);
+    border-left:1px solid var(--line); transform:translateX(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
+    z-index:50; overflow-y:auto; padding:var(--s-5) var(--s-5) 80px; box-shadow:var(--shadow); font-family:var(--font); color:var(--text); }
   #cdDrawer.on{ transform:translateX(0); }
-  /* Global search — lives in the sidebar, not in a modal.
-     Two layouts are on trial and switch from the control at the foot of the sidebar:
-       results "inline"  — the hit list drops down inside the 260px column
-       results "widen"   — the whole sidebar expands while a query is active, so the
-                           snippets have room to be read
-     The box itself is either permanently open or a row that turns into a field on click.
-     Both choices persist per browser in localStorage; neither touches state.json. */
-  .cd-navsearch{ padding:0 2px 4px; }
-  .cd-navsearchbar{
-    display:flex; align-items:center; gap:10px;
-    padding:9px 12px; border-radius:var(--r-sm);
-    background:var(--fill-4); border:0.5px solid transparent;
-    cursor:text; transition:background .15s ease, border-color .15s ease;
-  }
-  .cd-navsearchbar:hover{ background:var(--fill-3); }
-  .cd-navsearchbar.focused{ background:var(--fill-3); border-color:rgba(10,132,255,.55); }
-  .cd-navsearchbar svg{ width:17px; height:17px; flex:none; stroke:var(--label-3); fill:none; stroke-width:2; }
-  .cd-navsearchbar.focused svg{ stroke:var(--sys-blue); }
-  #cdNavSearchInput{
-    flex:1; min-width:0; background:transparent; border:none; outline:none;
-    color:var(--label); font-size:15px; font-family:inherit; letter-spacing:-.016em; padding:0;
-  }
-  #cdNavSearchInput::placeholder{ color:var(--label-3); }
-  /* The global :focus-visible ring would draw a blue lozenge around the field inside the
-     bar. The bar's own border already shows focus, so suppress the ring here only. */
+  :where(#cdDrawer *){ color:inherit; }
+
+  /* ---- Sidebar search ---- */
+  .cd-navsearch{ padding:0 0 var(--s-2); }
+  .cd-navsearchbar{ display:flex; align-items:center; gap:var(--s-2); height:36px; padding:0 10px; border-radius:var(--r-sm);
+    background:var(--bg-sunk); border:1px solid var(--line-strong); cursor:text; }
+  .cd-navsearchbar.focused{ box-shadow:var(--focus); }
+  .cd-navsearchbar svg{ width:16px; height:16px; flex:none; stroke:var(--text-3); fill:none; stroke-width:1.75; }
+  #cdNavSearchInput{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text); font-size:var(--fs-3); font-family:inherit; padding:0; }
   #cdNavSearchInput:focus, #cdNavSearchInput:focus-visible{ outline:none; box-shadow:none; }
-  .cd-navsearchlabel{ flex:1; color:var(--label-2); font-size:15px; letter-spacing:-.016em; }
-  .cd-navsearchclear{
-    background:none; border:none; color:var(--label-3); font-size:15px; cursor:pointer;
-    padding:0 2px; line-height:1; flex:none;
-  }
-  .cd-navsearchclear:hover{ color:var(--label); }
-  .cd-navsearchcount{ font-size:12px; color:var(--label-3); white-space:nowrap; flex:none; }
-
-  #cdNavSearchResults{ max-height:52vh; overflow-y:auto; margin-top:6px; }
+  .cd-navsearchlabel{ flex:1; color:var(--text-3); font-size:var(--fs-3); }
+  .cd-navsearchclear{ background:none; border:none; color:var(--text-3); font-size:var(--fs-3); cursor:pointer; padding:0 2px; line-height:1; flex:none; }
+  .cd-navsearchclear:hover{ color:var(--text); }
+  .cd-navsearchcount{ font-size:var(--fs-2); color:var(--text-3); white-space:nowrap; flex:none; }
+  #cdNavSearchResults{ max-height:52vh; overflow-y:auto; margin-top:var(--s-1); }
   #cdNavSearchResults:empty{ display:none; }
-  /* In the narrow column the hit rows have to give up some air to stay legible. */
-  #cdNavSearchResults .cd-sres{ padding:8px 10px; border-radius:var(--r-sm); font-size:14px; }
-  #cdNavSearchResults .cd-sres .meta{ font-size:11px; }
-  #cdNavSearchResults .cd-sres .snip{ font-size:11.5px; -webkit-line-clamp:2; }
-  #cdNavSearchResults .cd-sgroup{ padding:10px 10px 4px; }
-  #cdNavSearchResults .cd-searchempty{ padding:14px 10px; text-align:left; font-size:12.5px; line-height:1.45; }
-
-  /* Widen layout: the column grows while a query is live. */
+  #cdNavSearchResults .cd-sres{ padding:var(--s-2); border-radius:var(--r-sm); font-size:var(--fs-3); }
+  #cdNavSearchResults .cd-sres .snip{ -webkit-line-clamp:2; }
+  #cdNavSearchResults .cd-sgroup{ padding:var(--s-2) var(--s-2) var(--s-1); }
+  #cdNavSearchResults .cd-searchempty{ padding:var(--s-3) var(--s-2); text-align:left; font-size:var(--fs-2); }
   #cdNav{ transition:width .22s cubic-bezier(.32,.72,0,1); }
-  #cdNav.searching-widen{ width:470px; }
-  #cdNav.searching-widen #cdNavSearchResults .cd-sres{ padding:10px 14px; font-size:15px; }
-  #cdNav.searching-widen #cdNavSearchResults .cd-sres .meta{ font-size:12px; }
-  #cdNav.searching-widen #cdNavSearchResults .cd-sres .snip{ font-size:12.5px; -webkit-line-clamp:3; }
+  #cdNav.searching-widen{ width:460px; }
+  #cdNav.searching-widen #cdNavSearchResults .cd-sres{ padding:var(--s-2) var(--s-3); font-size:var(--fs-4); }
+  #cdNav.searching-widen #cdNavSearchResults .cd-sres .snip{ -webkit-line-clamp:3; }
   #cdNav.searching-widen #cdNavSearchResults{ max-height:66vh; }
-  @media (prefers-reduced-motion: reduce){ #cdNav{ transition:none; } }
-
-  .cd-sres{
-    display:block; width:100%; text-align:left; background:transparent; border:none;
-    color:inherit; font:inherit; padding:10px 16px; border-radius:var(--r-md); cursor:pointer;
-  }
-  .cd-sres:hover, .cd-sres.sel{ background:var(--fill-3); }
+  .cd-sres{ display:block; width:100%; text-align:left; background:transparent; border:none; color:inherit; font:inherit; padding:var(--s-2) var(--s-4); border-radius:var(--r-sm); cursor:pointer; }
+  .cd-sres:hover, .cd-sres.sel{ background:var(--surface-2); }
   .cd-sres b{ font-weight:600; }
-  .cd-sres .meta{ font-size:12px; color:var(--label-2); margin-top:2px;
-    font-family:"SF Mono",ui-monospace,monospace; }
-  .cd-sres .snip{ font-size:12.5px; color:var(--label-2); margin-top:3px;
-    overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-  .cd-sres mark{ background:rgba(10,132,255,.32); color:var(--label); border-radius:3px; padding:0 2px; }
-  .cd-sgroup{ font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--label-3); padding:12px 16px 6px; }
-  .cd-searchempty{ padding:34px 20px; text-align:center; color:var(--label-2); font-size:14px; }
+  .cd-sres .meta{ font-size:var(--fs-2); color:var(--text-2); margin-top:2px; }
+  .cd-sres .snip{ font-size:var(--fs-2); color:var(--text-2); margin-top:2px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .cd-sres mark{ background:color-mix(in oklch, var(--accent) 30%, transparent); color:var(--text); border-radius:var(--r-sm); padding:0 2px; }
+  .cd-sgroup{ font-size:var(--fs-1); font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); padding:var(--s-3) var(--s-4) var(--s-1); }
+  .cd-searchempty{ padding:var(--s-5); text-align:center; color:var(--text-2); font-size:var(--fs-3); }
 
-
-  #cdDrawerOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; display:none; }
+  /* ---- Overlays, modal ---- */
+  #cdDrawerOverlay{ position:fixed; inset:0; background:oklch(0 0 0 / .5); z-index:49; display:none; }
   #cdDrawerOverlay.on{ display:block; }
-
-  /* ---- Modal (alert sheet) ---- */
-  #cdModalOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.62); z-index:59; display:none; align-items:center; justify-content:center; }
+  #cdModalOverlay{ position:fixed; inset:0; background:oklch(0 0 0 / .55); z-index:59; display:none; align-items:center; justify-content:center; }
   #cdModalOverlay.on{ display:flex; }
-  #cdModal{
-    background:linear-gradient(165deg, rgba(40,46,56,.99), rgba(24,28,36,.99));
-    border:0.5px solid var(--stroke); border-radius:var(--r-xl); padding:26px;
-    width:470px; max-width:93vw; max-height:86vh; overflow-y:auto;
-    box-shadow:var(--glass-edge), 0 40px 100px -24px rgba(0,0,0,.85);
-  }
-  #cdModal h3{ font-size:22px; font-weight:700; margin:0 0 18px; letter-spacing:-.03em; }
-
-  /* iOS close: grey circle with ✕ */
-  .cd-modalclose, .cd-drclose{
-    background:var(--fill-3); border:none; color:var(--label-2); cursor:pointer;
-    width:30px; height:30px; border-radius:50%; font-size:15px; line-height:30px; text-align:center; padding:0;
-    transition:background .15s ease;
-  }
+  #cdModal{ background:var(--surface); color:var(--text); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-5);
+    width:480px; max-width:94vw; max-height:86vh; overflow-y:auto; box-shadow:var(--shadow); }
+  #cdModal h3{ font-size:var(--fs-5); font-weight:600; margin:0 0 var(--s-4); line-height:var(--lh-tight); }
+  .cd-modalclose, .cd-drclose{ display:inline-flex; align-items:center; justify-content:center; background:var(--surface-2); border:none; color:var(--text-2); cursor:pointer;
+    width:36px; height:36px; border-radius:var(--r-sm); font-size:var(--fs-4); line-height:1; padding:0; }
   .cd-modalclose{ float:right; }
-  .cd-drclose{ position:absolute; top:26px; right:26px; }
-  .cd-modalclose:hover, .cd-drclose:hover{ background:var(--fill-2); color:var(--label); }
-
-  .cd-dealpick{ max-height:190px; overflow-y:auto; border-radius:var(--r-md); margin-top:6px; background:var(--fill-4); }
-  .cd-dealpickrow{ padding:11px 14px; font-size:15px; cursor:pointer; border-bottom:0.5px solid var(--separator); }
+  .cd-drclose{ position:absolute; top:var(--s-5); right:var(--s-5); }
+  .cd-modalclose:hover, .cd-drclose:hover{ background:var(--surface-3); color:var(--text); }
+  .cd-dealpick{ max-height:190px; overflow-y:auto; border-radius:var(--r-sm); margin-top:var(--s-1); background:var(--bg-sunk); border:1px solid var(--line); }
+  .cd-dealpickrow{ padding:var(--s-2) var(--s-3); font-size:var(--fs-4); cursor:pointer; border-bottom:1px solid var(--line); }
   .cd-dealpickrow:last-child{ border-bottom:none; }
-  .cd-dealpickrow:hover{ background:var(--fill-3); }
-  .cd-dealpickrow.picked{ background:rgba(10,132,255,.25); }
-
-  .cd-drtitle{ font-size:28px; font-weight:700; padding-right:40px; margin-bottom:4px; letter-spacing:-.035em; line-height:1.15; }
-  .cd-drsub{ font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12px; color:var(--label-2); margin-bottom:22px; }
-  .cd-drsect{
-    font-size:13px; font-weight:400; color:var(--label-2); margin:28px 0 8px; padding:0 4px;
-    text-transform:uppercase; letter-spacing:.02em;   /* iOS grouped section header */
-  }
+  .cd-dealpickrow:hover{ background:var(--surface-2); }
+  .cd-dealpickrow.picked{ background:color-mix(in oklch, var(--accent) var(--tint), transparent); }
+  .cd-drtitle{ font-size:var(--fs-6); font-weight:600; padding-right:44px; margin-bottom:var(--s-1); line-height:var(--lh-tight); letter-spacing:-.01em; }
+  .cd-drsub{ font-size:var(--fs-2); color:var(--text-2); margin-bottom:var(--s-5); }
+  .cd-drsect{ font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); margin:var(--s-5) 0 var(--s-2); }
   .cd-drsect-toggle{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
-  .cd-drsect-toggle:hover{ color:var(--label); }
-  .cd-drsect-chevron{ font-size:11px; transition:transform .25s cubic-bezier(.32,.72,0,1); display:inline-block; }
+  .cd-drsect-toggle:hover{ color:var(--text); }
+  .cd-drsect-chevron{ font-size:var(--fs-1); transition:transform .25s cubic-bezier(.32,.72,0,1); display:inline-block; }
   .cd-drsect-chevron.open{ transform:rotate(90deg); }
   .cd-collapsible-body{ overflow:hidden; }
-
-  /* Segmented control */
-  .cd-drtabbar{
-    display:flex; background:var(--fill-3); border-radius:var(--r-sm); padding:2px; margin-bottom:8px;
-  }
-  .cd-drtab{
-    flex:1; padding:7px 10px; background:transparent; border:none; color:var(--label); font-size:13px;
-    font-weight:500; cursor:pointer; font-family:inherit; border-radius:8px; margin:0; white-space:nowrap;
-    transition:background .18s ease, box-shadow .18s ease;
-  }
-  .cd-drtab.on{ background:#636366; color:#FFFFFF; box-shadow:0 3px 8px rgba(0,0,0,.25), inset 0 0.5px 0 rgba(255,255,255,.2); }
-
-  .cd-tlrow{ display:flex; justify-content:space-between; padding:9px 0; font-size:15px; border-bottom:0.5px solid var(--separator); }
+  .cd-drtabbar{ display:flex; gap:var(--s-4); border-bottom:1px solid var(--line); margin-bottom:var(--s-2); overflow-x:auto; }
+  .cd-drtab{ height:40px; padding:0; background:transparent; border:none; color:var(--text-2); font-size:var(--fs-3); font-weight:500; cursor:pointer;
+    font-family:inherit; white-space:nowrap; border-radius:0; }
+  .cd-drtab:hover{ color:var(--text); }
+  .cd-drtab.on{ color:var(--text); box-shadow:inset 0 -2px 0 var(--accent); }
+  .cd-tlrow{ display:flex; justify-content:space-between; gap:var(--s-3); padding:var(--s-2) 0; font-size:var(--fs-3); border-bottom:1px solid var(--line); }
   .cd-tlrow:last-child{ border-bottom:none; }
-  .cd-tlrow span:first-child{ color:var(--label-2); }
-  .cd-tlrow span:last-child{ font-variant-numeric:tabular-nums; }
-  .cd-note{
-    width:100%; background:var(--fill-3) !important; border:none;
-    border-radius:var(--r-md); padding:12px 14px; color:var(--label) !important;
-    font-family:inherit; font-size:15px; min-height:72px; resize:vertical;
-  }
-  .cd-note:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
-  .cd-comment{ background:var(--fill-4); border-radius:var(--r-md); padding:13px 15px; margin-bottom:10px; }
-  .cd-comment-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
-  .cd-comment-time{ font-size:13px; color:var(--label-2); }
-  .cd-comment-del{ background:none; border:none; color:var(--sys-red); font-size:13px; cursor:pointer; font-family:inherit; padding:0; opacity:.7; }
-  .cd-comment-del:hover{ opacity:1; }
-  .cd-comment-text{ font-size:15px; white-space:pre-wrap; }
-  .cd-logrow{ display:flex; gap:12px; padding:8px 0; border-bottom:0.5px solid var(--separator); font-size:13px; }
-  .cd-logrow span:first-child{ color:var(--label-2); font-family:ui-monospace,"SF Mono",Menlo,monospace; white-space:nowrap; font-size:12px; }
-  .cd-select{
-    background:var(--fill-3) !important; border:none; border-radius:var(--r-sm);
-    padding:10px 14px; font-size:15px; width:100%; -webkit-appearance:none; appearance:none;
-  }
-  .cd-select:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
-  /* Native dropdown lists: solid dark background + white text (Windows renders the translucent fill as light grey) */
-  #cdApp select option, #cdApp select optgroup,
-  #cdDrawer select option, #cdDrawer select optgroup{ background-color:#1c1c1e !important; color:#fff !important; }
-  #cdApp select option:checked, #cdDrawer select option:checked{ background-color:#0a84ff !important; color:#fff !important; }
+  .cd-tlrow span:first-child{ color:var(--text-2); }
+  .cd-note{ width:100%; background:var(--bg-sunk); border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:10px 12px; color:var(--text);
+    font-family:inherit; font-size:var(--fs-4); min-height:72px; resize:vertical; }
+  .cd-note:focus{ outline:none; box-shadow:var(--focus); }
+  .cd-comment{ background:var(--surface-2); border-radius:var(--r-sm); padding:var(--s-3) var(--s-4); margin-bottom:var(--s-2); }
+  .cd-comment-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:var(--s-1); }
+  .cd-comment-time{ font-size:var(--fs-2); color:var(--text-2); }
+  .cd-comment-del{ background:none; border:none; color:var(--danger); font-size:var(--fs-2); cursor:pointer; font-family:inherit; padding:0; }
+  .cd-comment-text{ font-size:var(--fs-4); white-space:pre-wrap; }
+  .cd-logrow{ display:flex; gap:var(--s-3); padding:var(--s-2) 0; border-bottom:1px solid var(--line); font-size:var(--fs-3); }
+  .cd-logrow span:first-child{ color:var(--text-2); white-space:nowrap; font-size:var(--fs-2); }
+  .cd-select{ height:36px; background-color:var(--bg-sunk); border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:0 32px 0 12px; font-size:var(--fs-4); width:100%;
+    -webkit-appearance:none; appearance:none; color:var(--text);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 12px center; }
+  .cd-select:focus{ outline:none; box-shadow:var(--focus); }
+  select option, select optgroup{ background-color:var(--surface); color:var(--text); }
   .cd-datebtn{ display:flex; cursor:pointer; }
-  .cd-minical{
-    background:linear-gradient(165deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
-    backdrop-filter:blur(18px) saturate(150%); border:0.5px solid var(--stroke);
-    border-radius:var(--r-lg); padding:14px; margin-top:8px; width:100%;
-    box-shadow:var(--glass-edge), var(--glass-shadow);
-  }
-  .cd-minicalhead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:17px; }
-  .cd-minicalhead b{ font-weight:600; letter-spacing:-.02em; }
-  .cd-minicalhead button{ background:none; border:none; color:var(--sys-blue); cursor:pointer; font-size:20px; width:30px; height:30px; border-radius:50%; font-weight:500; }
-  .cd-minicalhead button:hover{ background:var(--fill-4); }
+  .cd-minical{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-3); margin-top:var(--s-2); width:260px; max-width:100%; box-shadow:var(--shadow); }
+  .cd-minicalhead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--s-2); font-size:var(--fs-3); }
+  .cd-minicalhead b{ font-weight:600; }
+  .cd-minicalhead button{ background:none; border:none; color:var(--text-2); cursor:pointer; font-size:var(--fs-4); width:28px; height:28px; border-radius:var(--r-sm); }
+  .cd-minicalhead button:hover{ background:var(--surface-2); color:var(--text); }
   .cd-minicalgrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
-  .cd-minicaldow{ font-size:13px; color:var(--label-2); text-align:center; padding:5px 0; font-weight:500; }
-  .cd-minicalday{
-    background:none; border:none; color:var(--label); font-size:17px; padding:0; height:38px;
-    border-radius:50%; cursor:pointer; font-family:inherit; font-variant-numeric:tabular-nums; font-weight:400;
-    transition:background .12s ease;
-  }
-  .cd-minicalday:hover{ background:var(--fill-3); }
-  .cd-minicalday.today{ color:var(--sys-blue); font-weight:600; }
-  .cd-minicalday.sel{ background:var(--sys-blue); color:#FFFFFF; font-weight:600; }
-  .cd-inlinebtn{
-    background:rgba(10,132,255,.2); border:none; border-radius:var(--r-pill);
-    padding:6px 14px; font-size:13px; font-weight:500; cursor:pointer; color:var(--sys-blue);
-    transition:background .15s ease;
-  }
-  .cd-inlinebtn:hover{ background:rgba(10,132,255,.3); }
-  .cd-docrow{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; font-size:15px; border-bottom:0.5px solid var(--separator); }
+  .cd-minicaldow{ font-size:var(--fs-1); color:var(--text-3); text-align:center; padding:var(--s-1) 0; font-weight:600; }
+  .cd-minicalday{ background:none; border:none; color:var(--text); font-size:var(--fs-3); padding:0; height:32px; border-radius:var(--r-sm); cursor:pointer; font-family:inherit; }
+  .cd-minicalday:hover{ background:var(--surface-2); }
+  .cd-minicalday.today{ color:var(--accent); font-weight:600; }
+  .cd-minicalday.sel{ background:var(--accent); color:var(--text-on-accent); font-weight:600; }
+  .cd-inlinebtn{ display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; background:transparent; border:none; border-radius:var(--r-sm);
+    font-size:var(--fs-2); font-weight:500; cursor:pointer; color:var(--accent); font-family:inherit; }
+  .cd-inlinebtn:hover{ background:var(--surface-2); }
+  .cd-docrow{ display:flex; justify-content:space-between; align-items:center; gap:var(--s-3); padding:var(--s-2) 0; font-size:var(--fs-3); border-bottom:1px solid var(--line); }
   .cd-docrow:last-child{ border-bottom:none; }
-  .cd-docstate{ display:flex; gap:6px; }
-  .cd-docbtn{
-    font-size:13px; font-weight:500; padding:5px 12px; border-radius:var(--r-pill);
-    border:none; background:var(--fill-4); cursor:pointer; color:var(--label-2);
-    transition:background .15s ease, color .15s ease;
-  }
-  .cd-docbtn:hover{ background:var(--fill-3); color:var(--label); }
-  .cd-docbtn.on{ background:rgba(48,209,88,.22); color:var(--sys-green); }
-  .cd-docbtn.na.on{ background:var(--fill-3); color:var(--label); }
-  .cd-warn{
-    background:rgba(255,159,10,.2); border:none;
-    border-radius:var(--r-md); padding:13px 16px; font-size:15px; color:var(--sys-orange); margin-bottom:18px;
-  }
+  .cd-docstate{ display:flex; gap:var(--s-1); }
+  .cd-docbtn{ height:28px; padding:0 10px; font-size:var(--fs-2); font-weight:500; border-radius:var(--r-sm); border:none; background:var(--surface-2); cursor:pointer; color:var(--text-2); font-family:inherit; }
+  .cd-docbtn:hover{ color:var(--text); }
+  .cd-docbtn.on{ background:color-mix(in oklch, var(--success) var(--tint), transparent); color:var(--success); }
+  .cd-docbtn.na.on{ background:var(--surface-3); color:var(--text); }
+  .cd-warn{ background:color-mix(in oklch, var(--warning) var(--tint), transparent); border:none; border-radius:var(--r-sm); padding:var(--s-3) var(--s-4); font-size:var(--fs-3); color:var(--warning); margin-bottom:var(--s-4); }
 
-  /* ---- Calendar ---- */
-  .cd-calgrid{ display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:124px; gap:8px; }
-  .cd-calhead{ font-size:13px; font-weight:500; color:var(--label-2); text-align:center; padding:6px 0; }
-  .cd-calday{
-    background:var(--glass); border:0.5px solid var(--stroke-soft); border-radius:var(--r-md);
-    height:124px; padding:10px; font-size:12px; cursor:pointer; overflow:hidden;
-    box-shadow:var(--glass-edge); transition:background .15s ease;
-  }
-  .cd-calday:hover{ background:var(--glass-raised); }
-  .cd-calday.today{ border-color:rgba(10,132,255,.6); background:rgba(10,132,255,.16); }
-  .cd-calday.empty{ background:none; border:none; cursor:default; box-shadow:none; }
-  .cd-caldate{ font-weight:600; margin-bottom:6px; font-variant-numeric:tabular-nums; font-size:15px; letter-spacing:-.02em; }
-  .cd-calday.today .cd-caldate{ color:var(--sys-blue); }
-  .cd-calitem{ display:block; font-size:11px; padding:3px 9px; border-radius:var(--r-pill); margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
-  .cd-calnav{ display:flex; align-items:center; gap:14px; margin-bottom:20px; }
-  .cd-calnav b{ font-size:22px; font-weight:700; letter-spacing:-.03em; }
-  .cd-calnavbtn{
-    background:var(--fill-3); border:none; border-radius:50%; width:34px; height:34px;
-    cursor:pointer; font-size:18px; color:var(--sys-blue); transition:background .15s ease;
-  }
-  .cd-calnavbtn:hover{ background:var(--fill-2); }
-  .cd-calviewsel{ display:flex; gap:2px; margin-left:auto; background:var(--fill-3); border-radius:var(--r-sm); padding:2px; }
-  .cd-calviewbtn{ background:none; border:none; padding:7px 18px; border-radius:8px; font-size:13px; color:var(--label); cursor:pointer; font-family:inherit; font-weight:500; transition:background .18s ease; }
-  .cd-calviewbtn.on{ background:#636366; color:#FFFFFF; box-shadow:0 3px 8px rgba(0,0,0,.25), inset 0 0.5px 0 rgba(255,255,255,.2); }
-
-  .cd-weekwrap{
-    border:0.5px solid var(--stroke); border-radius:var(--r-lg); overflow:hidden;
-    background:var(--glass); backdrop-filter:var(--glass-blur); box-shadow:var(--glass-edge), var(--glass-shadow);
-  }
-  .cd-weekheadrow{ display:grid; border-bottom:0.5px solid var(--separator); }
-  .cd-weekheadcell{ padding:14px 6px; text-align:center; border-left:0.5px solid var(--separator); }
+  /* ---- Calendar (rebuilt in step 14) ---- */
+  .cd-calgrid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; }
+  .cd-calhead{ font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); text-align:left; padding:var(--s-2); background:var(--surface); }
+  .cd-calday{ background:var(--surface); min-height:96px; padding:var(--s-2); font-size:var(--fs-2); cursor:pointer; overflow:hidden; }
+  .cd-calday:hover{ background:var(--surface-2); }
+  .cd-calday.today{ box-shadow:inset 0 0 0 1px var(--accent); }
+  .cd-calday.sel{ background:var(--surface-2); }
+  .cd-calday.empty{ background:var(--bg-sunk); cursor:default; }
+  .cd-caldate{ font-weight:500; margin-bottom:var(--s-1); font-size:var(--fs-2); color:var(--text-2); }
+  .cd-calday.today .cd-caldate{ color:var(--accent); font-weight:600; }
+  .cd-calitem{ display:block; font-size:var(--fs-1); font-weight:500; padding:2px var(--s-1); border-radius:var(--r-sm); margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cd-calnav{ display:flex; align-items:center; gap:var(--s-2); margin-bottom:var(--s-4); flex-wrap:wrap; }
+  .cd-calnav b{ font-size:var(--fs-5); font-weight:600; margin:0 var(--s-2); }
+  .cd-calnavbtn{ display:inline-flex; align-items:center; justify-content:center; background:var(--surface-2); border:none; border-radius:var(--r-sm); width:32px; height:32px; cursor:pointer; font-size:var(--fs-4); color:var(--text); }
+  .cd-calnavbtn:hover{ background:var(--surface-3); }
+  .cd-calviewsel{ display:flex; gap:2px; margin-left:auto; background:var(--surface-2); border-radius:var(--r-sm); padding:2px; }
+  .cd-calviewbtn{ background:none; border:none; height:28px; padding:0 14px; border-radius:var(--r-sm); font-size:var(--fs-3); color:var(--text-2); cursor:pointer; font-family:inherit; font-weight:500; }
+  .cd-calviewbtn.on{ background:var(--surface); color:var(--text); box-shadow:0 1px 2px oklch(0 0 0 / .2); }
+  .cd-weekwrap{ border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; background:var(--surface); }
+  .cd-weekheadrow{ display:grid; border-bottom:1px solid var(--line); }
+  .cd-weekheadcell{ padding:var(--s-3) var(--s-1); text-align:center; border-left:1px solid var(--line); }
   .cd-weekheadcell:first-child{ border-left:none; }
-  .cd-weekheadcell .dow{ font-size:12px; color:var(--label-2); font-weight:500; }
-  .cd-weekheadcell .dnum{ font-size:20px; margin-top:4px; font-variant-numeric:tabular-nums; font-weight:600; letter-spacing:-.03em; }
-  .cd-weekheadcell.today .dnum{ background:var(--sys-blue); color:#FFFFFF; border-radius:50%; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; }
-  .cd-allday-row{ display:grid; border-bottom:0.5px solid var(--separator); min-height:34px; }
-  .cd-allday-cell{ border-left:0.5px solid var(--separator); padding:4px; }
+  .cd-weekheadcell .dow{ font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); }
+  .cd-weekheadcell .dnum{ font-size:var(--fs-5); margin-top:var(--s-1); font-weight:600; }
+  .cd-weekheadcell.today .dnum{ color:var(--accent); }
+  .cd-allday-row{ display:grid; border-bottom:1px solid var(--line); min-height:34px; }
+  .cd-allday-cell{ border-left:1px solid var(--line); padding:var(--s-1); }
   .cd-allday-cell:first-child{ border-left:none; }
   .cd-hourgrid{ display:grid; grid-template-columns:60px 1fr; max-height:540px; overflow-y:auto; }
   .cd-hourlabels{ display:flex; flex-direction:column; }
-  .cd-hourlabel{ height:44px; font-size:11px; color:var(--label-2); text-align:right; padding-right:12px; transform:translateY(-6px); font-variant-numeric:tabular-nums; }
+  .cd-hourlabel{ height:44px; font-size:var(--fs-1); color:var(--text-3); text-align:right; padding-right:var(--s-3); transform:translateY(-6px); }
   .cd-hourcols{ display:grid; position:relative; }
-  .cd-hourcol{ border-left:0.5px solid var(--separator); position:relative; }
+  .cd-hourcol{ border-left:1px solid var(--line); position:relative; }
   .cd-hourcol:first-child{ border-left:none; }
-  .cd-hourslot{ height:44px; border-bottom:0.5px solid rgba(84,84,88,.4); }
-  .cd-nowline{ position:absolute; left:0; right:0; height:1.5px; background:var(--sys-red); z-index:2; }
-  .cd-nowdot{ position:absolute; left:-5px; top:-4.5px; width:11px; height:11px; border-radius:50%; background:var(--sys-red); }
-  .cd-calitem-chip{
-    background:rgba(10,132,255,.24); color:#B9D8FF; font-size:11px; padding:3px 9px;
-    border-radius:var(--r-pill); margin-bottom:3px; cursor:pointer; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap; display:block; font-weight:500;
-  }
-  .cd-timedev{
-    position:absolute; left:3px; right:3px; background:rgba(255,159,10,.22);
-    border-left:3px solid var(--sys-orange); color:var(--label); font-size:11px; line-height:1.3;
-    padding:5px 9px; border-radius:8px; overflow:hidden; max-height:40px; cursor:pointer; z-index:2;
-  }
+  .cd-hourslot{ height:44px; border-bottom:1px solid var(--line); }
+  .cd-nowline{ position:absolute; left:0; right:0; height:2px; background:var(--danger); z-index:2; }
+  .cd-nowdot{ position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:var(--r-pill); background:var(--danger); }
+  .cd-calitem-chip{ background:color-mix(in oklch, var(--accent) var(--tint), transparent); color:var(--accent); font-size:var(--fs-1); padding:2px var(--s-1);
+    border-radius:var(--r-sm); margin-bottom:2px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; font-weight:500; }
+  .cd-timedev{ position:absolute; left:3px; right:3px; background:color-mix(in oklch, var(--warning) var(--tint), transparent); border-left:3px solid var(--warning);
+    color:var(--text); font-size:var(--fs-1); line-height:1.3; padding:var(--s-1) var(--s-2); border-radius:var(--r-sm); overflow:hidden; max-height:40px; cursor:pointer; z-index:2; }
 
-  /* ---- Reminder / inbox rows ---- */
-  .cd-remrow{
-    display:flex; gap:14px; align-items:flex-start; padding:16px 18px;
-    border-radius:var(--r-md); margin-bottom:10px;
-    background:var(--fill-4);
-  }
-  .cd-remrow.fired{ background:rgba(255,159,10,.14); }
-  .cd-remmeta{ font-size:13px; color:var(--label-2); margin-top:5px; }
-  .cd-remacts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-  .cd-remacts button{
-    font-size:13px; font-weight:500; padding:7px 14px; border-radius:var(--r-pill);
-    border:none; background:var(--fill-3); color:var(--label);
-    cursor:pointer; transition:background .15s ease;
-  }
-  .cd-remacts button:hover{ background:var(--fill-2); }
-  .cd-remacts button.primary{ background:var(--sys-blue); color:#FFFFFF; }
-  .cd-remacts button.primary:hover{ filter:brightness(1.08); }
-  .cd-timesel{ display:flex; gap:7px; align-items:center; }
-  .cd-timesel select{
-    background:var(--fill-3); color:var(--label); border:none;
-    border-radius:var(--r-sm); padding:9px 12px; font-size:15px; font-variant-numeric:tabular-nums; -webkit-appearance:none; appearance:none;
-  }
+  /* ---- Reminders, forms ---- */
+  .cd-remrow{ display:flex; gap:var(--s-3); align-items:flex-start; padding:var(--s-3) var(--s-4); border-top:1px solid var(--line); }
+  .cd-remrow.fired{ background:color-mix(in oklch, var(--warning) 8%, transparent); }
+  .cd-remmeta{ font-size:var(--fs-3); color:var(--text-2); margin-top:var(--s-1); }
+  .cd-remacts{ display:flex; gap:var(--s-2); flex-wrap:wrap; margin-top:var(--s-3); }
+  .cd-remacts button{ height:28px; padding:0 10px; font-size:var(--fs-2); font-weight:500; border-radius:var(--r-sm); border:none; background:var(--surface-2); color:var(--text); cursor:pointer; font-family:inherit; }
+  .cd-remacts button:hover{ background:var(--surface-3); }
+  .cd-remacts button.primary{ background:var(--accent); color:var(--text-on-accent); }
+  .cd-timesel{ display:flex; gap:var(--s-2); align-items:center; }
+  .cd-timesel select{ height:36px; background:var(--bg-sunk); color:var(--text); border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:0 12px; font-size:var(--fs-4); -webkit-appearance:none; appearance:none; }
+  .cd-formrow{ margin-bottom:var(--s-3); }
+  .cd-formrow label{ display:block; font-size:var(--fs-2); font-weight:500; color:var(--text-2); margin-bottom:var(--s-1); }
+  .cd-input{ width:100%; height:36px; background:var(--bg-sunk); border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:0 12px; font-size:var(--fs-4); color:var(--text); }
+  textarea.cd-input{ height:auto; padding:10px 12px; resize:vertical; }
+  .cd-input:focus{ outline:none; box-shadow:var(--focus); }
 
-  .cd-formrow{ margin-bottom:14px; }
-  .cd-formrow label{ display:block; font-size:13px; color:var(--label-2); margin-bottom:6px; padding:0 4px; text-transform:uppercase; letter-spacing:.02em; }
-  .cd-input{
-    width:100%; background:var(--fill-3) !important; border:none;
-    border-radius:var(--r-sm); padding:11px 14px; font-size:15px; color:var(--label) !important;
-  }
-  .cd-input:focus{ outline:none; box-shadow:0 0 0 3px rgba(10,132,255,.45); }
-
-  /* ---- Tiered Today / David / Underwriting ---- */
-  .hq-compact{ padding:8px 12px; margin-bottom:5px; align-items:center; gap:12px; }
-  .hq-tierrow{ display:grid; grid-template-columns:minmax(200px,1.1fr) minmax(220px,1.6fr) minmax(200px,1.4fr) auto auto; cursor:pointer; font-size:13px; }
-  .hq-tierrow:hover{ background:var(--fill-3); }
-  .hq-c1{ display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; min-width:0; }
-  .hq-c1 b{ font-size:14px; letter-spacing:-.012em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-  .hq-ids{ font-size:11px; color:var(--label-2); white-space:nowrap; }
-  .hq-plat{ font-size:10px; color:var(--label-3); border:0.5px solid var(--stroke); padding:0 6px; border-radius:var(--r-pill); white-space:nowrap; }
-  .hq-c2{ color:var(--label-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-  .hq-c3{ display:flex; gap:6px; align-items:center; min-width:0; }
+  /* ---- Today tiers ---- */
+  .hq-compact{ padding:var(--s-2) var(--s-3); align-items:center; gap:var(--s-3); }
+  .hq-tierrow{ display:grid; grid-template-columns:minmax(200px,1.1fr) minmax(200px,1.6fr) minmax(180px,1.3fr) auto auto; gap:var(--s-3); cursor:pointer; font-size:var(--fs-3);
+    padding:var(--s-3) var(--s-4); margin:0 calc(-1 * var(--s-4)); border-top:1px solid var(--line); border-left:3px solid transparent; }
+  .hq-tierrow:hover{ background:var(--surface-2); }
+  .hq-c1{ display:flex; gap:var(--s-1) var(--s-2); align-items:baseline; flex-wrap:wrap; min-width:0; overflow:hidden; }
+  .hq-c1 b{ font-size:var(--fs-4); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .hq-ids{ font-size:var(--fs-2); color:var(--text-2); }
+  .hq-plat{ display:inline-flex; align-items:center; height:20px; padding:0 6px; border-radius:var(--r-sm); border:1px solid currentColor; font-size:var(--fs-1); font-weight:600;
+    text-transform:uppercase; letter-spacing:.04em; color:var(--p-legacy); white-space:nowrap; }
+  .hq-c2{ color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; align-self:center; }
+  .hq-c3{ display:flex; gap:var(--s-2); align-items:center; min-width:0; }
   .hq-c3 span:last-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
-  .hq-c3 .cd-badge{ font-size:11px; padding:1px 7px; flex:none; }
-  .hq-c4{ display:flex; flex-direction:column; align-items:flex-end; gap:0; font-size:13px; }
-  .hq-due{ font-size:11px; color:var(--label-3); }
-  .hq-due.over{ color:var(--sys-red); }
-  .hq-c5{ display:flex; gap:4px; }
-  .hq-c5 .cd-inlinebtn{ padding:4px 10px; font-size:12px; }
-  .hq-c5 .hq-done{ background:var(--sys-blue); color:#fff; }
+  .hq-c3 .cd-badge{ flex:none; }
+  .hq-c4{ display:flex; flex-direction:column; align-items:flex-end; font-size:var(--fs-3); font-weight:600; align-self:center; }
+  .hq-due{ font-size:var(--fs-2); font-weight:400; color:var(--text-3); }
+  .hq-due.over{ color:var(--danger); }
+  .hq-c5{ display:flex; gap:var(--s-1); align-self:center; }
+  .hq-c5 .hq-done{ background:var(--accent); color:var(--text-on-accent); }
+  .hq-c5 .hq-done:hover{ background:var(--accent); filter:brightness(1.06); }
   .hq-uwrow{ grid-template-columns:minmax(260px,1.4fr) minmax(240px,2fr) auto; }
   .hq-uwrow .hq-c1{ flex-wrap:nowrap; align-items:center; }
-  #cdModal.hq-pop, #cdModal.hq-pop h3{ color:#F5F6F8; }
-  #cdModal.hq-pop .hq-plat{ color:#C9CED8; border-color:rgba(255,255,255,.35); }
-  .hq-popsect{ margin-top:14px; font-size:15px; line-height:1.5; color:#ECEEF2; }
-  .hq-poplab{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#AEB4BF; font-weight:700; margin-bottom:4px; }
-  .hq-popnote{ font-size:13.5px; color:#D5D9E0; padding:5px 0; border-top:0.5px solid rgba(255,255,255,.12); }
+  .hq-popsect{ margin-top:var(--s-3); font-size:var(--fs-4); line-height:1.5; }
+  .hq-poplab{ font-size:var(--fs-1); letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); font-weight:600; margin-bottom:var(--s-1); }
+  .hq-popnote{ font-size:var(--fs-3); color:var(--text-2); padding:var(--s-1) 0; border-top:1px solid var(--line); }
   .hq-popnote:first-child{ border-top:none; }
-  .hq-popnote .mono{ color:#AEB4BF !important; }
-  .hq-popids{ color:#C9CED8 !important; }
-  .hq-popids b{ color:#F5F6F8; }
-  .hq-davact{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding-top:6px; border-top:0.5px solid var(--separator); }
-  .hq-davact .cd-inlinebtn{ padding:4px 10px; font-size:12px; }
-  .hq-davnotebox{ padding-top:4px; }
-  .hq-t4grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px 18px; color:var(--label-2); font-size:14px; }
+  .hq-popids{ color:var(--text-2); }
+  .hq-popids b{ color:var(--text); }
+  .hq-davact{ display:flex; gap:var(--s-1); align-items:center; flex-wrap:wrap; padding-top:var(--s-2); border-top:1px solid var(--line); }
+  .hq-davnotebox{ padding-top:var(--s-1); }
+  .hq-t4grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--s-2) var(--s-4); color:var(--text-2); font-size:var(--fs-3); }
   .hq-t4grid > div{ cursor:pointer; }
-  .hq-t4grid > div:hover{ color:var(--label); }
+  .hq-t4grid > div:hover{ color:var(--text); }
   @media (max-width:1100px){ .hq-tierrow{ grid-template-columns:minmax(180px,1fr) minmax(200px,1.4fr) auto auto; } .hq-c3{ display:none; } }
   @media (max-width:760px){ .hq-tierrow{ grid-template-columns:1fr auto; } .hq-c2,.hq-c3{ display:none; } }
-
   @media (max-width: 900px){
     #cdApp{ flex-direction:column; }
-    #cdNav{ width:100%; height:auto; position:relative; border-right:none; border-bottom:0.5px solid var(--stroke); }
-    #cdMain{ padding:24px 18px 60px; }
+    #cdNav{ width:100%; height:auto; position:relative; border-right:none; border-bottom:1px solid var(--line); }
+    #cdMain{ padding:var(--s-4) var(--s-4) 60px; }
     .cd-kpirow{ grid-template-columns:repeat(2,1fr); }
-    .cd-h1{ font-size:28px; }
   }
+  .cd-davidmode .hq-davact, .cd-davidmode .hq-davnotebox { display:none !important; }
+  #cdDavidPill{ position:fixed; top:var(--s-2); right:var(--s-3); z-index:300; font-family:var(--font); font-size:var(--fs-2); font-weight:500; height:22px; padding:0 8px;
+    display:inline-flex; align-items:center; border-radius:var(--r-pill); background:color-mix(in oklch, var(--warning) var(--tint), transparent); color:var(--warning); }
 
   /* ---------------- OVERVIEW (read-only snapshot for David and the team) ----------------
      Deliberately a different register from the rest of the app: flat near-black cards with
@@ -708,14 +529,11 @@
     .ov-hbar{ grid-template-columns:96px 1fr auto; gap:8px; }
   }
   /* David view-only login (10/7): Yaakov's controls on the David page are hidden; a pill says view only. */
-  .cd-davidmode .hq-davact, .cd-davidmode .hq-davnotebox { display:none !important; }
-  #cdDavidPill { position:fixed; top:10px; right:12px; z-index:300; font:600 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif; font-weight:600; padding:5px 11px;
-    border-radius:999px; background:rgba(255,159,10,.18); color:#FF9F0A; border:0.5px solid #FF9F0A; }
+  
 </style>
 </head>
 <body>
-<div id="cdBackdrop"></div>
-<div id="cdApp"><div style="padding:40px;color:#9CA1AC">Loading Collections HQ...</div></div>
+<div id="cdApp"><div style="padding:var(--s-6);color:var(--text-3)">Loading Collections HQ...</div></div>
 <div id="cdDrawerOverlay"></div>
 <div id="cdDrawer"></div>
 <div id="cdModalOverlay"><div id="cdModal"></div></div>
@@ -735,27 +553,27 @@
   // states are quietest of all — a resolved deal should recede, not glow.
   // Semantic pairs from the design system: bold colour on a soft tint, never a solid fill.
   const STATUS = {
-    contact_today: {label:"Contact Today", color:"#FF453A", bg:"rgba(255,69,58,.20)", severity:6},
-    needs_file:    {label:"Needs to Be Filed", color:"#FF453A", bg:"rgba(255,69,58,.20)", severity:5.5},
-    urgent:        {label:"Urgent", color:"#FF9F0A", bg:"rgba(255,159,10,.20)", severity:5},
-    legal:         {label:"Legal", color:"#BF5AF2", bg:"rgba(191,90,242,.20)", severity:5},
-    in_touch:      {label:"In Touch", color:"#0A84FF", bg:"rgba(10,132,255,.22)", severity:4},
-    awaiting_response: {label:"Awaiting Response", color:"#FFD60A", bg:"rgba(255,214,10,.18)", severity:3.5},
-    debt_relief:   {label:"Debt Relief", color:"#BF5AF2", bg:"rgba(191,90,242,.20)", severity:3},
-    monitor:       {label:"Monitor", color:"#8E8E93", bg:"rgba(142,142,147,.22)", severity:2},
-    resolved:      {label:"Resolved", color:"#30D158", bg:"rgba(48,209,88,.20)", severity:0, terminal:true},
-    paid_full:     {label:"Paid Full", color:"#30D158", bg:"rgba(48,209,88,.20)", severity:0, terminal:true},
-    write_off:     {label:"Write Off", color:"#8E8E93", bg:"rgba(142,142,147,.22)", severity:0, terminal:true}
+    contact_today: {label:"Contact Today", color:"var(--danger)", bg:"color-mix(in oklch, var(--danger) var(--tint), transparent)", severity:6},
+    needs_file:    {label:"Needs to Be Filed", color:"var(--danger)", bg:"color-mix(in oklch, var(--danger) var(--tint), transparent)", severity:5.5},
+    urgent:        {label:"Urgent", color:"var(--warning)", bg:"color-mix(in oklch, var(--warning) var(--tint), transparent)", severity:5},
+    legal:         {label:"Legal", color:"var(--accent)", bg:"color-mix(in oklch, var(--accent) var(--tint), transparent)", severity:5},
+    in_touch:      {label:"In Touch", color:"var(--accent)", bg:"color-mix(in oklch, var(--accent) var(--tint), transparent)", severity:4},
+    awaiting_response: {label:"Awaiting Response", color:"var(--warning)", bg:"color-mix(in oklch, var(--warning) var(--tint), transparent)", severity:3.5},
+    debt_relief:   {label:"Debt Relief", color:"var(--neutral)", bg:"color-mix(in oklch, var(--neutral) var(--tint), transparent)", severity:3},
+    monitor:       {label:"Monitor", color:"var(--neutral)", bg:"color-mix(in oklch, var(--neutral) var(--tint), transparent)", severity:2},
+    resolved:      {label:"Resolved", color:"var(--success)", bg:"color-mix(in oklch, var(--success) var(--tint), transparent)", severity:0, terminal:true},
+    paid_full:     {label:"Paid Full", color:"var(--success)", bg:"color-mix(in oklch, var(--success) var(--tint), transparent)", severity:0, terminal:true},
+    write_off:     {label:"Write Off", color:"var(--neutral)", bg:"color-mix(in oklch, var(--neutral) var(--tint), transparent)", severity:0, terminal:true}
   };
-  function statusOf(s){ return STATUS[s] || {label:s||"Unknown", color:"var(--gray)", bg:"var(--gray-bg)", severity:1, terminal:false}; }
+  function statusOf(s){ return STATUS[s] || {label:s||"Unknown", color:"var(--neutral)", bg:"color-mix(in oklch, var(--neutral) var(--tint), transparent)", severity:1, terminal:false}; }
 
   const CLAWBACK = {
-    none:           {label:"None", color:"var(--ink-faint)"},
-    at_risk:        {label:"At Risk", color:"var(--amber)"},
-    needs_pull:     {label:"Needs to Be Pulled", color:"var(--red)"},
-    pulled_pending: {label:"Pulled — Pending", color:"var(--blue)"},
-    landed:         {label:"Landed", color:"var(--green)"},
-    bounced:        {label:"Bounced — ISO Wire Needed", color:"var(--red)"}
+    none:           {label:"None", color:"var(--text-3)"},
+    at_risk:        {label:"At Risk", color:"var(--warning)"},
+    needs_pull:     {label:"Needs to Be Pulled", color:"var(--danger)"},
+    pulled_pending: {label:"Pulled — Pending", color:"var(--accent)"},
+    landed:         {label:"Landed", color:"var(--success)"},
+    bounced:        {label:"Bounced — ISO Wire Needed", color:"var(--danger)"}
   };
 
   const TASK_TYPES = {
@@ -916,21 +734,21 @@
   function renderDavidLogin(err){
     const app = document.getElementById("cdApp");
     app.innerHTML = '<div style="margin:auto;max-width:420px;padding:40px 24px;">'
-      + '<div class="cd-h1" style="font-size:26px;">Collections HQ</div>'
+      + '<div class="cd-h1" style="font-size:var(--fs-6);">Collections HQ</div>'
       + '<p class="cd-sub" style="margin:8px 0 24px;">View-only sign in. You can see everything and post instructions on the David page.</p>'
       + (err ? '<div class="cd-warn">' + esc(err) + '</div>' : '')
       + '<div class="cd-formrow"><label>Password</label>'
       + '<input class="cd-input" id="cfgDavidPw" type="password" autocomplete="current-password"></div>'
       + '<button class="cd-savebtn" id="cfgDavidGo" style="margin-top:8px;">Sign in</button>'
       + '<div id="cfgDavidStatus" class="cd-sub" style="margin-top:14px;"></div>'
-      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToGithub" style="color:var(--label-2);">Full access sign in</a></p></div>';
+      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToGithub" style="color:var(--text-2);">Full access sign in</a></p></div>';
     const go = async ()=>{
       const pw = document.getElementById("cfgDavidPw").value.trim(); if(!pw) return;
       const status = document.getElementById("cfgDavidStatus");
       status.textContent = "Checking\u2026";
       ghCfg = { owner:"", repo:"", token:"", mode:"david", davidKey: pw };
       try{ await ghRead(); saveCfg(); currentPage = "david"; await load(); }
-      catch(e){ ghCfg = { owner:"", repo:"", token:"" }; status.innerHTML = '<span style="color:var(--sys-red);">' + esc((e && e.message) || "Couldn't sign in.") + '</span>'; }
+      catch(e){ ghCfg = { owner:"", repo:"", token:"" }; status.innerHTML = '<span style="color:var(--danger);">' + esc((e && e.message) || "Couldn't sign in.") + '</span>'; }
     };
     document.getElementById("cfgDavidGo").onclick = go;
     document.getElementById("cfgDavidPw").addEventListener("keydown", e=>{ if(e.key === "Enter") go(); });
@@ -1060,17 +878,13 @@
   function showBanner(html, tone){
     if(!saveBannerEl){
       saveBannerEl = document.createElement("div");
-      saveBannerEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:200;"
-        + "padding:12px 18px;border-radius:14px;font-size:14px;max-width:92vw;"
-        + "background-color:rgba(20,24,30,.97);"
-        + "box-shadow:0 20px 44px -18px rgba(0,0,0,.75);";
+      saveBannerEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:var(--s-5);z-index:200;"
+        + "padding:var(--s-3) var(--s-4);border-radius:var(--r-sm);font-family:var(--font);font-size:var(--fs-3);max-width:92vw;"
+        + "background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:var(--shadow);";
       document.body.appendChild(saveBannerEl);
     }
-    const bg = tone === "bad" ? "rgba(255,69,58,.22)" : tone === "warn" ? "rgba(255,159,10,.22)" : "rgba(48,209,88,.22)";
-    const fg = tone === "bad" ? "#FF453A" : tone === "warn" ? "#FF9F0A" : "#30D158";
-    saveBannerEl.style.background = bg;
-    saveBannerEl.style.border = "0.5px solid " + fg;
-    saveBannerEl.style.color = "#F5F7FA";
+    const tc = tone === "bad" ? "var(--danger)" : tone === "warn" ? "var(--warning)" : "var(--success)";
+    saveBannerEl.style.borderLeft = "3px solid " + tc;
     saveBannerEl.innerHTML = html;
     saveBannerEl.style.display = "block";
   }
@@ -1197,8 +1011,7 @@
     }catch(e){
       const msg = (e && e.message) || "Couldn't save to GitHub.";
       showBanner("<b>Not saved.</b> " + esc(msg)
-        + ' <button id="cdRetrySave" style="margin-left:10px;background:rgba(255,255,255,.18);border:none;'
-        + 'color:inherit;padding:4px 12px;border-radius:999px;cursor:pointer;font:inherit;">Retry</button>', "bad");
+        + ' <button id="cdRetrySave" class="cd-inlinebtn" style="margin-left:var(--s-2);">Retry</button>', "bad");
       const btn = document.getElementById("cdRetrySave");
       if(btn) btn.onclick = ()=>{ hideBanner(); save(message); };
     }
@@ -1208,7 +1021,7 @@
     const msg = (e && e.message) || "Couldn't reach GitHub.";
     const app = document.getElementById("cdApp");
     app.innerHTML = '<div style="margin:auto;max-width:520px;padding:40px;text-align:center;">'
-      + '<div class="cd-h1" style="font-size:24px;">Couldn\'t load your data</div>'
+      + '<div class="cd-h1" style="font-size:var(--fs-5);">Couldn\'t load your data</div>'
       + '<p class="cd-sub" style="margin:10px 0 22px;">' + esc(msg) + '</p>'
       + '<button class="cd-savebtn" id="cdRetryLoad">Try again</button> '
       + '<button class="cd-savebtn secondary" id="cdReconfig">Change settings</button></div>';
@@ -1222,7 +1035,7 @@
     if(/[?&]david\b/.test(location.search) && !renderSetup._skipDavid){ renderSetup._skipDavid = true; return renderDavidLogin(err); }
     const app = document.getElementById("cdApp");
     app.innerHTML = '<div style="margin:auto;max-width:460px;padding:40px 24px;">'
-      + '<div class="cd-h1" style="font-size:26px;">Connect to GitHub</div>'
+      + '<div class="cd-h1" style="font-size:var(--fs-6);">Connect to GitHub</div>'
       + '<p class="cd-sub" style="margin:8px 0 24px;">Your data lives in a private repo. '
       + 'These details are stored in this browser only \u2014 never in the app itself.</p>'
       + (err ? '<div class="cd-warn">' + esc(err) + '</div>' : '')
@@ -1234,7 +1047,7 @@
       + '<input class="cd-input" id="cfgToken" type="password" placeholder="github_pat_..."></div>'
       + '<button class="cd-savebtn" id="cfgSave" style="margin-top:8px;">Connect</button>'
       + '<div id="cfgStatus" class="cd-sub" style="margin-top:14px;"></div>'
-      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToDavid" style="color:var(--label-2);">View-only sign in (David)</a></p></div>';
+      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToDavid" style="color:var(--text-2);">View-only sign in (David)</a></p></div>';
     document.getElementById("cfgToDavid").onclick = (e)=>{ e.preventDefault(); renderDavidLogin(); };
     document.getElementById("cfgSave").onclick = async ()=>{
       const owner = document.getElementById("cfgOwner").value.trim();
@@ -1245,7 +1058,7 @@
         status.textContent = "All three are needed.";
         ["cfgOwner","cfgRepo","cfgToken"].forEach(id=>{
           const el = document.getElementById(id);
-          el.style.borderColor = el.value.trim() ? "" : "var(--sys-red)";
+          el.style.borderColor = el.value.trim() ? "" : "var(--danger)";
         });
         return;
       }
@@ -1258,7 +1071,7 @@
         await load();
       }catch(e){
         ghCfg = { owner:"", repo:"", token:"" };
-        status.innerHTML = '<span style="color:var(--sys-red);">' + esc((e && e.message) || "Couldn't connect.") + '</span>';
+        status.innerHTML = '<span style="color:var(--danger);">' + esc((e && e.message) || "Couldn't connect.") + '</span>';
       }
     };
   }
@@ -1316,7 +1129,7 @@
   function dateFieldHtml(key){
     const val = datePickerValues[key] || "";
     const displayVal = val ? fmtDateShort(val) : "Select date";
-    let html = '<button type="button" class="cd-select cd-datebtn" data-datetoggle="'+key+'" style="justify-content:space-between;align-items:center;color:'+(val?'var(--ink)':'var(--ink-faint)')+';">'+esc(displayVal)+'<span></span></button>';
+    let html = '<button type="button" class="cd-select cd-datebtn" data-datetoggle="'+key+'" style="justify-content:space-between;align-items:center;color:'+(val?'var(--text)':'var(--text-3)')+';">'+esc(displayVal)+'<span></span></button>';
     if(datePickerOpenFor===key) html += miniCalendarHtml(key);
     return html;
   }
@@ -1479,11 +1292,11 @@
   function emergencyContactsHtml(d){
     const list = d.emergencyContacts || [];
     let h = '<div class="cd-drsect">Emergency Contacts'
-      + (list.length ? ' <span style="color:var(--label-3);">\u00B7 '+list.length+'</span>' : '')
+      + (list.length ? ' <span style="color:var(--text-3);">\u00B7 '+list.length+'</span>' : '')
       + '</div>';
     if(list.length){
       h += list.map((ec,i)=>'<div class="cd-comment">'
-        + '<div class="cd-comment-head"><b>'+esc(ec.name||"\u2014")+(ec.relationship?' <span style="color:var(--label-2);font-weight:400;">\u00B7 '+esc(ec.relationship)+'</span>':'')+'</b>'
+        + '<div class="cd-comment-head"><b>'+esc(ec.name||"\u2014")+(ec.relationship?' <span style="color:var(--text-2);font-weight:400;">\u00B7 '+esc(ec.relationship)+'</span>':'')+'</b>'
         + '<button class="cd-comment-del" data-delemerg="'+d.id+'|'+i+'">Remove</button></div>'
         + '<div class="cd-comment-text">'+esc(ec.phone||"\u2014")+(ec.email?' \u00B7 '+esc(ec.email):'')+'</div>'
         + (ec.note?'<div class="cd-remmeta">'+esc(ec.note)+'</div>':'')
@@ -1500,7 +1313,7 @@
         + '<input class="cd-note" id="cdEmergPhone" placeholder="Phone" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
         + '<input class="cd-note" id="cdEmergEmail" placeholder="Email (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
         + '<input class="cd-note" id="cdEmergNote" placeholder="Note (optional)" style="min-height:auto;padding:8px 10px;margin-bottom:8px;">'
-        + '<div id="cdEmergErr" class="cd-remmeta" style="color:var(--sys-red);"></div>'
+        + '<div id="cdEmergErr" class="cd-remmeta" style="color:var(--danger);"></div>'
         + '<button class="cd-savebtn" data-saveemerg="'+d.id+'">Save</button> '
         + '<button class="cd-inlinebtn" id="cdCancelEmerg">Cancel</button>'
         + '</div>';
@@ -2190,7 +2003,7 @@
     const brokerAddSaveBtn = document.getElementById("cdPageBrokerAddSave");
     if(brokerAddSaveBtn) brokerAddSaveBtn.onclick = async ()=>{
       const name = document.getElementById("cdPageNewBrokerName").value.trim();
-      if(!name){ document.getElementById("cdPageNewBrokerName").style.borderColor = "var(--red)"; return; }
+      if(!name){ document.getElementById("cdPageNewBrokerName").style.borderColor = "var(--danger)"; return; }
       const phone = document.getElementById("cdPageNewBrokerPhone").value.trim();
       const email = document.getElementById("cdPageNewBrokerEmail").value.trim();
       DB.brokers = DB.brokers || [];
@@ -2206,7 +2019,7 @@
       const broker = DB.brokers.find(x=>x.id===bid);
       if(!broker) return;
       const name = document.getElementById("cdEditBrokerName-"+bid).value.trim();
-      if(!name){ document.getElementById("cdEditBrokerName-"+bid).style.borderColor = "var(--red)"; return; }
+      if(!name){ document.getElementById("cdEditBrokerName-"+bid).style.borderColor = "var(--danger)"; return; }
       const phone = document.getElementById("cdEditBrokerPhone-"+bid).value.trim();
       const email = document.getElementById("cdEditBrokerEmail-"+bid).value.trim();
       const changed = name!==broker.name || phone!==broker.phone || email!==broker.email;
@@ -2230,8 +2043,8 @@
       const err = document.getElementById("cdEmergErr");
       if(!name || !phone){
         err.textContent = "Name and phone are both needed.";
-        nameEl.style.borderColor = name ? "" : "var(--sys-red)";
-        phoneEl.style.borderColor = phone ? "" : "var(--sys-red)";
+        nameEl.style.borderColor = name ? "" : "var(--danger)";
+        phoneEl.style.borderColor = phone ? "" : "var(--danger)";
         return;
       }
       d.emergencyContacts = d.emergencyContacts || [];
@@ -2303,8 +2116,8 @@
       const textEl = document.getElementById("cdRemText");
       const text = textEl.value.trim();
       const date = datePickerValues["newRem"];
-      if(!text){ textEl.style.borderColor = "var(--red)"; return; }
-      if(!date){ const btn=document.querySelector('[data-datetoggle="newRem"]'); if(btn) btn.style.borderColor="var(--red)"; return; }
+      if(!text){ textEl.style.borderColor = "var(--danger)"; return; }
+      if(!date){ const btn=document.querySelector('[data-datetoggle="newRem"]'); if(btn) btn.style.borderColor="var(--danger)"; return; }
       const time = timePickerValues["newRem"] || "16:00";
       DB.reminders = DB.reminders || [];
       const repeatEl = document.getElementById("cdRemRepeat");
@@ -2426,8 +2239,8 @@
   function firedRemindersBlockHtml(){
     const fired = firedReminders();
     if(!fired.length) return "";
-    return '<div class="cd-panel" style="border-color:var(--yellow);margin-bottom:16px;">'
-      + '<h3 style="color:var(--yellow);">Reminders due \u2014 '+fired.length+'</h3>'
+    return '<div class="cd-panel" style="border-color:var(--warning);margin-bottom:16px;">'
+      + '<h3 style="color:var(--warning);">Reminders due \u2014 '+fired.length+'</h3>'
       + fired.map(r=>reminderRowHtml(r,true)).join("")
       + '</div>';
   }
@@ -2437,11 +2250,11 @@
   // nothing here is set by hand. "Done" closes whatever raised the line (reminder, task,
   // commitment, David instruction) and writes a note; "Later" pushes it to tomorrow.
   const TIER_META = {
-    1:{label:"Tier 1", color:"var(--sys-red)",    why:"clock running — inside the window, deliberate stop, clawback in flight, or David is waiting"},
-    2:{label:"Tier 2", color:"var(--sys-orange)", why:"deteriorating — second or third miss, someone waiting on us, a promise or reminder due"},
-    3:{label:"Tier 3", color:"var(--sys-blue)",   why:"filing decisions and deals that need a status before anyone touches them"}
+    1:{label:"Tier 1", color:"var(--danger)",    why:"clock running — inside the window, deliberate stop, clawback in flight, or David is waiting"},
+    2:{label:"Tier 2", color:"var(--warning)", why:"deteriorating — second or third miss, someone waiting on us, a promise or reminder due"},
+    3:{label:"Tier 3", color:"var(--accent)",   why:"filing decisions and deals that need a status before anyone touches them"}
   };
-  const DAVID_ST = {new:["New","var(--sys-red)"],prog:["In progress","var(--sys-orange)"],wait:["Waiting on Anusha","var(--sys-indigo)"],done:["Completed","var(--sys-green)"]};
+  const DAVID_ST = {new:["New","var(--danger)"],prog:["In progress","var(--warning)"],wait:["Waiting on Anusha","var(--p-mcapay)"],done:["Completed","var(--success)"]};
   const UW_KINDS = ["Renewal while missing","First pull failed","Contract template","File shopping","Stacking","Bank / statement issue","Other"];
   let hqReturn = null, hqPopKey = null, hqShowSnoozed = false, hqTierCache = null, davidShowArchive = false, uwShowArchive = false, uwAdding = false;
   const HQ_ARCHIVE_DAYS = 30;
@@ -2590,23 +2403,23 @@
   function tierItemByKey(key){ const T=computeTiers(); for(const k of [1,2,3,"snoozed"]){ const f=T[k].find(x=>x.key===key); if(f) return f; } return null; }
 
   function whoPill(w){
-    const c = w==="You"?"var(--sys-blue)": w==="Anusha"?"var(--sys-indigo)": w==="David"?"var(--sys-orange)":"var(--sys-gray)";
-    return '<span class="cd-badge" style="background:'+c+'22;color:'+c+';font-size:12px;padding:2px 9px;">'+esc(w)+'</span>';
+    const c = w==="You"?"var(--accent)": w==="Anusha"?"var(--p-mcapay)": w==="David"?"var(--warning)":"var(--neutral)";
+    return '<span class="cd-badge" style="background:color-mix(in oklch, '+c+' var(--tint), transparent);color:'+c+';">'+esc(w)+'</span>';
   }
   function tierRowHtml(it){
     const d = it.deal, tier = it.tier;
     const bal = money((d.original||0)-(d.recovered||0));
     return '<div class="cd-remrow hq-tierrow hq-compact" data-hqpop="'+it.key+'" style="border-left:3px solid '+TIER_META[tier].color+';">'
-      + '<div class="hq-c1"><b>'+esc(d.name)+'</b>'+(dealIds(d)?'<span class="mono hq-ids">'+esc(dealIds(d))+'</span>':'')+(d.platform?'<span class="hq-plat">'+esc(d.platform)+'</span>':'')+'</div>'
+      + '<div class="hq-c1"><b>'+esc(d.name)+'</b>'+(dealIds(d)?'<span class="hq-ids">'+esc(dealIds(d))+'</span>':'')+(d.platform?'<span class="hq-plat">'+esc(d.platform)+'</span>':'')+'</div>'
       + '<div class="hq-c2">'+esc(it.what)+'</div>'
       + '<div class="hq-c3">'+whoPill(it.who)+'<span>'+esc(it.act)+'</span></div>'
-      + '<div class="hq-c4"><span class="mono">'+bal+'</span>'+(it.due?'<span class="mono hq-due'+(it.over?' over':'')+'">'+esc(it.due)+'</span>':'')+'</div>'
-      + '<div class="hq-c5">'+(it.who!=="Claude"?'<button class="cd-inlinebtn hq-done" data-hqdone="'+it.key+'">Done</button>':'')+'<button class="cd-inlinebtn hq-later" data-hqlater="'+it.key+'" style="background:var(--fill-3);color:var(--label);">Later</button></div>'
+      + '<div class="hq-c4"><span>'+bal+'</span>'+(it.due?'<span class="hq-due'+(it.over?' over':'')+'">'+esc(it.due)+'</span>':'')+'</div>'
+      + '<div class="hq-c5">'+(it.who!=="Claude"?'<button class="cd-inlinebtn hq-done" data-hqdone="'+it.key+'">Done</button>':'')+'<button class="cd-inlinebtn hq-later" data-hqlater="'+it.key+'" style="background:var(--surface-2);color:var(--text);">Later</button></div>'
     + '</div>';
   }
   function tierPanelHtml(t, items){
     return '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">'
-      + '<h3 style="margin:0;color:'+TIER_META[t].color+';">'+TIER_META[t].label+' <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">'+TIER_META[t].why+'</span></h3>'
+      + '<h3 style="margin:0;color:'+TIER_META[t].color+';">'+TIER_META[t].label+' <span style="font-size:var(--fs-3);font-weight:400;color:var(--text-2);">'+TIER_META[t].why+'</span></h3>'
       + '</div><div style="height:6px;"></div>'
       + '<div class="hq-tierbody">' + (items.length ? items.map(tierRowHtml).join('') : '<div class="cd-empty" style="padding:14px 0;">Nothing here.</div>') + '</div></div>';
   }
@@ -2619,20 +2432,20 @@
       + '<p class="cd-sub">Work top to bottom. Each line is one call or one message. Click a line for the full situation; Done when you’ve reported the outcome.</p>';
     const t4 = T.legal.length + T.anusha.length + T.uw.length;
     html += '<div class="cd-kpirow">'
-      + [1,2,3].map(k=>'<div class="cd-kpi"><span>'+TIER_META[k].label+'</span><b class="mono" style="color:'+TIER_META[k].color+';">'+T[k].length+'</b></div>').join('')
-      + '<div class="cd-kpi"><span>Tier 4</span><b class="mono" style="color:var(--sys-gray);">'+t4+'</b><div class="cd-kpisub">legal chases + others’ work</div></div>'
+      + [1,2,3].map(k=>'<div class="cd-kpi"><span>'+TIER_META[k].label+'</span><b style="color:'+TIER_META[k].color+';">'+T[k].length+'</b></div>').join('')
+      + '<div class="cd-kpi"><span>Tier 4</span><b style="color:var(--neutral);">'+t4+'</b><div class="cd-kpisub">legal chases + others’ work</div></div>'
       + '</div>';
     [1,2,3].forEach(k=>{ html += tierPanelHtml(k, T[k]); });
 
     // Tier 4
     const byFirm = {};
     T.legal.forEach(x=>{ const f=(x.deal.legalCase&&x.deal.legalCase.firm)||"No firm recorded"; (byFirm[f]=byFirm[f]||[]).push(x); });
-    html += '<div class="cd-panel"><h3 style="color:var(--sys-gray);">Tier 4 <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">only on a slow day — batched, not chased one by one</span></h3><div class="hq-t4grid">'
-      + Object.keys(byFirm).sort().map(f=>'<div data-page="legal"><b class="mono">'+byFirm[f].length+'</b> '+esc(f)+' — '+byFirm[f].filter(x=>x.stale).length+' quiet 14+ days'+(byFirm[f].some(x=>x.rems.length||x.tasks.length||x.david.length)?', '+byFirm[f].filter(x=>x.rems.length||x.tasks.length||x.david.length).length+' with something due':'')+'</div>').join('')
-      + (T.anusha.length?'<div data-page="tasks"><b class="mono">'+T.anusha.length+'</b> waiting on Anusha / David / a firm — '+esc(T.anusha.slice(0,2).map(x=>(dealById(x.dealId)||{}).name||"").join(", "))+(T.anusha.length>2?' and more':'')+'</div>':'')
-      + (T.uw.length?'<div data-page="uw"><b class="mono">'+T.uw.length+'</b> for underwriting</div>':'')
-      + (T.missingContact.length?'<div data-page="deals" data-viewmode-hint="missingcontact"><b class="mono">'+T.missingContact.length+'</b> active deals with no contact on file</div>':'')
-      + (T.needsReviewLegal.length?'<div data-page="legal"><b class="mono">'+T.needsReviewLegal.length+'</b> legal cases migrated with guessed stage — confirm</div>':'')
+    html += '<div class="cd-panel"><h3 style="color:var(--neutral);">Tier 4 <span style="font-size:var(--fs-3);font-weight:400;color:var(--text-2);">only on a slow day — batched, not chased one by one</span></h3><div class="hq-t4grid">'
+      + Object.keys(byFirm).sort().map(f=>'<div data-page="legal"><b>'+byFirm[f].length+'</b> '+esc(f)+' — '+byFirm[f].filter(x=>x.stale).length+' quiet 14+ days'+(byFirm[f].some(x=>x.rems.length||x.tasks.length||x.david.length)?', '+byFirm[f].filter(x=>x.rems.length||x.tasks.length||x.david.length).length+' with something due':'')+'</div>').join('')
+      + (T.anusha.length?'<div data-page="tasks"><b>'+T.anusha.length+'</b> waiting on Anusha / David / a firm — '+esc(T.anusha.slice(0,2).map(x=>(dealById(x.dealId)||{}).name||"").join(", "))+(T.anusha.length>2?' and more':'')+'</div>':'')
+      + (T.uw.length?'<div data-page="uw"><b>'+T.uw.length+'</b> for underwriting</div>':'')
+      + (T.missingContact.length?'<div data-page="deals" data-viewmode-hint="missingcontact"><b>'+T.missingContact.length+'</b> active deals with no contact on file</div>':'')
+      + (T.needsReviewLegal.length?'<div data-page="legal"><b>'+T.needsReviewLegal.length+'</b> legal cases migrated with guessed stage — confirm</div>':'')
       + (!Object.keys(byFirm).length && !T.anusha.length && !T.uw.length && !T.missingContact.length ? '<div style="cursor:default;">Nothing batched.</div>':'')
       + '</div></div>';
 
@@ -2642,21 +2455,21 @@
     const upC = openCommitments().filter(c=>c.dueDate>t && c.dueDate<=week);
     const upR = upcomingReminders().filter(r=>splitDueAt(r.dueAt).date>t && splitDueAt(r.dueAt).date<=week).slice(0,8);
     const ups = [].concat(upW.map(w=>({date:w.checkOn, dealId:w.dealId, text:w.condition})), upC.map(c=>({date:c.dueDate, dealId:c.dealId, text:"promise: "+c.description})), upR.map(r=>({date:splitDueAt(r.dueAt).date, dealId:r.dealId, text:r.text}))).sort((a,b)=>a.date.localeCompare(b.date));
-    html += '<div class="cd-panel"><h3 style="color:var(--label-2);">Coming up <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">next 7 days — watched, nothing to do unless it fails</span></h3>'
-      + (ups.length ? '<div style="display:flex;flex-direction:column;gap:4px;color:var(--label-2);font-size:14px;">'+ups.slice(0,12).map(u=>{const d=u.dealId?dealById(u.dealId):null;return '<div '+(d?'data-open="'+d.id+'" style="cursor:pointer;"':'')+'><span class="mono" style="color:var(--label-3);">'+fmtDateShort(u.date)+'</span> · '+(d?'<b>'+esc(d.name)+'</b> · ':'')+esc(u.text.length>140?u.text.slice(0,140)+"…":u.text)+'</div>';}).join('')+(ups.length>12?'<div class="cd-caption">and '+(ups.length-12)+' more — see Calendar</div>':'')+'</div>' : '<div class="cd-empty" style="padding:14px 0;">Nothing scheduled in the next week.</div>')
+    html += '<div class="cd-panel"><h3 style="color:var(--text-2);">Coming up <span style="font-size:var(--fs-3);font-weight:400;color:var(--text-2);">next 7 days — watched, nothing to do unless it fails</span></h3>'
+      + (ups.length ? '<div style="display:flex;flex-direction:column;gap:4px;color:var(--text-2);font-size:var(--fs-3);">'+ups.slice(0,12).map(u=>{const d=u.dealId?dealById(u.dealId):null;return '<div '+(d?'data-open="'+d.id+'" style="cursor:pointer;"':'')+'><span style="color:var(--text-3);">'+fmtDateShort(u.date)+'</span> · '+(d?'<b>'+esc(d.name)+'</b> · ':'')+esc(u.text.length>140?u.text.slice(0,140)+"…":u.text)+'</div>';}).join('')+(ups.length>12?'<div class="cd-caption">and '+(ups.length-12)+' more — see Calendar</div>':'')+'</div>' : '<div class="cd-empty" style="padding:14px 0;">Nothing scheduled in the next week.</div>')
       + '</div>';
 
     if(T.snoozed.length){
-      html += '<div class="cd-panel" style="opacity:.8;"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--label-2);">Pushed to tomorrow ('+T.snoozed.length+')</h3><button class="cd-inlinebtn" id="hqToggleSnoozed" style="background:var(--fill-3);color:var(--label);">'+(hqShowSnoozed?'hide':'show')+'</button></div>'
+      html += '<div class="cd-panel" style="opacity:.8;"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--text-2);">Pushed to tomorrow ('+T.snoozed.length+')</h3><button class="cd-inlinebtn" id="hqToggleSnoozed" style="background:var(--surface-2);color:var(--text);">'+(hqShowSnoozed?'hide':'show')+'</button></div>'
         + (hqShowSnoozed?'<div style="height:6px;"></div><div class="hq-tierbody">'+T.snoozed.map(tierRowHtml).join('')+'</div>':'')+'</div>';
     }
 
-    html += '<div class="cd-panel" style="opacity:.75;"><h3 style="font-size:15px;color:var(--label-2);">How a deal lands in a tier <span style="font-weight:400;">— computed, not set by hand</span></h3>'
-      + '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;color:var(--label-2);">'
-      + '<b style="color:var(--sys-red);">Tier 1</b><span>funded &lt; 30 days with any miss · R08 / R02 / R29 in a note from the last 60 days · a clawback pulled, bounced or waiting to be pulled · an open instruction from David</span>'
-      + '<b style="color:var(--sys-orange);">Tier 2</b><span>2nd or 3rd consecutive miss (weekly), 4th+ (daily) · a reminder, task, promise or watch condition due · a paused or wire-paying deal past its date · status Contact Today · marked resolved but bouncing</span>'
-      + '<b style="color:var(--sys-blue);">Tier 3</b><span>4+ consecutive weekly / 10+ daily → filing decision · Needs to Be Filed · Needs Review · broken settlement</span>'
-      + '<b style="color:var(--sys-gray);">Tier 4</b><span>deals in legal or debt relief — firm quiet 14+ days, batched by firm · tasks waiting on Anusha, David or a firm · underwriting notes · missing contact info</span>'
+    html += '<div class="cd-panel" style="opacity:.75;"><h3 style="font-size:var(--fs-4);color:var(--text-2);">How a deal lands in a tier <span style="font-weight:400;">— computed, not set by hand</span></h3>'
+      + '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:var(--fs-3);color:var(--text-2);">'
+      + '<b style="color:var(--danger);">Tier 1</b><span>funded &lt; 30 days with any miss · R08 / R02 / R29 in a note from the last 60 days · a clawback pulled, bounced or waiting to be pulled · an open instruction from David</span>'
+      + '<b style="color:var(--warning);">Tier 2</b><span>2nd or 3rd consecutive miss (weekly), 4th+ (daily) · a reminder, task, promise or watch condition due · a paused or wire-paying deal past its date · status Contact Today · marked resolved but bouncing</span>'
+      + '<b style="color:var(--accent);">Tier 3</b><span>4+ consecutive weekly / 10+ daily → filing decision · Needs to Be Filed · Needs Review · broken settlement</span>'
+      + '<b style="color:var(--neutral);">Tier 4</b><span>deals in legal or debt relief — firm quiet 14+ days, batched by firm · tasks waiting on Anusha, David or a firm · underwriting notes · missing contact info</span>'
       + '</div></div>';
 
     // Inbox — the one thing that is still its own list: things that ARRIVED.
@@ -2664,7 +2477,7 @@
       + (unread.length?'<button class="cd-savebtn secondary" id="cdInboxAllRead">Mark all read</button>':'')+'</div>'
       + '<p class="cd-caption">Reports, emails and messages that have arrived. Your own updates never appear here. Reading an item clears it.</p>'
       + (unread.length ? unread.map(x=>{const d=x.dealId?dealById(x.dealId):null;
-          return '<div class="cd-remrow fired hq-compact"><div style="flex:1;min-width:0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;"><b '+(d?'data-open="'+d.id+'" style="cursor:pointer;"':'')+'>'+esc(x.title||"")+'</b>'+(d&&dealIds(d)?'<span class="mono" style="font-size:12px;color:var(--label-2);">'+esc(dealIds(d))+'</span>':'')+'<span style="color:var(--label-2);font-size:13px;">'+esc((x.detail||"").slice(0,140))+'</span></div><span class="mono" style="font-size:12px;color:var(--label-3);flex:none;">'+esc(x.source||"")+' · '+esc(fmtReceived(x.receivedAt))+'</span><button class="cd-inlinebtn" data-inboxread="'+x.id+'" style="flex:none;">Read</button></div>';}).join('')
+          return '<div class="cd-remrow fired hq-compact"><div style="flex:1;min-width:0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;"><b '+(d?'data-open="'+d.id+'" style="cursor:pointer;"':'')+'>'+esc(x.title||"")+'</b>'+(d&&dealIds(d)?'<span style="font-size:var(--fs-2);color:var(--text-2);">'+esc(dealIds(d))+'</span>':'')+'<span style="color:var(--text-2);font-size:var(--fs-3);">'+esc((x.detail||"").slice(0,140))+'</span></div><span style="font-size:var(--fs-2);color:var(--text-3);flex:none;">'+esc(x.source||"")+' · '+esc(fmtReceived(x.receivedAt))+'</span><button class="cd-inlinebtn" data-inboxread="'+x.id+'" style="flex:none;">Read</button></div>';}).join('')
         : '<div class="cd-empty">Nothing new.</div>')
       + '</div>';
     return html;
@@ -2706,27 +2519,27 @@
     const c = (d && d.contact) || {};
     const notes = d ? (d.notesLog||[]).slice(-3).reverse() : [];
     const bal = d ? money((d.original||0)-(d.recovered||0)) : "";
-    const accent = kind==='t' ? TIER_META[it.tier].color : 'var(--sys-orange)';
+    const accent = kind==='t' ? TIER_META[it.tier].color : 'var(--warning)';
     const watches = kind==='t' ? it.watchIds.map(watchById).filter(Boolean) : [];
     let h = '<button class="cd-modalclose" data-hqpopclose="1" style="position:absolute;top:18px;right:18px;">×</button>';
-    h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+accent+';font-weight:600;margin-bottom:4px;">'+(kind==='t'?TIER_META[it.tier].label+' · '+esc(it.reasons.join(" ·ⁿ").replace(/ⁿ/g,"")):esc(it.kind||""))+'</div>';
+    h += '<div style="font-size:var(--fs-1);text-transform:uppercase;color:'+accent+';font-weight:600;margin-bottom:4px;">'+(kind==='t'?TIER_META[it.tier].label+' · '+esc(it.reasons.join(" ·ⁿ").replace(/ⁿ/g,"")):esc(it.kind||""))+'</div>';
     h += '<h3 style="margin:0 0 4px;padding-right:36px;">'+esc(d?d.name:(it.title||""))+'</h3>';
-    h += '<div class="mono hq-popids" style="font-size:12.5px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'
+    h += '<div class="hq-popids" style="font-size:var(--fs-2);margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'
       + (d?esc(dealIds(d)):'') + (d&&d.platform?'<span class="hq-plat">'+esc(d.platform)+'</span>':'')
       + (st?'<span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span>':'')
       + (bal?'<span style="margin-left:auto;"><b>'+bal+'</b> <span style="font-weight:400;">left</span></span>':'')
       + '</div>';
     if(kind==='t'){
       h += '<div class="hq-popsect"><div class="hq-poplab">What happened</div><div>'+esc(it.what)+'</div></div>';
-      h += '<div class="hq-popsect"><div class="hq-poplab">Next</div><div style="display:flex;gap:8px;align-items:flex-start;">'+whoPill(it.who)+'<div><b>'+esc(it.act)+'</b>'+(it.due?'<div class="mono" style="font-size:12px;color:#AEB4BF;margin-top:2px;">'+esc(it.due)+'</div>':'')+'</div></div></div>';
-      if(watches.length) h += '<div class="hq-popsect"><div class="hq-poplab">Watch condition</div>'+watches.map(w=>'<div style="margin-bottom:6px;">'+esc(w.condition)+'<div style="font-size:13px;color:#C9CED8;margin-top:3px;">met → '+esc(w.ifMet||"")+'<br>not met → '+esc(w.ifFailed||"")+'</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="cd-inlinebtn" data-watchmet="'+w.id+'" style="background:var(--sys-green);color:#fff;">Met</button><button class="cd-inlinebtn" data-watchfailed="'+w.id+'" style="background:var(--sys-red);color:#fff;">Not met</button></div></div>').join('')+'</div>';
+      h += '<div class="hq-popsect"><div class="hq-poplab">Next</div><div style="display:flex;gap:8px;align-items:flex-start;">'+whoPill(it.who)+'<div><b>'+esc(it.act)+'</b>'+(it.due?'<div style="font-size:var(--fs-2);color:var(--text-2);margin-top:2px;">'+esc(it.due)+'</div>':'')+'</div></div></div>';
+      if(watches.length) h += '<div class="hq-popsect"><div class="hq-poplab">Watch condition</div>'+watches.map(w=>'<div style="margin-bottom:6px;">'+esc(w.condition)+'<div style="font-size:var(--fs-3);color:var(--text-2);margin-top:3px;">met → '+esc(w.ifMet||"")+'<br>not met → '+esc(w.ifFailed||"")+'</div><div style="display:flex;gap:6px;margin-top:6px;"><button class="cd-inlinebtn" data-watchmet="'+w.id+'" style="background:var(--success);color:#fff;">Met</button><button class="cd-inlinebtn" data-watchfailed="'+w.id+'" style="background:var(--danger);color:#fff;">Not met</button></div></div>').join('')+'</div>';
     } else {
-      h += '<div class="hq-popsect"><div style="font-weight:600;color:#F5F6F8;margin-bottom:6px;">'+esc(it.title||"")+'</div><div>'+esc(it.text||"")+'</div><div class="mono" style="font-size:12px;color:#AEB4BF;margin-top:6px;">'+esc(it.date||"")+(it.by?' · '+esc(it.by):'')+'</div></div>';
+      h += '<div class="hq-popsect"><div style="font-weight:600;color:var(--text);margin-bottom:6px;">'+esc(it.title||"")+'</div><div>'+esc(it.text||"")+'</div><div style="font-size:var(--fs-2);color:var(--text-2);margin-top:6px;">'+esc(it.date||"")+(it.by?' · '+esc(it.by):'')+'</div></div>';
     }
     if(d){
       const ec = (d.emergencyContacts||[]).length;
-      h += '<div class="hq-popsect"><div class="hq-poplab">Contact</div>'+((c.name||c.phone||c.email)?'<div>'+esc(c.name||"")+(c.phone?' · <span class="mono">'+esc(c.phone)+'</span>':'')+(c.email?' · '+esc(c.email):'')+'</div>':'<div style="color:#FF6B6B;font-weight:600;">None on file'+(ec?' — '+ec+' emergency contact'+(ec>1?'s':'')+' in the drawer':'')+'</div>')+'</div>';
-      h += '<div class="hq-popsect"><div class="hq-poplab">Last notes</div>'+(notes.length?notes.map(n=>'<div class="hq-popnote"><span class="mono">'+esc(n.date||"")+'</span> '+esc((n.text||"").length>240?(n.text||"").slice(0,240)+"…":(n.text||""))+'</div>').join(''):'<div style="color:#AEB4BF;">No notes yet.</div>')+'</div>';
+      h += '<div class="hq-popsect"><div class="hq-poplab">Contact</div>'+((c.name||c.phone||c.email)?'<div>'+esc(c.name||"")+(c.phone?' · <span>'+esc(c.phone)+'</span>':'')+(c.email?' · '+esc(c.email):'')+'</div>':'<div style="color:var(--danger);font-weight:600;">None on file'+(ec?' — '+ec+' emergency contact'+(ec>1?'s':'')+' in the drawer':'')+'</div>')+'</div>';
+      h += '<div class="hq-popsect"><div class="hq-poplab">Last notes</div>'+(notes.length?notes.map(n=>'<div class="hq-popnote"><span>'+esc(n.date||"")+'</span> '+esc((n.text||"").length>240?(n.text||"").slice(0,240)+"…":(n.text||""))+'</div>').join(''):'<div style="color:var(--text-2);">No notes yet.</div>')+'</div>';
       h += '<div class="hq-popsect"><div class="hq-poplab">Note</div><textarea class="cd-input" id="hqPopNote" rows="2" placeholder="What happened on the call, what they said, what’s next"></textarea></div>';
     }
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">'
@@ -2762,21 +2575,21 @@
     const when = (i.when||"").replace("T"," ");
     return '<div class="cd-remrow hq-davrow" '+(d&&!compact?'data-open="'+d.id+'"':'')+' style="flex-direction:column;align-items:stretch;gap:6px;'+(d&&!compact?'cursor:pointer;':'')+(i.status==="done"?'opacity:.55;':'')+'">'
       + '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;"><div style="font-size:'+(compact?'14':'16')+'px;">'+esc(i.text)+'</div><span class="cd-badge" style="background:'+col+'22;color:'+col+';flex:none;">'+lab+'</span></div>'
-      + '<div class="mono" style="font-size:'+(compact?'11':'12')+'px;color:var(--label-2);">'+(compact?'':esc(d?d.name+(dealIds(d)?' · '+dealIds(d):''):(i.dealLabel||"General"))+' · ')+esc(when)+'</div>'
-      + (i.answer?'<div style="color:var(--label-2);border-top:0.5px solid var(--separator);padding-top:8px;font-size:'+(compact?'13':'14')+'px;">'+esc(i.answer)+'</div>':'')
-      + (i.log&&i.log.length?i.log.map(l=>'<div style="font-size:13px;color:var(--label-2);padding-left:10px;border-left:2px solid var(--stroke);"><span class="mono" style="font-size:11px;color:var(--label-3);">'+esc(l.who||"")+' · '+esc((l.when||"").replace("T"," "))+'</span><br>'+esc(l.text||"")+'</div>').join(''):'')
+      + '<div style="font-size:'+(compact?'11':'12')+'px;color:var(--text-2);">'+(compact?'':esc(d?d.name+(dealIds(d)?' · '+dealIds(d):''):(i.dealLabel||"General"))+' · ')+esc(when)+'</div>'
+      + (i.answer?'<div style="color:var(--text-2);border-top:1px solid var(--line);padding-top:8px;font-size:'+(compact?'13':'14')+'px;">'+esc(i.answer)+'</div>':'')
+      + (i.log&&i.log.length?i.log.map(l=>'<div style="font-size:var(--fs-3);color:var(--text-2);padding-left:10px;border-left:2px solid var(--line-strong);"><span style="font-size:var(--fs-1);color:var(--text-3);">'+esc(l.who||"")+' · '+esc((l.when||"").replace("T"," "))+'</span><br>'+esc(l.text||"")+'</div>').join(''):'')
       + '<div class="hq-davact" data-stop="1">'
-        + (i.status!=="done"?'<button class="cd-inlinebtn hq-davdone" data-n="'+i.id+'" style="background:var(--sys-green);color:#fff;">Mark completed</button>':'<button class="cd-inlinebtn hq-davreopen" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Reopen</button>')
-        + '<select class="cd-input hq-davst" data-n="'+i.id+'" style="width:auto;padding:4px 8px;font-size:12px;">'+Object.keys(DAVID_ST).map(k=>'<option value="'+k+'"'+(k===i.status?' selected':'')+'>'+DAVID_ST[k][0]+'</option>').join('')+'</select>'
-        + '<button class="cd-inlinebtn hq-davnote" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Note</button>'
-        + (d&&!compact?'<span class="cd-caption" style="margin:0 0 0 auto;font-size:11px;">click row → deal</span>':'')
+        + (i.status!=="done"?'<button class="cd-inlinebtn hq-davdone" data-n="'+i.id+'" style="background:var(--success);color:#fff;">Mark completed</button>':'<button class="cd-inlinebtn hq-davreopen" data-n="'+i.id+'" style="background:var(--surface-2);color:var(--text);">Reopen</button>')
+        + '<select class="cd-input hq-davst" data-n="'+i.id+'" style="width:auto;padding:4px 8px;font-size:var(--fs-2);">'+Object.keys(DAVID_ST).map(k=>'<option value="'+k+'"'+(k===i.status?' selected':'')+'>'+DAVID_ST[k][0]+'</option>').join('')+'</select>'
+        + '<button class="cd-inlinebtn hq-davnote" data-n="'+i.id+'" style="background:var(--surface-2);color:var(--text);">Note</button>'
+        + (d&&!compact?'<span class="cd-caption" style="margin:0 0 0 auto;font-size:var(--fs-1);">click row → deal</span>':'')
       + '</div>'
-      + (davidMode()&&!compact?'<div class="hq-davupdwrap" data-stop="1"><button class="cd-inlinebtn hq-davupd" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Update this instruction</button>'
+      + (davidMode()&&!compact?'<div class="hq-davupdwrap" data-stop="1"><button class="cd-inlinebtn hq-davupd" data-n="'+i.id+'" style="background:var(--surface-2);color:var(--text);">Update this instruction</button>'
         + '<div class="hq-davupdbox" data-n="'+i.id+'" hidden style="margin-top:8px;">'
-        + '<div style="display:flex;gap:6px;margin-bottom:6px;"><button class="cd-inlinebtn hq-davmode" data-n="'+i.id+'" data-mode="add" style="background:var(--sys-blue);color:#fff;">Add to it</button><button class="cd-inlinebtn hq-davmode" data-n="'+i.id+'" data-mode="replace" style="background:var(--fill-3);color:var(--label);">Replace it</button></div>'
+        + '<div style="display:flex;gap:6px;margin-bottom:6px;"><button class="cd-inlinebtn hq-davmode" data-n="'+i.id+'" data-mode="add" style="background:var(--accent);color:#fff;">Add to it</button><button class="cd-inlinebtn hq-davmode" data-n="'+i.id+'" data-mode="replace" style="background:var(--surface-2);color:var(--text);">Replace it</button></div>'
         + '<textarea class="cd-input" rows="2" placeholder="What changed?"></textarea>'
         + '<div style="display:flex;gap:8px;margin-top:6px;align-items:center;"><button class="cd-inlinebtn hq-davupdsave" data-n="'+i.id+'">Save update</button><span class="cd-caption hq-davupdmsg" style="margin:0;"></span></div></div></div>':'')
-      + '<div class="hq-davnotebox" data-n="'+i.id+'" hidden data-stop="1"><textarea class="cd-input" rows="2" placeholder="Update for David — what happened, what’s next"></textarea><div style="display:flex;gap:8px;margin-top:6px;"><button class="cd-inlinebtn hq-davnotesave" data-n="'+i.id+'">Save note</button><button class="cd-inlinebtn hq-davnotecancel" data-n="'+i.id+'" style="background:var(--fill-3);color:var(--label);">Cancel</button></div></div>'
+      + '<div class="hq-davnotebox" data-n="'+i.id+'" hidden data-stop="1"><textarea class="cd-input" rows="2" placeholder="Update for David — what happened, what’s next"></textarea><div style="display:flex;gap:8px;margin-top:6px;"><button class="cd-inlinebtn hq-davnotesave" data-n="'+i.id+'">Save note</button><button class="cd-inlinebtn hq-davnotecancel" data-n="'+i.id+'" style="background:var(--surface-2);color:var(--text);">Cancel</button></div></div>'
       + '</div>';
   }
   function davidHtml(){
@@ -2786,11 +2599,11 @@
     const done = items.filter(i=>i.status==="done" && (i.closedDate||i.when||"").slice(0,10)>=cutoff);
     const archived = items.filter(i=>i.status==="done" && (i.closedDate||i.when||"").slice(0,10)<cutoff);
     let html = '<div class="cd-h1">David</div><p class="cd-sub">Write the instruction against the deal. It lands in the next sweep; the status shows here. Click an instruction to open the deal.</p>';
-    html += '<div class="cd-panel"><div class="cd-formrow"><label>Deal</label><input class="cd-input" id="hqDavidDeal" placeholder="Start typing a merchant, MCHT or lead ID…" autocomplete="off"><div id="hqDavidSugg" style="display:none;background:var(--fill-4);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
+    html += '<div class="cd-panel"><div class="cd-formrow"><label>Deal</label><input class="cd-input" id="hqDavidDeal" placeholder="Start typing a merchant, MCHT or lead ID…" autocomplete="off"><div id="hqDavidSugg" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
       + '<div class="cd-formrow"><label>Instruction</label><textarea class="cd-input" id="hqDavidText" rows="3" placeholder="e.g. send to madeb. ensure anusha clawback"></textarea></div>'
       + '<div style="display:flex;gap:12px;align-items:center;"><button class="cd-savebtn" id="hqDavidPost">Post instruction</button><span class="cd-caption" style="margin:0;">Timestamped · goes on the deal as a note · shows in Tier 1 until it’s completed</span></div></div>';
     html += '<div class="cd-panel"><h3>Open ('+open.length+')</h3>' + (open.length?open.map(i=>davidItemHtml(i,false)).join(''):'<div class="cd-empty">Nothing open.</div>') + '</div>';
-    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--label-2);">Completed ('+done.length+')</h3>'+(archived.length?'<button class="cd-inlinebtn" id="hqDavidArchive" style="background:var(--fill-3);color:var(--label);">'+(davidShowArchive?'hide':'show')+' '+archived.length+' older than '+HQ_ARCHIVE_DAYS+' days</button>':'')+'</div><div style="height:6px;"></div>' + done.map(i=>davidItemHtml(i,false)).join('') + (davidShowArchive?archived.map(i=>davidItemHtml(i,false)).join(''):'') + '</div>';
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--text-2);">Completed ('+done.length+')</h3>'+(archived.length?'<button class="cd-inlinebtn" id="hqDavidArchive" style="background:var(--surface-2);color:var(--text);">'+(davidShowArchive?'hide':'show')+' '+archived.length+' older than '+HQ_ARCHIVE_DAYS+' days</button>':'')+'</div><div style="height:6px;"></div>' + done.map(i=>davidItemHtml(i,false)).join('') + (davidShowArchive?archived.map(i=>davidItemHtml(i,false)).join(''):'') + '</div>';
     return html;
   }
   function wireDavidItems(rerender){
@@ -2803,7 +2616,7 @@
     document.querySelectorAll('.hq-davnote').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]');box.hidden=!box.hidden;if(!box.hidden)box.querySelector('textarea').focus();});
     document.querySelectorAll('.hq-davnotecancel').forEach(b=>b.onclick=(e)=>{e.stopPropagation();document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]').hidden=true;});
     document.querySelectorAll('.hq-davupd').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');box.hidden=!box.hidden;b.textContent=box.hidden?'Update this instruction':'Cancel';if(!box.hidden)box.querySelector('textarea').focus();});
-    document.querySelectorAll('.hq-davmode').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');box.dataset.mode=b.dataset.mode;box.querySelectorAll('.hq-davmode').forEach(x=>{const on=x===b;x.style.background=on?'var(--sys-blue)':'var(--fill-3)';x.style.color=on?'#fff':'var(--label)';});});
+    document.querySelectorAll('.hq-davmode').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');box.dataset.mode=b.dataset.mode;box.querySelectorAll('.hq-davmode').forEach(x=>{const on=x===b;x.style.background=on?'var(--accent)':'var(--surface-2)';x.style.color=on?'#fff':'var(--text)';});});
     document.querySelectorAll('.hq-davupdsave').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davupdbox[data-n="'+b.dataset.n+'"]');const t=box.querySelector('textarea').value.trim();const msg=box.querySelector('.hq-davupdmsg');if(!t){msg.textContent='Write the update first.';return;}b.disabled=true;msg.textContent='Saving\u2026';try{await davidApi('/david/items/'+encodeURIComponent(b.dataset.n)+'/update',{method:'POST',body:JSON.stringify({text:t,mode:box.dataset.mode==='replace'?'replace':'add'})});await davidReload();}catch(err){msg.textContent='Not saved: '+((err&&err.message)||'');b.disabled=false;}});
     document.querySelectorAll('.hq-davnotesave').forEach(b=>b.onclick=async(e)=>{e.stopPropagation();const box=document.querySelector('.hq-davnotebox[data-n="'+b.dataset.n+'"]');const t=box.querySelector('textarea').value.trim();if(!t)return;const i=find(b.dataset.n); if(!i) return; await touch(i,t,'David item note');});
   }
@@ -2812,10 +2625,10 @@
   function uwRowHtml(n){
     const d = n.dealId ? dealById(n.dealId) : null;
     const bal = d ? money((d.original||0)-(d.recovered||0)) : "";
-    return '<div class="cd-remrow hq-tierrow hq-compact hq-uwrow" data-hqpop="u:'+n.id+'" style="border-left:3px solid var(--sys-orange);'+(n.status==="done"?'opacity:.5;':'')+'">'
-      + '<div class="hq-c1"><span class="cd-badge" style="background:var(--sys-orange)22;color:var(--sys-orange);font-size:11px;padding:1px 7px;flex:none;">'+esc(n.kind||"Note")+'</span><b>'+esc(n.title||(d?d.name:""))+'</b></div>'
+    return '<div class="cd-remrow hq-tierrow hq-compact hq-uwrow" data-hqpop="u:'+n.id+'" style="border-left:3px solid var(--warning);'+(n.status==="done"?'opacity:.5;':'')+'">'
+      + '<div class="hq-c1"><span class="cd-badge" style="background:color-mix(in oklch, var(--warning) var(--tint), transparent);color:var(--warning);flex:none;">'+esc(n.kind||"Note")+'</span><b>'+esc(n.title||(d?d.name:""))+'</b></div>'
       + '<div class="hq-c2">'+esc(n.text||"")+'</div>'
-      + '<div class="hq-c4"><span class="mono">'+bal+'</span><span class="mono hq-due">'+esc(n.date||"")+'</span></div>'
+      + '<div class="hq-c4"><span>'+bal+'</span><span class="hq-due">'+esc(n.date||"")+'</span></div>'
       + '</div>';
   }
   function uwHtml(){
@@ -2825,20 +2638,20 @@
     const done = all.filter(n=>n.status==="done" && (n.closedDate||n.date||"")>=cutoff);
     const archived = all.filter(n=>n.status==="done" && (n.closedDate||n.date||"")<cutoff);
     let html = '<div class="cd-h1">Notes for Underwriting</div><p class="cd-sub">What collections learned that UW should see before the next funding or renewal. Click a line for the full note.</p>';
-    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"><h3 style="margin:0;color:var(--sys-orange);">Open <span style="font-size:13px;font-weight:400;color:var(--label-2);letter-spacing:0;">'+open.length+' note'+(open.length===1?'':'s')+'</span></h3><button class="cd-inlinebtn" id="hqUwAdd" style="background:var(--fill-3);color:var(--label);">'+(uwAdding?'Cancel':'+ Add note')+'</button></div><div style="height:6px;"></div>'
-      + (uwAdding ? '<div style="background:var(--fill-4);border-radius:var(--r-sm);padding:12px;margin-bottom:10px;"><div class="cd-formrow"><label>Deal</label><input class="cd-input" id="hqUwDeal" placeholder="Merchant, MCHT or lead ID…" autocomplete="off"><div id="hqUwSugg" style="display:none;background:var(--fill-3);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"><h3 style="margin:0;color:var(--warning);">Open <span style="font-size:var(--fs-3);font-weight:400;color:var(--text-2);">'+open.length+' note'+(open.length===1?'':'s')+'</span></h3><button class="cd-inlinebtn" id="hqUwAdd" style="background:var(--surface-2);color:var(--text);">'+(uwAdding?'Cancel':'+ Add note')+'</button></div><div style="height:6px;"></div>'
+      + (uwAdding ? '<div style="background:var(--surface-2);border-radius:var(--r-sm);padding:12px;margin-bottom:10px;"><div class="cd-formrow"><label>Deal</label><input class="cd-input" id="hqUwDeal" placeholder="Merchant, MCHT or lead ID…" autocomplete="off"><div id="hqUwSugg" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
           + '<div class="cd-formrow"><label>Kind</label><select class="cd-input" id="hqUwKind">'+UW_KINDS.map(k=>'<option>'+k+'</option>').join('')+'</select></div>'
           + '<div class="cd-formrow"><label>Note</label><textarea class="cd-input" id="hqUwText" rows="3" placeholder="What UW should know before the next funding or renewal"></textarea></div>'
           + '<button class="cd-savebtn" id="hqUwSave">Save</button></div>' : '')
       + '<div class="hq-tierbody">' + (open.length?open.map(uwRowHtml).join(''):'<div class="cd-empty" style="padding:14px 0;">Nothing open.</div>') + '</div></div>';
-    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--label-2);">Acknowledged ('+done.length+')</h3>'+(archived.length?'<button class="cd-inlinebtn" id="hqUwArchive" style="background:var(--fill-3);color:var(--label);">'+(uwShowArchive?'hide':'show')+' '+archived.length+' older than '+HQ_ARCHIVE_DAYS+' days</button>':'')+'</div><div style="height:6px;"></div><div class="hq-tierbody">' + done.map(uwRowHtml).join('') + (uwShowArchive?archived.map(uwRowHtml).join(''):'') + '</div></div>';
+    html += '<div class="cd-panel"><div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--text-2);">Acknowledged ('+done.length+')</h3>'+(archived.length?'<button class="cd-inlinebtn" id="hqUwArchive" style="background:var(--surface-2);color:var(--text);">'+(uwShowArchive?'hide':'show')+' '+archived.length+' older than '+HQ_ARCHIVE_DAYS+' days</button>':'')+'</div><div style="height:6px;"></div><div class="hq-tierbody">' + done.map(uwRowHtml).join('') + (uwShowArchive?archived.map(uwRowHtml).join(''):'') + '</div></div>';
     return html;
   }
 
   function dealPicker(inpId, sugId, onPick){
     const inp=document.getElementById(inpId), sug=document.getElementById(sugId);
     if(!inp||!sug) return;
-    inp.oninput=()=>{onPick(null);const q=inp.value.trim().toLowerCase();if(!q){sug.style.display='none';return;}const m=DB.deals.filter(d=>(d.name+' '+(d.dba||'')+' '+(d.mcht||'')+' '+(d.leadId||'')).toLowerCase().includes(q)).slice(0,8);sug.innerHTML=m.map(d=>'<div style="padding:8px 12px;cursor:pointer;" data-n="'+esc(d.name)+'" data-id="'+esc(d.id)+'">'+esc(d.name)+' <span class="mono" style="font-size:12px;color:var(--label-2);">'+esc(dealIds(d))+(d.platform?' · '+esc(d.platform):'')+'</span></div>').join('');sug.style.display=m.length?'block':'none';};
+    inp.oninput=()=>{onPick(null);const q=inp.value.trim().toLowerCase();if(!q){sug.style.display='none';return;}const m=DB.deals.filter(d=>(d.name+' '+(d.dba||'')+' '+(d.mcht||'')+' '+(d.leadId||'')).toLowerCase().includes(q)).slice(0,8);sug.innerHTML=m.map(d=>'<div style="padding:8px 12px;cursor:pointer;" data-n="'+esc(d.name)+'" data-id="'+esc(d.id)+'">'+esc(d.name)+' <span style="font-size:var(--fs-2);color:var(--text-2);">'+esc(dealIds(d))+(d.platform?' · '+esc(d.platform):'')+'</span></div>').join('');sug.style.display=m.length?'block':'none';};
     sug.onclick=(e)=>{const el=e.target.closest('[data-n]');if(el){inp.value=el.dataset.n;onPick(el.dataset.id);sug.style.display='none';}};
   }
 
@@ -2884,7 +2697,7 @@
     const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
     const overdueDays = daysUntil(c.dueDate);
     const overdueLabel = overdueDays<0 ? Math.abs(overdueDays)+"d overdue" : overdueDays===0?"Due today":"Due in "+overdueDays+"d";
-    return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.description)+'</b><small>'+esc(d.name)+' ('+esc(idBits)+') — promised by '+esc(WAITING_ON[c.promisedBy]||c.promisedBy)+'</small></div><span class="cd-badge" style="color:'+(overdueDays<0?'var(--red)':'var(--blue)')+';background:'+(overdueDays<0?'var(--red-bg)':'var(--blue-bg)')+';flex:none;">'+overdueLabel+'</span></div>';
+    return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.description)+'</b><small>'+esc(d.name)+' ('+esc(idBits)+') — promised by '+esc(WAITING_ON[c.promisedBy]||c.promisedBy)+'</small></div><span class="cd-badge" style="color:'+(overdueDays<0?'var(--danger)':'var(--accent)')+';background:'+(overdueDays<0?'color-mix(in oklch, var(--danger) var(--tint), transparent)':'color-mix(in oklch, var(--accent) var(--tint), transparent)')+';flex:none;">'+overdueLabel+'</span></div>';
   }
   function taskRowHtml(t){
     const d = dealById(t.dealId);
@@ -2909,28 +2722,28 @@
     DB.commitments.filter(c=>c.status==="open").forEach(c=>{
       const d = dealById(c.dealId);
       if(!d || isOtherOwnerDeal(d)) return;
-      add(c.dueDate, d.name+": "+c.description, "var(--blue)", c.dealId);
+      add(c.dueDate, d.name+": "+c.description, "var(--accent)", c.dealId);
     });
     ourDeals().filter(d=>d.legalCase).forEach(d=>{
       const nf = legalNextFollowUp(d);
-      if(nf) add(nf, d.name+": Legal follow-up", "var(--maroon)", d.id);
+      if(nf) add(nf, d.name+": Legal follow-up", "var(--danger)", d.id);
     });
     DB.tasks.filter(t=>t.status==="open" && t.dueDate).forEach(t=>{
       const d = dealById(t.dealId);
       if(!d || isOtherOwnerDeal(d)) return;
-      add(t.dueDate, d.name+": "+(TASK_TYPES[t.type]||t.type), "var(--purple)", t.dealId);
+      add(t.dueDate, d.name+": "+(TASK_TYPES[t.type]||t.type), "var(--p-mcapay)", t.dealId);
     });
     allReminders().filter(r=>r.status==="open").forEach(r=>{
       const {date,time} = splitDueAt(r.dueAt);
       const d = r.dealId ? dealById(r.dealId) : null;
       const who = d ? d.name+": " : "";
-      add(date, (time?fmtTime(time)+" ":"")+""+who+r.text, "var(--yellow)", r.dealId, time, r.id);
+      add(date, (time?fmtTime(time)+" ":"")+""+who+r.text, "var(--warning)", r.dealId, time, r.id);
     });
     // Manual-pay deals (wire/manual, invisible to bounce feeds) — recurring check-in
     // computed from the stored frequency, always showing the current upcoming occurrence.
     ourDeals().filter(d=>d.manualPay).forEach(d=>{
       const nd = nextManualPayDate(d.manualPay);
-      if(nd) add(nd, d.name+": Check for "+(d.manualPay.method||"manual")+" payment ("+money(d.manualPay.expectedAmount)+")", "var(--green)", d.id);
+      if(nd) add(nd, d.name+": Check for "+(d.manualPay.method||"manual")+" payment ("+money(d.manualPay.expectedAmount)+")", "var(--success)", d.id);
     });
     return map;
   }
@@ -2964,7 +2777,7 @@
       + '<button class="cd-savebtn secondary" data-calmove="today">Today</button>'
       + '<button class="cd-calnavbtn" data-calmove="-1">‹</button>'
       + '<button class="cd-calnavbtn" data-calmove="1">›</button>'
-      + '<b style="font-size:17px;">'+label+'</b>'
+      + '<b style="font-size:var(--fs-4);">'+label+'</b>'
       + '<div class="cd-calviewsel">'
         + '<button class="cd-calviewbtn '+(calViewMode==="month"?"on":"")+'" data-calview="month">Month</button>'
         + '<button class="cd-calviewbtn '+(calViewMode==="week"?"on":"")+'" data-calview="week">Week</button>'
@@ -3006,7 +2819,7 @@
       cells += '<div class="cd-calday'+(isToday?' today':'')+'" data-calday="'+dateStr+'">'
         + '<div class="cd-caldate">'+day+'</div>'
         + evs.slice(0,3).map(e=>'<span class="cd-calitem" data-open="'+e.dealId+'" style="background:rgba(255,255,255,.08);color:'+e.color+';" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join("")
-        + (evs.length>3?'<span style="font-size:9px;color:var(--ink-faint);">+'+(evs.length-3)+' more</span>':"")
+        + (evs.length>3?'<span style="font-size:var(--fs-1);color:var(--text-3);">+'+(evs.length-3)+' more</span>':"")
         + '</div>';
     }
     const body = '<div class="cd-calgrid">'
@@ -3060,7 +2873,7 @@
 
     const body = '<div class="cd-weekwrap">'
       + '<div class="cd-weekheadrow" style="grid-template-columns:52px repeat(7,1fr);"><div></div>'+headCells+'</div>'
-      + '<div class="cd-allday-row" style="grid-template-columns:52px repeat(7,1fr);"><div style="font-size:9px;color:var(--ink-faint);padding:4px;">All-day</div>'+alldayCells+'</div>'
+      + '<div class="cd-allday-row" style="grid-template-columns:52px repeat(7,1fr);"><div style="font-size:var(--fs-1);color:var(--text-3);padding:4px;">All-day</div>'+alldayCells+'</div>'
       + hourGridHtml(days, events)
       + '</div>';
     return {body, label};
@@ -3075,7 +2888,7 @@
 
     const body = '<div class="cd-weekwrap">'
       + '<div class="cd-weekheadrow" style="grid-template-columns:52px 1fr;"><div></div><div class="cd-weekheadcell'+(isToday?' today':'')+'"><div class="dow">'+d.toLocaleDateString("en-US",{weekday:"short",timeZone:"UTC"}).toUpperCase()+'</div><div class="dnum">'+d.getUTCDate()+'</div></div></div>'
-      + '<div class="cd-allday-row" style="grid-template-columns:52px 1fr;"><div style="font-size:9px;color:var(--ink-faint);padding:4px;">All-day</div><div class="cd-allday-cell" data-calday="'+ds+'">'+(evs.filter(e=>!e.time).length?evs.filter(e=>!e.time).map(e=>'<span class="cd-calitem-chip" data-open="'+e.dealId+'" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join(""):"")+'</div></div>'
+      + '<div class="cd-allday-row" style="grid-template-columns:52px 1fr;"><div style="font-size:var(--fs-1);color:var(--text-3);padding:4px;">All-day</div><div class="cd-allday-cell" data-calday="'+ds+'">'+(evs.filter(e=>!e.time).length?evs.filter(e=>!e.time).map(e=>'<span class="cd-calitem-chip" data-open="'+e.dealId+'" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join(""):"")+'</div></div>'
       + hourGridHtml([ds], events)
       + '</div>';
     return {body, label};
@@ -3098,7 +2911,7 @@
       + ''
       + '<div style="flex:1;min-width:0;">'
         + (d ? '<div><b '+(r.dealId?'data-open="'+r.dealId+'" style="cursor:pointer;"':'')+'>'+esc(d.name)+'</b>'
-              + (idBits?' <span style="color:var(--ink-faint);font-size:11px;">'+esc(idBits)+'</span>':'')+'</div>' : '')
+              + (idBits?' <span style="color:var(--text-3);font-size:var(--fs-1);">'+esc(idBits)+'</span>':'')+'</div>' : '')
         + '<div style="margin-top:2px;">'+esc(r.text)+'</div>'
         + '<div class="cd-remmeta">'+fmtDueAt(r.dueAt)+' \u00B7 '+relativeDue(r.dueAt)
         + (r.repeat ? ' \u00B7 repeats '+r.repeat : '')
@@ -3111,7 +2924,7 @@
             + '<button data-rempush="'+r.id+'|tomorrow">Tomorrow 9 AM</button>'
             + '<button data-remresched="'+r.id+'">'+(resched?'Cancel':'Pick a time\u2026')+'</button>'
             + '<button data-remdismiss="'+r.id+'">Dismiss</button>'
-            + '</div>' : '<div class="cd-remmeta" style="color:var(--green);">'+(r.status==="done"?"Done":"Dismissed")+'</div>')
+            + '</div>' : '<div class="cd-remmeta" style="color:var(--success);">'+(r.status==="done"?"Done":"Dismissed")+'</div>')
         + (resched ? '<div style="margin-top:10px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">'
             + '<div style="min-width:180px;">'+dateFieldHtml("resched-"+r.id)+'</div>'
             + timeFieldHtml("resched-"+r.id, splitDueAt(r.dueAt).time||"16:00")
@@ -3189,11 +3002,11 @@
       const idBits = [d.mcht, d.leadId?("Lead "+d.leadId):null].filter(Boolean).join(" · ");
       const overdue = t.dueDate && t.dueDate < todayStr();
       return '<tr data-open="'+d.id+'">'
-        + '<td><span class="cd-badge" style="color:var(--purple);background:var(--purple-bg);">'+esc(TASK_TYPES[t.type]||t.type)+'</span></td>'
+        + '<td><span class="cd-badge" style="color:var(--p-mcapay);background:color-mix(in oklch, var(--p-mcapay) var(--tint), transparent);">'+esc(TASK_TYPES[t.type]||t.type)+'</span></td>'
         + '<td class="cd-namecell"><b>'+esc(d.name)+'</b><span>'+esc(idBits)+'</span></td>'
         + '<td>'+esc(t.description||"—")+'</td>'
-        + '<td><span class="cd-badge" style="color:var(--blue);background:var(--blue-bg);">'+esc(WAITING_ON[t.waitingOn]||t.waitingOn)+'</span></td>'
-        + '<td class="mono" style="'+(overdue?'color:var(--red);':'')+'">'+(t.dueDate?fmtDateShort(t.dueDate):"—")+'</td>'
+        + '<td><span class="cd-badge" style="color:var(--accent);background:color-mix(in oklch, var(--accent) var(--tint), transparent);">'+esc(WAITING_ON[t.waitingOn]||t.waitingOn)+'</span></td>'
+        + '<td style="'+(overdue?'color:var(--danger);':'')+'">'+(t.dueDate?fmtDateShort(t.dueDate):"—")+'</td>'
         + '<td><input type="checkbox" data-taskdone="'+t.id+'" onclick="event.stopPropagation()"></td>'
         + '</tr>';
     }).join("");
@@ -3229,9 +3042,9 @@
         + '<td class="cd-namecell"><b>'+esc(d.name)+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</span></td>'
         + '<td>'+esc(lc.firm||"—")+(lc.needsReview?' <span class="cd-flagpill">Review</span>':"")+'</td>'
         + '<td><span class="cd-badge" style="background:rgba(255,255,255,.08);">'+esc(stage.label)+'</span></td>'
-        + '<td style="'+(stale?'color:var(--red);':'')+'">'+(nf?fmtDateShort(nf)+(stale?' (due)':""):"—")+'</td>'
-        + '<td>'+docsSent+'/'+docsTotal+(docsMissing.length?' <span style="color:var(--yellow);">missing '+docsMissing.length+'</span>':'')+'</td>'
-        + '<td class="mono" style="color:var(--maroon);">'+money(remaining)+'</td>'
+        + '<td style="'+(stale?'color:var(--danger);':'')+'">'+(nf?fmtDateShort(nf)+(stale?' (due)':""):"—")+'</td>'
+        + '<td>'+docsSent+'/'+docsTotal+(docsMissing.length?' <span style="color:var(--warning);">missing '+docsMissing.length+'</span>':'')+'</td>'
+        + '<td style="color:var(--danger);">'+money(remaining)+'</td>'
         + '</tr>';
     }).join("");
 
@@ -3280,7 +3093,7 @@
     const viewChips = Object.keys(DEAL_VIEW_MODES).map(k=>{
       const cnt = DB.deals.filter(DEAL_VIEW_MODES[k].predicate).length;
       const urgent = k==="missingcontact" && cnt>0;
-      return '<div class="cd-chip '+(dealViewMode===k?'on':'')+'" data-dealviewmode="'+k+'" style="'+(urgent?'color:var(--red);':'')+'">'+DEAL_VIEW_MODES[k].label+' <b>'+cnt+'</b></div>';
+      return '<div class="cd-chip '+(dealViewMode===k?'on':'')+'" data-dealviewmode="'+k+'" style="'+(urgent?'color:var(--danger);':'')+'">'+DEAL_VIEW_MODES[k].label+' <b>'+cnt+'</b></div>';
     }).join("");
     const statusChips = ["all",...Object.keys(STATUS)].map(k=>{
       const label = k==="all"?"All":statusOf(k).label;
@@ -3296,10 +3109,10 @@
       const c = d.contact||{};
       const missingContact = !(c.name && (c.phone||c.email));
       return '<tr data-open="'+d.id+'">'
-        + '<td class="cd-namecell"><b>'+esc(d.name)+(missingContact?'<span class="cd-flagpill" style="background:var(--red-bg);color:var(--red);">No Contact</span>':"")+(d.flags&&d.flags.length?d.flags.map(f=>'<span class="cd-flagpill">'+esc(f)+'</span>').join(""):"")+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+(d.contractUrl?' · <a href="'+esc(d.contractUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--amber);">Contract</a>':"")+'</span></td>'
+        + '<td class="cd-namecell"><b>'+esc(d.name)+(missingContact?'<span class="cd-flagpill" style="background:color-mix(in oklch, var(--danger) var(--tint), transparent);color:var(--danger);">No Contact</span>':"")+(d.flags&&d.flags.length?d.flags.map(f=>'<span class="cd-flagpill">'+esc(f)+'</span>').join(""):"")+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+(d.contractUrl?' · <a href="'+esc(d.contractUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--warning);">Contract</a>':"")+'</span></td>'
         + '<td><span class="cd-badge" style="color:'+st.color+';background:'+st.bg+'">'+st.label+'</span></td>'
-        + '<td class="mono">'+money(remaining)+'</td>'
-        + '<td><span class="cd-pctbar"><i style="width:'+p.toFixed(0)+'%"></i></span><span class="mono">'+p.toFixed(0)+'%</span></td>'
+        + '<td>'+money(remaining)+'</td>'
+        + '<td><span class="cd-pctbar"><i style="width:'+p.toFixed(0)+'%"></i></span><span>'+p.toFixed(0)+'%</span></td>'
         + '<td>'+esc(d.source||"—")+'</td>'
         + '</tr>';
     }).join("");
@@ -3330,16 +3143,16 @@
       return '<div class="cd-panel" style="margin-bottom:10px;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(g.deals.length>1?'8px':'0')+';">'
         + '<b>'+esc(g.name)+'</b>'
-        + '<span style="display:flex;gap:10px;align-items:center;"><span class="cd-badge" style="color:'+statusOf(worstStatus.status).color+';background:'+statusOf(worstStatus.status).bg+';">'+statusOf(worstStatus.status).label+'</span><span class="mono" style="color:var(--ink-dim);">'+money(totalRemaining)+' remaining</span></span>'
+        + '<span style="display:flex;gap:10px;align-items:center;"><span class="cd-badge" style="color:'+statusOf(worstStatus.status).color+';background:'+statusOf(worstStatus.status).bg+';">'+statusOf(worstStatus.status).label+'</span><span style="color:var(--text-2);">'+money(totalRemaining)+' remaining</span></span>'
         + '</div>'
-        + (g.deals.length>1 ? g.deals.map(d=>'<div class="cd-listrow" data-open="'+d.id+'" style="padding-left:8px;"><div><b style="font-size:12px;">'+esc(d.mcht||d.id)+(d.leadId?' · Lead '+esc(d.leadId):"")+'</b><small>'+money(Math.max(0,(d.original||0)-(d.recovered||0)))+' remaining</small></div><span class="cd-badge" style="color:'+statusOf(d.status).color+';background:'+statusOf(d.status).bg+';flex:none;">'+statusOf(d.status).label+'</span></div>').join("") : "")
+        + (g.deals.length>1 ? g.deals.map(d=>'<div class="cd-listrow" data-open="'+d.id+'" style="padding-left:8px;"><div><b style="font-size:var(--fs-2);">'+esc(d.mcht||d.id)+(d.leadId?' · Lead '+esc(d.leadId):"")+'</b><small>'+money(Math.max(0,(d.original||0)-(d.recovered||0)))+' remaining</small></div><span class="cd-badge" style="color:'+statusOf(d.status).color+';background:'+statusOf(d.status).bg+';flex:none;">'+statusOf(d.status).label+'</span></div>').join("") : "")
         + '</div>';
     }
     // single-deal groups: whole panel clickable
     function singleRow(g){
       const d = g.deals[0];
       const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
-      return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.name)+'</b><small>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</small></div><span style="display:flex;gap:10px;align-items:center;"><span class="cd-badge" style="color:'+statusOf(d.status).color+';background:'+statusOf(d.status).bg+';">'+statusOf(d.status).label+'</span><span class="mono" style="color:var(--ink-dim);">'+money(remaining)+'</span></span></div>';
+      return '<div class="cd-listrow" data-open="'+d.id+'"><div><b>'+esc(d.name)+'</b><small>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</small></div><span style="display:flex;gap:10px;align-items:center;"><span class="cd-badge" style="color:'+statusOf(d.status).color+';background:'+statusOf(d.status).bg+';">'+statusOf(d.status).label+'</span><span style="color:var(--text-2);">'+money(remaining)+'</span></span></div>';
     }
 
     return '<div class="cd-h1">Merchants</div><p class="cd-sub">Deals grouped by real-world merchant — multi-deal merchants (renewals, multiple locations) roll up together.</p>'
@@ -3367,10 +3180,10 @@
       return '<tr data-open="'+d.id+'">'
         + '<td class="cd-namecell"><b>'+esc(d.name)+'</b><span>'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+'</span></td>'
         + '<td><span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span></td>'
-        + '<td class="mono">'+(d.lifetime||0)+'</td>'
-        + '<td class="mono">'+(d.consecutive||0)+'</td>'
-        + '<td class="mono" style="color:var(--yellow);">'+clearedCycles+'</td>'
-        + '<td class="mono" style="color:var(--maroon);">'+money(Math.max(0,(d.original||0)-(d.recovered||0)))+'</td>'
+        + '<td>'+(d.lifetime||0)+'</td>'
+        + '<td>'+(d.consecutive||0)+'</td>'
+        + '<td style="color:var(--warning);">'+clearedCycles+'</td>'
+        + '<td style="color:var(--danger);">'+money(Math.max(0,(d.original||0)-(d.recovered||0)))+'</td>'
         + '</tr>';
     }).join("");
     return '<div class="cd-h1">Repeat Bouncers</div><p class="cd-sub">Deals with a cyclical pattern — bounce, clear, bounce again — rather than a single unbroken streak. Sorted by how much "clearing" has happened between bounces (a rough proxy for how many separate cycles).</p>'
@@ -3451,8 +3264,8 @@
         + (showDeal && d ? '<div><b data-open="'+d.id+'" style="cursor:pointer;">'+esc(d.name)+'</b>'
             + (idBits?' <span class="cd-remmeta" style="margin:0;">'+esc(idBits)+'</span>':'')+'</div>' : '')
         + '<div style="margin-top:3px;"><b>If:</b> '+esc(w.condition)+'</div>'
-        + '<div class="cd-remmeta" style="margin-top:4px;"><b style="color:var(--sys-green);">Met \u2192</b> '+esc(w.ifMet||"\u2014")+'</div>'
-        + '<div class="cd-remmeta" style="margin-top:2px;"><b style="color:var(--sys-red);">Not met \u2192</b> '+esc(w.ifFailed||"\u2014")+'</div>'
+        + '<div class="cd-remmeta" style="margin-top:4px;"><b style="color:var(--success);">Met \u2192</b> '+esc(w.ifMet||"\u2014")+'</div>'
+        + '<div class="cd-remmeta" style="margin-top:2px;"><b style="color:var(--danger);">Not met \u2192</b> '+esc(w.ifFailed||"\u2014")+'</div>'
         + '<div class="cd-remmeta" style="margin-top:5px;">Check '+esc(fmtDateShort(w.checkOn))+(overdue?' \u00B7 overdue':'')
             + (w.source?' \u00B7 '+esc(w.source):'')+'</div>'
         + '<div class="cd-remacts">'
@@ -3468,7 +3281,7 @@
     let html = '<div class="cd-h1">Watchlist</div>'
       + '<p class="cd-sub">Things that only happen if something else does. These have no due date of their own, which is exactly why they get lost \u2014 each one records the condition, what follows either way, and when to look.</p>';
     html += '<div class="cd-kpirow">'
-      + '<div class="cd-kpi"><span>Due to check</span><b style="color:'+(due.length?'var(--sys-red)':'var(--sys-green)')+';">'+due.length+'</b></div>'
+      + '<div class="cd-kpi"><span>Due to check</span><b style="color:'+(due.length?'var(--danger)':'var(--success)')+';">'+due.length+'</b></div>'
       + '<div class="cd-kpi"><span>Open conditions</span><b>'+all.length+'</b></div>'
       + '<div class="cd-kpi"><span>Resolved</span><b>'+(DB.watch||[]).filter(w=>w.status!=="open").length+'</b></div>'
       + '</div>';
@@ -3488,7 +3301,7 @@
     return '<div class="cd-h1">Reports</div><p class="cd-sub">A plain-English summary for David, plus the raw log and data export.</p>'
       + '<div class="cd-panel"><h3>Generate Report for David</h3><p class="cd-caption">Written in plain, human, easy-to-read language — what changed, what needs a decision, general state of things'+(since?'. Last pulled '+since+', covers everything since then.':'. First run covers full history.')+'</p>'
       + '<button class="cd-savebtn" id="cdGenReport">Generate Report</button>'
-      + '<span class="cd-saveok" id="cdReportGenerating" style="display:none;color:var(--ink-faint);">Writing summary…</span>'
+      + '<span class="cd-saveok" id="cdReportGenerating" style="display:none;color:var(--text-3);">Writing summary…</span>'
       + '<div id="cdReportOutput"></div>'
       + '</div>'
       + '<div class="cd-panel"><h3>Activity Log</h3><p class="cd-caption">Raw event log, most recent first.</p>'
@@ -3581,7 +3394,7 @@
         + '<div class="cd-tlrow"><span>Frequency</span><span>'+esc(d.freq||"—")+'</span></div>'
         + '<div class="cd-tlrow"><span>Last Payment</span><span>'+fmtDate(d.lastPaymentDate)+'</span></div>'
         + '<div class="cd-tlrow"><span>Consecutive / Lifetime Returns</span><span>'+(d.consecutive||0)+' / '+(d.lifetime||0)+'</span></div>'
-        + '<div class="cd-drsect">Contact'+(missingContact?' <span style="color:var(--red);">— missing</span>':'')+'</div>'
+        + '<div class="cd-drsect">Contact'+(missingContact?' <span style="color:var(--danger);">— missing</span>':'')+'</div>'
         + (drawerEditingContact
             ? '<input class="cd-note" id="cdContactName" placeholder="Name" value="'+esc(c.name||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
               + '<input class="cd-note" id="cdContactPhone" placeholder="Phone" value="'+esc(c.phone||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
@@ -3600,7 +3413,7 @@
           + Object.keys(STATUS).map(k=>'<option value="'+k+'" '+(d.status===k?'selected':'')+'>'+STATUS[k].label+'</option>').join("")
         + '</select>'
         + (ownershipForceOpen
-            ? '<div class="cd-drsect">Deal Ownership <span style="color:var(--yellow);">— not ours</span></div>'
+            ? '<div class="cd-drsect">Deal Ownership <span style="color:var(--warning);">— not ours</span></div>'
             : sectionHtml("ownership","Deal Ownership",""))
         + (ownershipForceOpen || !collapsedSections.has("ownership") ? (
             '<select class="cd-select" data-ownerchange="'+d.id+'" style="margin-bottom:'+(!owner.isOurs?'6px':'0')+';"><option value="ours" '+(owner.isOurs?'selected':'')+'>Our deal</option><option value="other" '+(!owner.isOurs?'selected':'')+'>Not our deal (on our platform)</option></select>'
@@ -3661,12 +3474,12 @@
             const od = daysUntil(c.dueDate);
             const odLabel = od<0?Math.abs(od)+"d overdue":od===0?"Due today":"Due in "+od+"d";
             const recurLabel = c.recurrenceDays===7?"weekly":c.recurrenceDays===14?"every 2 weeks":c.recurrenceDays===30?"monthly":c.recurrenceDays?"every "+c.recurrenceDays+"d":null;
-            return '<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(WAITING_ON[c.promisedBy])+' — due '+fmtDateShort(c.dueDate)+' ('+odLabel+')'+(recurLabel?' <span style="color:var(--blue);">↻ '+recurLabel+'</span>':'')+'</span></div>'
+            return '<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(WAITING_ON[c.promisedBy])+' — due '+fmtDateShort(c.dueDate)+' ('+odLabel+')'+(recurLabel?' <span style="color:var(--accent);">↻ '+recurLabel+'</span>':'')+'</span></div>'
               + '<div class="cd-comment-text">'+esc(c.description)+'</div>'
               + '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">'
               + '<button class="cd-inlinebtn" data-commitedit="'+c.id+'">Edit</button>'
               + '<button class="cd-inlinebtn" data-commitfulfill="'+c.id+'">Mark Fulfilled</button>'
-              + '<button class="cd-inlinebtn" data-commitbreak="'+c.id+'" style="color:var(--red);">Broken</button>'
+              + '<button class="cd-inlinebtn" data-commitbreak="'+c.id+'" style="color:var(--danger);">Broken</button>'
               + '</div></div>';
           }).join("") : '<p class="cd-caption">No open commitments.</p>')
         + sectionHtml("resolved-commit","Resolved ("+dealCommitments.filter(c=>c.status!=="open").length+")",
@@ -3713,7 +3526,7 @@
           + '<select class="cd-select" id="cdLegalStage" style="margin-bottom:10px;">'+Object.keys(LEGAL_STAGES).map(k=>'<option value="'+k+'" '+(lc.stage===k?'selected':'')+'>'+LEGAL_STAGES[k].label+'</option>').join("")+'</select>'
           + '<div class="cd-tlrow"><span>Filed</span><span>'+fmtDate(lc.filedDate)+'</span></div>'
           + '<div class="cd-tlrow"><span>Last Contact</span><span>'+fmtDate(lc.lastContactDate)+'</span></div>'
-          + '<div class="cd-tlrow"><span>Next Follow-up</span><span style="'+(legalIsStale(d)?'color:var(--red);':'')+'">'+(nf?fmtDate(nf):"—")+'</span></div>'
+          + '<div class="cd-tlrow"><span>Next Follow-up</span><span style="'+(legalIsStale(d)?'color:var(--danger);':'')+'">'+(nf?fmtDate(nf):"—")+'</span></div>'
           + '<button class="cd-inlinebtn" data-legalcontacttoday="'+d.id+'" style="margin-top:6px;">Log contact today</button> '
           + '<select class="cd-select" id="cdLegalSnooze" style="display:inline-block;width:auto;margin-top:6px;"><option value="0">Snooze...</option><option value="1">+1 week</option><option value="2">+2 weeks</option><option value="3">+3 weeks</option><option value="4">+4 weeks</option></select>'
           + sectionHtml("legaldocs","Document Checklist ("+Object.keys(LEGAL_DOC_LABELS).filter(k=>(lc.docs||{})[k]&&(lc.docs||{})[k]!=="pending").length+"/"+Object.keys(LEGAL_DOC_LABELS).length+")",
@@ -3725,18 +3538,18 @@
                   + '</div></div>';
               }).join(""))
           + '<div class="cd-drsect">Case Notes</div>'
-          + '<div class="cd-comment-text" style="color:var(--ink-dim);">'+esc(lc.caseStatusLegacy||"—")+'</div>';
+          + '<div class="cd-comment-text" style="color:var(--text-2);">'+esc(lc.caseStatusLegacy||"—")+'</div>';
       }
     } else if(drawerTab==="david"){
       const mine = (DB.david||[]).filter(i=>i.dealId===d.id).slice().sort((a,b)=>(b.when||"").localeCompare(a.when||""));
       body = '<p class="cd-caption" style="margin-top:0;">Everything David has said about this deal and what was done about it. Mark completed here or on the David page — same record.</p>'
         + (mine.length ? mine.map(i=>davidItemHtml(i,true)).join('') : '<div class="cd-empty">No instructions from David on this deal.</div>');
     } else if(drawerTab==="pending"){
-      body = (d.pending||[]).length ? d.pending.map((p,i)=>'<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(p.date||"")+'</span></div><div class="cd-comment-text" style="'+(p.done?"text-decoration:line-through;color:var(--ink-faint);":"")+'">'+esc(p.text)+'</div></div>').join("") : '<p class="cd-caption">Nothing legacy-pending on this deal.</p>';
+      body = (d.pending||[]).length ? d.pending.map((p,i)=>'<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(p.date||"")+'</span></div><div class="cd-comment-text" style="'+(p.done?"text-decoration:line-through;color:var(--text-3);":"")+'">'+esc(p.text)+'</div></div>').join("") : '<p class="cd-caption">Nothing legacy-pending on this deal.</p>';
     }
 
     return '<button class="cd-drclose" data-drclose="1">×</button>'
-      + (hqReturn ? '<div style="margin-bottom:10px;"><button class="cd-inlinebtn" data-hqback="1" style="background:var(--fill-3);color:var(--label);">← Back to '+(hqReturn[0]==='u'?'underwriting':'today')+'</button></div>' : '')
+      + (hqReturn ? '<div style="margin-bottom:10px;"><button class="cd-inlinebtn" data-hqback="1" style="background:var(--surface-2);color:var(--text);">← Back to '+(hqReturn[0]==='u'?'underwriting':'today')+'</button></div>' : '')
       + '<div class="cd-drtitle">'+esc(d.name)+'</div>'
       + '<div class="cd-drsub">'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+' · <span class="cd-badge" style="color:'+st.color+';background:'+st.bg+';">'+st.label+'</span></div>'
       + '<div class="cd-drtabbar">'
@@ -3822,7 +3635,7 @@
     if(ownerSaveBtn) ownerSaveBtn.onclick = ()=>{
       const name = document.getElementById("cdNewOwnerName").value.trim();
       if(!name){
-        document.getElementById("cdNewOwnerName").style.borderColor = "var(--red)";
+        document.getElementById("cdNewOwnerName").style.borderColor = "var(--danger)";
         return;
       }
       const newOwner = {id: uid("owner"), name};
@@ -3855,7 +3668,7 @@
     if(brokerSaveBtn) brokerSaveBtn.onclick = ()=>{
       const name = document.getElementById("cdNewBrokerName").value.trim();
       if(!name){
-        document.getElementById("cdNewBrokerName").style.borderColor = "var(--red)";
+        document.getElementById("cdNewBrokerName").style.borderColor = "var(--danger)";
         return;
       }
       const phone = document.getElementById("cdNewBrokerPhone").value.trim();
@@ -3918,8 +3731,8 @@
       const date = datePickerValues["newCommit"];
       const recur = parseInt(document.getElementById("cdNewCommitRecur").value, 10) || 0;
       if(!desc || !date){
-        if(!desc) document.getElementById("cdNewCommitDesc").style.borderColor = "var(--red)";
-        if(!date) document.querySelector('[data-datetoggle="newCommit"]').style.borderColor = "var(--red)";
+        if(!desc) document.getElementById("cdNewCommitDesc").style.borderColor = "var(--danger)";
+        if(!date) document.querySelector('[data-datetoggle="newCommit"]').style.borderColor = "var(--danger)";
         return;
       }
       const newCommit = {id:uid("commit"), dealId:d.id, description:desc, promisedBy:by, dueDate:date, status:"open", history:[], createdDate:todayStr()};
@@ -3962,8 +3775,8 @@
       const newBy = document.getElementById("cdEditCommitBy-"+cid).value;
       const newDate = datePickerValues["editCommit-"+cid];
       if(!newDesc || !newDate){
-        if(!newDesc) document.getElementById("cdEditCommitDesc-"+cid).style.borderColor = "var(--red)";
-        if(!newDate) document.querySelector('[data-datetoggle="editCommit-'+cid+'"]').style.borderColor = "var(--red)";
+        if(!newDesc) document.getElementById("cdEditCommitDesc-"+cid).style.borderColor = "var(--danger)";
+        if(!newDate) document.querySelector('[data-datetoggle="editCommit-'+cid+'"]').style.borderColor = "var(--danger)";
         return;
       }
       const changes = [];
@@ -4212,10 +4025,10 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      outEl.innerHTML = '<p class="cd-caption" style="margin-top:10px;color:var(--green);">Saved as '+esc(filename)+' — check your Downloads folder. Drag that file into a chat with Claude any time to hand off everything currently in this app.</p>';
+      outEl.innerHTML = '<p class="cd-caption" style="margin-top:10px;color:var(--success);">Saved as '+esc(filename)+' — check your Downloads folder. Drag that file into a chat with Claude any time to hand off everything currently in this app.</p>';
     } catch(e){
       // Download blocked for some reason — fall back to a copyable textarea so nothing is lost
-      outEl.innerHTML = '<p class="cd-caption" style="margin-top:10px;color:var(--yellow);">Download didn\'t go through — here\'s the data to copy manually instead:</p>'
+      outEl.innerHTML = '<p class="cd-caption" style="margin-top:10px;color:var(--warning);">Download didn\'t go through — here\'s the data to copy manually instead:</p>'
         + '<textarea class="cd-note" readonly style="min-height:160px;margin-top:6px;" onclick="this.select()">'+esc(text)+'</textarea>';
     }
   }
@@ -4250,7 +4063,7 @@
       html += '<div class="cd-dealpickrow picked">'+esc(picked.name)+' <button class="cd-inlinebtn" id="cdQuickTaskChangeDeal" style="margin-left:8px;">Change</button></div>';
     } else {
       html += '<input class="cd-search" id="cdQuickTaskSearch" placeholder="Search deal by name or MCHT..." value="'+esc(quickTaskSearch)+'" style="max-width:none;">'
-        + (matches.length ? '<div class="cd-dealpick">'+matches.map(d=>'<div class="cd-dealpickrow" data-quickpick="'+d.id+'">'+esc(d.name)+' <span style="color:var(--ink-faint);">'+esc(d.mcht||"")+'</span></div>').join("")+'</div>' : (quickTaskSearch?'<p class="cd-caption">No matches.</p>':''));
+        + (matches.length ? '<div class="cd-dealpick">'+matches.map(d=>'<div class="cd-dealpickrow" data-quickpick="'+d.id+'">'+esc(d.name)+' <span style="color:var(--text-3);">'+esc(d.mcht||"")+'</span></div>').join("")+'</div>' : (quickTaskSearch?'<p class="cd-caption">No matches.</p>':''));
     }
 
     if(picked){
