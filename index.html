@@ -7,6 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  // Theme: dark (default), light or system. Stored per browser; set before first paint.
+  (function(){ try{ var t = localStorage.getItem("collections_hq_theme") || "dark";
+    var eff = t === "system" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : t;
+    document.documentElement.setAttribute("data-theme", eff); }catch(e){ document.documentElement.setAttribute("data-theme","dark"); } })();
+</script>
 <style>
 /* Collections HQ — design tokens. One font, 6 type sizes, 6 spacing steps, 3 radii.
    Dark is the default; [data-theme="light"] overrides the colour layer only. */
@@ -492,106 +498,140 @@ button{ cursor: pointer; }
   svg.ic{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
   .grid-table .tag{ display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; line-height:18px; vertical-align:middle; }
 
-  .cd-davidmode .hq-davact, .cd-davidmode .hq-davnotebox { display:none !important; }
-  #cdDavidPill{ position:fixed; top:var(--s-2); right:var(--s-3); z-index:300; font-family:var(--font); font-size:var(--fs-2); font-weight:500; height:22px; padding:0 8px;
-    display:inline-flex; align-items:center; border-radius:var(--r-pill); background:color-mix(in oklch, var(--warning) var(--tint), transparent); color:var(--warning); }
+  /* ---- Theme toggle (step 11) ---- */
+  .cd-theme{ display:flex; gap:2px; padding:2px; margin:var(--s-5) var(--s-2) 0; background:var(--surface-2); border-radius:var(--r-sm); }
+  .cd-theme button{ flex:1; height:28px; border:0; border-radius:var(--r-sm); background:transparent; color:var(--text-2); font-size:var(--fs-2); font-weight:500; cursor:pointer; font-family:inherit; }
+  .cd-theme button.on{ background:var(--surface); color:var(--text); box-shadow:0 1px 2px oklch(0 0 0 / .2); }
+  .phone-only, #cdTop, #cdTabs{ display:none; }
 
-  /* ---------------- OVERVIEW (read-only snapshot for David and the team) ----------------
-     Deliberately a different register from the rest of the app: flat near-black cards with
-     hairline borders, a serif display face for titles and mono for every label and figure,
-     modelled on the portfolio dashboard David already uses. Scoped entirely under .ov so
-     nothing here leaks into the working pages. No hover states and no click targets. */
-  .ov{
-    --ov-bg:#07090c; --ov-card:#0f1216; --ov-card-2:#12161b;
-    --ov-line:rgba(255,255,255,.075); --ov-grid:rgba(255,255,255,.06);
-    --ov-ink:#f5f6f7; --ov-ink-2:rgba(235,235,245,.62); --ov-ink-3:rgba(235,235,245,.38);
-    --ov-good:#5fd08a; --ov-warn:#f0a44b; --ov-bad:#ff6b5e;
-    --ov-bar-top:#6b9cf0; --ov-bar-bot:#2c4f8f;
-    --ov-s1:#199e70; --ov-s2:#d95926; --ov-s3:#9085e9; --ov-s4:#c98500; --ov-s5:#d55181; --ov-s6:#3987e5; --ov-s7:#8e8e93;
-    --ov-serif:"New York", ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-    --ov-mono:ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-    background:var(--ov-bg); border:1px solid var(--ov-line); border-radius:16px;
-    padding:28px 28px 30px; color:var(--ov-ink); cursor:default; user-select:text;
+  /* ---- Phone (step 10): one column, bottom tab bar, 44px targets ---- */
+  @media (max-width:760px){
+    #cdApp{ flex-direction:column; }
+    #cdNav{ display:none; }
+    #cdApp.page-more #cdNav{ display:block; width:100%; height:auto; position:static; border:0; padding:var(--s-4) var(--s-4) 96px; overflow:visible; }
+    #cdApp.page-more #cdMain{ display:none; }
+    #cdApp.page-more .cd-navbtn{ height:48px; font-size:var(--fs-4); }
+    #cdNav.searching-widen{ width:100%; }
+    #cdTop{ display:flex; margin:calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) var(--s-4); align-items:center; justify-content:space-between; gap:var(--s-2); height:52px; padding:0 var(--s-4); position:sticky; top:0; z-index:40;
+      background:var(--bg); border-bottom:1px solid var(--line); }
+    #cdTop b{ font-size:var(--fs-4); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #cdTabs{ display:flex; position:fixed; left:0; right:0; bottom:0; z-index:45; height:64px; padding:4px 0 10px; background:var(--bg); border-top:1px solid var(--line); }
+    #cdTabs button{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:0; background:none; color:var(--text-2);
+      font-family:inherit; font-size:var(--fs-1); font-weight:500; position:relative; cursor:pointer; min-height:44px; }
+    #cdTabs button svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    #cdTabs button.on{ color:var(--accent); }
+    #cdTabs .dot{ position:absolute; top:0; left:calc(50% + 6px); min-width:16px; height:16px; padding:0 4px; border-radius:var(--r-pill); background:var(--danger);
+      color:var(--text-on-accent); font-size:var(--fs-1); font-weight:600; display:flex; align-items:center; justify-content:center; }
+    #cdMain{ padding:var(--s-4) var(--s-4) 96px; }
+    .cd-h1{ font-size:var(--fs-5); }
+    .phone-only{ display:block; }
+    span.phone-only{ display:inline-flex; }
+    [data-hide-phone]{ display:none !important; }
+    .btn, .input, .cd-input, .cd-search, .cd-select, .cd-timesel select, .cd-datebtn, .cd-minicalday, .cd-chip, .cd-calviewbtn, .cd-drtab, .cd-theme button{ min-height:44px; }
+    .btn-icon, .btn-icon.btn-sm{ width:44px; }
+    .cd-navsearchclear.btn{ min-height:24px; width:24px; }
+    .cd-search{ max-width:none; }
+    .cd-kpirow, .ov-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .cd-kpi b, .ov-val{ font-size:var(--fs-5); }
+    .ov-row, .ov-row.wide-left, .hq-t4grid{ grid-template-columns:1fr; }
+    .ov-hbar{ grid-template-columns:96px 1fr auto; gap:var(--s-2); }
+    .cd-chiprow{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-left:calc(-1 * var(--s-4)); margin-right:calc(-1 * var(--s-4)); padding:0 var(--s-4); scrollbar-width:none; }
+    .cd-chiprow::-webkit-scrollbar{ display:none; }
+    /* grid rows collapse to name + one figure */
+    .cd-panel.grid-table > .thead{ display:none; }
+    .grid-table > .row{ grid-template-columns:minmax(0,1fr) auto !important; min-width:0; }
+    .grid-table[data-gt="dealsHtml"] > .row > :nth-child(2), .grid-table[data-gt="dealsHtml"] > .row > :nth-child(4), .grid-table[data-gt="dealsHtml"] > .row > :nth-child(5),
+    .grid-table[data-gt="legalHtml"] > .row > :nth-child(-n+5):not(:first-child),
+    .grid-table[data-gt="repeatBouncersHtml"] > .row > :nth-child(-n+5):not(:first-child),
+    .grid-table[data-gt="tasksHtml"] > .row > :nth-child(1), .grid-table[data-gt="tasksHtml"] > .row > :nth-child(2),
+    .grid-table[data-gt="tasksHtml"] > .row > :nth-child(4), .grid-table[data-gt="tasksHtml"] > .row > :nth-child(5){ display:none !important; }
+    .grid-table .cd-namecell .sub{ font-size:var(--fs-2); color:var(--text-2); margin-top:var(--s-1); }
+    /* Today rows: name block left; balance and Done / Later right */
+    .hq-tierrow, .hq-uwrow{ grid-template-columns:minmax(0,1fr) auto !important; row-gap:var(--s-2); }
+    .hq-tierrow .hq-c1{ grid-row:span 2; flex-direction:column; align-items:flex-start; flex-wrap:nowrap; }
+    .hq-tierrow .hq-c1 b{ white-space:normal; }
+    .hq-tierrow .hq-c2, .hq-tierrow .hq-c3{ display:none; }
+    .hq-tierrow .hq-c5{ justify-content:flex-end; }
+    .hq-tierrow .phone-only{ font-size:var(--fs-3); color:var(--text-2); }
+    .cd-remrow{ flex-wrap:wrap; } .cd-remrow *, .cd-listrow *{ overflow-wrap:anywhere; }
+    /* sheets */
+    #cdModalOverlay{ align-items:flex-end; }
+    #cdModal, #cdModal.hq-pop{ position:fixed !important; inset:auto 0 0 0; width:100% !important; max-width:none; max-height:92vh; border-radius:var(--r-lg) var(--r-lg) 0 0;
+      padding:var(--s-4) var(--s-4) var(--s-5); }
+    #cdModal .hq-popacts, #cdModal .sheet-actions{ position:sticky; bottom:calc(-1 * var(--s-5)); background:var(--surface); padding:var(--s-3) 0; margin-bottom:calc(-1 * var(--s-5)); }
+    #cdDrawer{ width:100%; padding:var(--s-4) var(--s-4) 96px; }
+    .cd-calgrid{ grid-template-columns:repeat(7,minmax(0,1fr)); }
+    .cd-calday{ min-height:56px; padding:var(--s-1); }
+    .cd-weekwrap{ overflow-x:auto; }
   }
+
+  .cd-davidmode .hq-davact, .cd-davidmode .hq-davnotebox { display:none !important; }
+
+  /* ---------------- OVERVIEW (step 9): same system as every other page, read-only ---------------- */
+  .ov{ cursor:default; user-select:text; }
   .ov *{ cursor:default; }
-  .ov-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;
-    padding-bottom:18px; margin-bottom:20px; border-bottom:1px solid var(--ov-line); }
-  .ov-title{ font-family:var(--ov-serif); font-size:30px; font-weight:700; letter-spacing:-.01em; line-height:1.1; margin:0; }
-  .ov-kicker{ font-family:var(--ov-mono); font-size:11.5px; color:var(--ov-ink-3); margin-top:6px; letter-spacing:.02em; }
-  .ov-asof{ font-family:var(--ov-mono); font-size:11px; color:var(--ov-ink-2); border:1px solid var(--ov-line);
-    border-radius:999px; padding:5px 11px; white-space:nowrap; }
-
-  .ov-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px; margin-bottom:14px; }
-  .ov-kpi{ background:var(--ov-card); border:1px solid var(--ov-line); border-radius:10px; padding:15px 17px 14px; min-width:0; }
-  .ov-lab{ font-family:var(--ov-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ov-ink-3); }
-  .ov-val{ font-family:var(--ov-mono); font-size:23px; font-weight:600; letter-spacing:-.02em; margin-top:9px; line-height:1.1;
-    font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .ov-val small{ font-size:13px; font-weight:500; color:var(--ov-ink-2); margin-left:6px; letter-spacing:0; }
-  .ov-subl{ font-family:var(--ov-mono); font-size:11px; color:var(--ov-ink-2); margin-top:7px; line-height:1.45; }
-  .ov-subl.good{ color:var(--ov-good); } .ov-subl.warn{ color:var(--ov-warn); } .ov-subl.bad{ color:var(--ov-bad); }
-
-  .ov-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+  .ov-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:var(--s-4); flex-wrap:wrap; margin-bottom:var(--s-5); }
+  .ov-title{ font-size:var(--fs-6); font-weight:600; line-height:var(--lh-tight); margin:0; letter-spacing:-.01em; }
+  .ov-kicker{ font-size:var(--fs-3); color:var(--text-2); margin-top:var(--s-1); }
+  .ov-asof{ display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:var(--r-pill); background:var(--surface-2); font-size:var(--fs-3); font-weight:500; color:var(--text-2); white-space:nowrap; }
+  .ov-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s-3); margin-bottom:var(--s-3); }
+  .ov-kpi, .ov-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); min-width:0; }
+  .ov-kpi{ padding:var(--s-4); }
+  .ov-lab{ font-size:var(--fs-1); font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); }
+  .ov-val{ font-size:var(--fs-6); font-weight:600; margin-top:var(--s-2); line-height:var(--lh-tight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ov-val small{ font-size:var(--fs-3); font-weight:500; color:var(--text-2); margin-left:var(--s-2); }
+  .ov-subl{ font-size:var(--fs-2); color:var(--text-2); margin-top:var(--s-2); line-height:var(--lh); }
+  .ov-subl.good{ color:var(--success); } .ov-subl.warn{ color:var(--warning); } .ov-subl.bad{ color:var(--danger); }
+  .ov-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-3); margin-top:var(--s-3); }
   .ov-row.wide-left{ grid-template-columns:1.25fr 1fr; }
-  .ov-card{ background:var(--ov-card); border:1px solid var(--ov-line); border-radius:10px; min-width:0; overflow:hidden; }
-  .ov-card-h{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:12px; padding:14px 18px 12px; border-bottom:1px solid var(--ov-line); }
-  .ov-card-h h3{ font-family:var(--ov-serif); font-size:16.5px; font-weight:700; margin:0; letter-spacing:-.005em; color:var(--ov-ink); }
-  .ov-card-h span{ font-family:var(--ov-mono); font-size:10.5px; color:var(--ov-ink-3); white-space:nowrap; }
-  .ov-card-b{ padding:14px 18px 16px; }
-  .ov-card svg{ display:block; width:100%; height:auto; }
-  .ov-svgtext{ font-family:var(--ov-mono); }
-
-  .ov-legend{ display:flex; gap:16px; flex-wrap:wrap; font-family:var(--ov-mono); font-size:11px; color:var(--ov-ink-2); margin:2px 0 8px; }
-  .ov-legend i{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:-1px; }
-
-  .ov-status{ display:grid; grid-template-columns:170px 1fr; gap:22px; align-items:center; }
-  .ov-srow{ display:grid; grid-template-columns:12px 1fr auto; gap:9px; align-items:center; padding:5px 0;
-    font-family:var(--ov-mono); font-size:12px; color:var(--ov-ink-2); border-bottom:1px solid var(--ov-grid); }
-  .ov-srow:last-child{ border-bottom:none; }
-  .ov-srow i{ width:9px; height:9px; border-radius:50%; display:block; }
-  .ov-srow b{ color:var(--ov-ink); font-weight:600; white-space:nowrap; }
-  .ov-srow em{ font-style:normal; color:var(--ov-ink-3); margin-left:6px; }
-  .ov-note{ font-family:var(--ov-mono); font-size:11px; color:var(--ov-warn); margin-top:12px; line-height:1.5; }
-  .ov-stats{ display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; margin-top:16px; padding-top:14px; border-top:1px solid var(--ov-line); }
+  .ov-card{ overflow:hidden; }
+  .ov-card-h{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:var(--s-3); padding:var(--s-4) var(--s-4) 0; }
+  .ov-card-h h3{ font-size:var(--fs-5); font-weight:600; margin:0; line-height:var(--lh-tight); }
+  .ov-card-h span{ font-size:var(--fs-2); color:var(--text-3); }
+  .ov-card-b{ padding:var(--s-4); }
+  .ov-legend{ display:flex; gap:var(--s-4); flex-wrap:wrap; font-size:var(--fs-2); color:var(--text-2); margin:0 0 var(--s-3); }
+  .ov-legend i{ display:inline-block; width:8px; height:8px; border-radius:var(--r-pill); margin-right:var(--s-1); vertical-align:0; }
+  .ov-chart{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--s-3); align-items:end; height:200px; border-bottom:1px solid var(--line); }
+  .ov-col{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:0; }
+  .ov-col b{ font-size:var(--fs-2); font-weight:600; margin-bottom:var(--s-1); white-space:nowrap; }
+  .ov-stack{ width:min(52px,70%); display:flex; flex-direction:column; gap:2px; }
+  .ov-stack i{ display:block; width:100%; }
+  .ov-stack i:first-child{ border-radius:var(--r-sm) var(--r-sm) 0 0; }
+  .ov-xlab{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--s-3); margin-top:var(--s-2); font-size:var(--fs-2); color:var(--text-3); text-align:center; }
+  .ov-stackbar{ display:flex; gap:2px; height:12px; border-radius:var(--r-pill); overflow:hidden; margin:var(--s-2) 0 var(--s-4); }
+  .ov-stackbar i{ display:block; height:100%; }
+  .ov-total{ font-size:var(--fs-6); font-weight:600; line-height:var(--lh-tight); }
+  .ov-total small{ font-size:var(--fs-3); font-weight:500; color:var(--text-2); margin-left:var(--s-2); }
+  .ov-srow{ display:grid; grid-template-columns:12px 1fr auto; gap:var(--s-2); align-items:center; padding:var(--s-1) 0; font-size:var(--fs-3); color:var(--text-2); border-top:1px solid var(--line); }
+  .ov-srow:first-child{ border-top:none; }
+  .ov-srow i{ width:8px; height:8px; border-radius:var(--r-pill); display:block; }
+  .ov-srow b{ color:var(--text); font-weight:600; white-space:nowrap; }
+  .ov-srow em{ font-style:normal; color:var(--text-3); margin-left:var(--s-2); font-weight:400; }
+  .ov-note{ font-size:var(--fs-2); color:var(--warning); margin-top:var(--s-3); }
+  .ov-stats{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-3) var(--s-5); margin-top:var(--s-4); padding-top:var(--s-4); border-top:1px solid var(--line); }
   .ov-stats div{ min-width:0; }
-  .ov-stats b{ display:block; font-family:var(--ov-mono); font-size:15px; font-weight:600; margin-top:5px; font-variant-numeric:tabular-nums; }
-  .ov-stats b.bad{ color:var(--ov-bad); }
-
-  .ov-hbar{ display:grid; grid-template-columns:minmax(110px,150px) 1fr minmax(92px,auto); gap:12px; align-items:center; padding:6px 0;
-    font-family:var(--ov-mono); font-size:12px; }
-  .ov-hbar .n{ color:var(--ov-ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .ov-hbar .t{ height:9px; background:var(--ov-grid); border-radius:3px; overflow:hidden; }
-  .ov-hbar .t i{ display:block; height:100%; border-radius:0 4px 4px 0; }
-  .ov-hbar .v{ text-align:right; color:var(--ov-ink); white-space:nowrap; font-variant-numeric:tabular-nums; }
-  .ov-hbar .v em{ font-style:normal; color:var(--ov-ink-3); margin-left:6px; }
-
-  .ov-list{ font-family:var(--ov-mono); font-size:12px; }
-  .ov-li{ display:grid; grid-template-columns:1fr auto; gap:12px; padding:9px 0; border-bottom:1px solid var(--ov-grid); align-items:center; }
-  .ov-li:last-child{ border-bottom:none; }
-  .ov-li .nm{ color:var(--ov-ink); font-family:inherit; font-weight:600; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .ov-li .mt{ color:var(--ov-ink-3); font-size:11px; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .ov-li .am{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
-  .ov-li .am small{ display:block; font-size:10.5px; margin-top:3px; }
-
-  .ov-table{ width:100%; border-collapse:collapse; font-family:var(--ov-mono); font-size:12px; }
-  .ov-table th{ text-align:left; font-weight:500; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ov-ink-3);
-    padding:0 0 8px; border-bottom:1px solid var(--ov-line); }
-  .ov-table td{ padding:8px 0; border-bottom:1px solid var(--ov-grid); color:var(--ov-ink-2); }
+  .ov-stats b{ display:block; font-size:var(--fs-4); font-weight:600; margin-top:var(--s-1); }
+  .ov-stats b.bad{ color:var(--danger); }
+  .ov-hbar{ display:grid; grid-template-columns:minmax(110px,150px) 1fr minmax(92px,auto); gap:var(--s-3); align-items:center; padding:var(--s-1) 0; font-size:var(--fs-3); }
+  .ov-hbar .n{ color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ov-hbar .bar{ height:8px; }
+  .ov-hbar .v{ text-align:right; white-space:nowrap; font-weight:500; }
+  .ov-hbar .v em{ font-style:normal; color:var(--text-3); margin-left:var(--s-2); font-weight:400; }
+  .ov-li{ display:grid; grid-template-columns:1fr auto; gap:var(--s-3); padding:var(--s-2) 0; border-top:1px solid var(--line); align-items:center; font-size:var(--fs-3); }
+  .ov-li:first-child{ border-top:none; }
+  .ov-li .nm{ font-weight:500; font-size:var(--fs-4); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ov-li .mt{ color:var(--text-2); font-size:var(--fs-2); margin-top:2px; }
+  .ov-li .am{ text-align:right; white-space:nowrap; font-weight:600; }
+  .ov-li .am small{ display:block; font-size:var(--fs-2); font-weight:500; margin-top:2px; }
+  .ov-table{ width:100%; border-collapse:collapse; font-size:var(--fs-3); }
+  .ov-table th{ text-align:left; font-weight:500; font-size:var(--fs-2); color:var(--text-2); padding:0 0 var(--s-2); border-bottom:1px solid var(--line); }
+  .ov-table td{ padding:var(--s-2) 0; border-bottom:1px solid var(--line); color:var(--text-2); }
   .ov-table tr:last-child td{ border-bottom:none; }
   .ov-table td.r, .ov-table th.r{ text-align:right; }
-  .ov-table td b{ color:var(--ov-ink); font-weight:600; }
+  .ov-table td b{ color:var(--text); font-weight:600; }
+  .ov-foot{ font-size:var(--fs-2); color:var(--text-3); margin-top:var(--s-4); line-height:var(--lh); }
+  @media (max-width:1100px){ .ov-row, .ov-row.wide-left{ grid-template-columns:1fr; } .ov-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
-  .ov-foot{ font-family:var(--ov-mono); font-size:10.5px; color:var(--ov-ink-3); margin-top:18px; line-height:1.6; }
-
-  @media (max-width:1100px){ .ov-row, .ov-row.wide-left{ grid-template-columns:1fr; } }
-  @media (max-width:560px){
-    .ov{ padding:18px 14px 20px; border-radius:12px; }
-    .ov-title{ font-size:25px; }
-    .ov-status{ grid-template-columns:1fr; justify-items:center; }
-    .ov-status > div:last-child{ width:100%; }
-    .ov-hbar{ grid-template-columns:96px 1fr auto; gap:8px; }
-  }
-  /* David view-only login (10/7): Yaakov's controls on the David page are hidden; a pill says view only. */
-  
 </style>
 </head>
 <body>
@@ -1739,6 +1779,7 @@ button{ cursor: pointer; }
       + item("otherdeals","Other Deals", DB.deals.filter(isOtherOwnerDeal).length)
       + item("brokers","Brokers")
       + item("reports","Reports")
+      + themeToggleHtml()
       + '</div>';
   }
 
@@ -1755,13 +1796,13 @@ button{ cursor: pointer; }
   //  - "Bouncing now": open, not in legal, one or more consecutive returns on record.
   //  - "Paused": open with a pause record or a paused-schedule flag.
   const OV_GROUPS = [
-    {key:"monitor", label:"Monitoring", color:"var(--ov-s1)", statuses:["monitor"]},
-    {key:"working", label:"Being worked", color:"var(--ov-s2)", statuses:["contact_today","urgent","awaiting_response","in_touch"]},
-    {key:"legal",   label:"Legal", color:"var(--ov-s3)", statuses:["legal"]},
-    {key:"relief",  label:"Debt relief", color:"var(--ov-s4)", statuses:["debt_relief"]},
-    {key:"filing",  label:"Filing queue", color:"var(--ov-s5)", statuses:["needs_file"]},
-    {key:"closed",  label:"Closed", color:"var(--ov-s6)", statuses:["resolved","paid_full","write_off"]},
-    {key:"review",  label:"Under review", color:"var(--ov-s7)", statuses:[]}   // catch-all: needs_review and anything unknown
+    {key:"monitor", label:"Monitoring", color:"var(--success)", statuses:["monitor"]},
+    {key:"working", label:"Being worked", color:"var(--warning)", statuses:["contact_today","urgent","awaiting_response","in_touch"]},
+    {key:"legal",   label:"Legal", color:"var(--accent)", statuses:["legal"]},
+    {key:"relief",  label:"Debt relief", color:"var(--p-ember)", statuses:["debt_relief"]},
+    {key:"filing",  label:"Filing queue", color:"var(--danger)", statuses:["needs_file"]},
+    {key:"closed",  label:"Closed", color:"var(--p-breeze)", statuses:["resolved","paid_full","write_off"]},
+    {key:"review",  label:"Under review", color:"var(--neutral)", statuses:[]}   // catch-all: needs_review and anything unknown
   ];
   function ovGroupOf(d){
     for(const g of OV_GROUPS){ if(g.statuses.indexOf(d.status)>=0) return g.key; }
@@ -1788,77 +1829,33 @@ button{ cursor: pointer; }
   function ovIsFundingWatchOnly(d){
     return d.status==="monitor" && !((d.consecutive||0)>0) && (d.flags||[]).some(f=>/funding watch/i.test(f));
   }
-  function ovTopRoundRect(x,y,w,h,r){
-    if(h<=0) return "";
-    r = Math.min(r,h,w/2);
-    return '<path d="M'+x+','+(y+h)+' V'+(y+r)+' Q'+x+','+y+' '+(x+r)+','+y+' H'+(x+w-r)+' Q'+(x+w)+','+y+' '+(x+w)+','+(y+r)+' V'+(y+h)+' Z"';
-  }
-  // Vertical bar chart, one or two stacked series, value printed above each bar. Static SVG.
+  // Div bar chart: six columns, bars as a share of the largest, value above, month below.
+  // Stacked bars put recovered (--success) over still owed (--accent).
   function ovBars(cols, opts){
-    const W=560, H=240, L=48, R=10, T=26, B=30;
-    const pw=W-L-R, ph=H-T-B;
-    const max = Math.max(1, ...cols.map(c=>c.segs.reduce((s,x)=>s+x.v,0)));
-    const step = niceStep(max/4); const top = Math.ceil(max/step)*step || 1;
     const fmt = opts.fmt || (v=>String(Math.round(v)));
-    let s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(opts.aria||"")+'" class="ov-svgtext">';
-    s += '<defs><linearGradient id="ovg-'+opts.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b9cf0"/><stop offset="1" stop-color="#2c4f8f"/></linearGradient></defs>';
-    for(let i=0;i<=4;i++){
-      const v = top*i/4, y = T+ph-(v/top)*ph;
-      s += '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'" stroke="rgba(255,255,255,.06)" stroke-width="1"/>';
-      s += '<text x="'+(L-8)+'" y="'+(y+3.5)+'" text-anchor="end" font-size="10" fill="rgba(235,235,245,.38)">'+esc(fmt(v))+'</text>';
-    }
-    const slot = pw/cols.length, bw = Math.min(52, slot*0.46);
+    const totals = cols.map(c=>c.segs.reduce((s,x)=>s+x.v,0));
+    const max = Math.max(1, ...totals);
+    const H = 176;   // px inside the 200px chart, leaving room for the value label
+    const colour = f => f==="grad" ? "var(--accent)" : f==="rec" ? "var(--success)" : f;
+    let h = '<div class="ov-chart" role="img" aria-label="'+esc(opts.aria||"")+'">';
     cols.forEach((c,i)=>{
-      const x = L + slot*i + (slot-bw)/2;
-      let yCursor = T+ph; const total = c.segs.reduce((a,b)=>a+b.v,0);
-      const visible = c.segs.filter(sg=>sg.v>0);
-      c.segs.forEach(sg=>{
-        if(sg.v<=0) return;
-        const h = Math.max(1,(sg.v/top)*ph);
-        const isTop = sg===visible[visible.length-1];
-        const fill = sg.fill==="grad" ? 'url(#ovg-'+opts.id+')' : sg.fill;
-        const y = yCursor - h;
-        if(isTop) s += ovTopRoundRect(x,y,bw,h,4)+' fill="'+fill+'"/>';
-        else s += '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" fill="'+fill+'"/>';
-        yCursor = y - (isTop?0:2);   // 2px gap between stacked segments
-      });
-      if(total>0) s += '<text x="'+(x+bw/2)+'" y="'+(yCursor-7)+'" text-anchor="middle" font-size="11" font-weight="600" fill="#f5f6f7">'+esc((opts.topFmt||fmt)(total))+'</text>';
-      s += '<text x="'+(x+bw/2)+'" y="'+(H-10)+'" text-anchor="middle" font-size="10.5" fill="rgba(235,235,245,.5)">'+esc(c.label)+'</text>';
+      const segs = c.segs.filter(sg=>sg.v>0).slice().reverse();   // top segment first
+      h += '<div class="ov-col">'+(totals[i]>0?'<b>'+esc((opts.topFmt||fmt)(totals[i]))+'</b>':'')
+        + '<div class="ov-stack">'+segs.map(sg=>'<i style="height:'+Math.max(2, sg.v/max*H).toFixed(1)+'px;background:'+colour(sg.fill)+'"></i>').join('')+'</div></div>';
     });
-    s += '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'" stroke="rgba(255,255,255,.14)" stroke-width="1"/>';
-    return s+'</svg>';
+    h += '</div><div class="ov-xlab">'+cols.map(c=>'<span>'+esc(c.label)+'</span>').join('')+'</div>';
+    return h;
   }
-  function niceStep(raw){
-    if(raw<=0) return 1;
-    const p = Math.pow(10, Math.floor(Math.log10(raw))); const n = raw/p;
-    return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p;
-  }
-  // Donut with a 2px surface gap between slices. Static.
+  // 12px stacked bar in place of the donut; the legend rows below carry the numbers.
   function ovDonut(parts, centreBig, centreSmall){
-    const S=170, cx=S/2, cy=S/2, r=70, rin=50;
     const total = parts.reduce((a,b)=>a+b.v,0) || 1;
-    let a0 = -Math.PI/2, s = '<svg viewBox="0 0 '+S+' '+S+'" role="img" aria-label="Deals by status" class="ov-svgtext" style="max-width:170px;">';
-    const pt=(rad,ang)=>[cx+rad*Math.cos(ang), cy+rad*Math.sin(ang)];
-    parts.filter(p=>p.v>0).forEach(p=>{
-      const sweep = p.v/total*Math.PI*2;
-      const a1 = a0 + sweep;
-      if(sweep >= Math.PI*2-1e-6){
-        s += '<circle cx="'+cx+'" cy="'+cy+'" r="'+((r+rin)/2)+'" fill="none" stroke="'+p.color+'" stroke-width="'+(r-rin)+'"/>';
-      } else {
-        const [x0,y0]=pt(r,a0),[x1,y1]=pt(r,a1),[x2,y2]=pt(rin,a1),[x3,y3]=pt(rin,a0);
-        const large = sweep>Math.PI?1:0;
-        s += '<path d="M'+x0+','+y0+' A'+r+','+r+' 0 '+large+' 1 '+x1+','+y1+' L'+x2+','+y2+' A'+rin+','+rin+' 0 '+large+' 0 '+x3+','+y3+' Z" fill="'+p.color+'" stroke="#0f1216" stroke-width="2" stroke-linejoin="round"/>';
-      }
-      a0 = a1;
-    });
-    s += '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="24" font-weight="700" fill="#f5f6f7">'+esc(centreBig)+'</text>';
-    s += '<text x="'+cx+'" y="'+(cy+21)+'" text-anchor="middle" font-size="9.5" letter-spacing="1.2" fill="rgba(235,235,245,.45)">'+esc(centreSmall)+'</text>';
-    return s+'</svg>';
+    return '<div class="ov-total">'+esc(centreBig)+'<small>'+esc(String(centreSmall).toLowerCase())+'</small></div>'
+      + '<div class="ov-stackbar" role="img" aria-label="Deals by status">'+parts.filter(p=>p.v>0).map(p=>'<i style="flex:'+p.v+';background:'+p.color+'"></i>').join('')+'</div>';
   }
   function ovHbars(rows, colorOf){
     const max = Math.max(1, ...rows.map(r=>r.v));
     return rows.map(r=>'<div class="ov-hbar"><div class="n" title="'+esc(r.label)+'">'+esc(r.label)+'</div>'
-      + '<div class="t"><i style="width:'+Math.max(r.v>0?1.5:0, r.v/max*100).toFixed(2)+'%;background:'+(r.color||colorOf||"var(--ov-s6)")+';"></i></div>'
+      + '<span class="bar"><i style="width:'+Math.max(r.v>0?1.5:0, r.v/max*100).toFixed(2)+'%;background:'+(r.color||colorOf||"var(--accent)")+';"></i></span>'
       + '<div class="v">'+esc(r.text)+(r.sub?'<em>'+esc(r.sub)+'</em>':'')+'</div></div>').join("");
   }
   function ovKpi(label, value, small, sub, tone){
@@ -1920,15 +1917,15 @@ button{ cursor: pointer; }
       const ds = book.filter(d=>(d.datePlaced||"").slice(0,7)===m.key);
       return {label:m.label, n:ds.length, rec:sum(ds,d=>Math.min(d.recovered||0, d.original||0)), rem:sum(ds,ovRem)};
     });
-    const moneyBars = ovBars(byMonth.map(m=>({label:m.label, segs:[{v:m.rem, fill:"grad"},{v:m.rec, fill:"var(--ov-s1)"}]})),
+    const moneyBars = ovBars(byMonth.map(m=>({label:m.label, segs:[{v:m.rem, fill:"grad"},{v:m.rec, fill:"rec"}]})),
       {id:"amt", fmt:ovCompact, aria:"Balance placed with collections by month, split into recovered and still owed"});
     const countBars = ovBars(byMonth.map(m=>({label:m.label, segs:[{v:m.n, fill:"grad"}]})),
       {id:"cnt", aria:"Deals added to collections by month"});
     h += '<div class="ov-row">'
       + ovCard("Placed in Collections by Month", "balance · recovered vs still owed",
-          '<div class="ov-legend"><span><i style="background:#4f7fd0"></i>Still owed</span><span><i style="background:var(--ov-s1)"></i>Recovered</span></div>'+moneyBars)
+          '<div class="ov-legend"><span><i style="background:var(--accent)"></i>Still owed</span><span><i style="background:var(--success)"></i>Recovered</span></div>'+moneyBars)
       + ovCard("Deals Added by Month", "count of deals", countBars
-          + (earlier ? '<div class="ov-foot" style="margin-top:6px;">'+earlier+' more placed before '+esc(months[0].label)+' not shown.</div>' : ''))
+          + (earlier ? '<div class="ov-foot" style="margin-top:var(--s-2);">'+earlier+' more placed before '+esc(months[0].label)+' not shown.</div>' : ''))
       + '</div>';
 
     // --- Book status donut + money by group
@@ -1940,7 +1937,7 @@ button{ cursor: pointer; }
     const legendRows = groupStats.map(g=>'<div class="ov-srow"><i style="background:'+g.color+'"></i><span>'+esc(g.label)+'</span><b>'+g.n+' deals<em>'+ovPct(g.n,book.length).toFixed(0)+'%</em></b></div>').join("");
     const reviewN = groupStats.find(g=>g.key==="review").n;
     const legalRate = ovPct(book.filter(d=>d.status==="legal").length, book.length);
-    const statusBody = '<div class="ov-status"><div>'+donut+'</div><div>'+legendRows+'</div></div>'
+    const statusBody = donut + '<div>'+legendRows+'</div>'
       + (reviewN ? '<div class="ov-note">'+reviewN+' deals are still being classified (under review) and will move into the other groups as they are worked.</div>' : '')
       + '<div class="ov-stats">'
       +   '<div><div class="ov-lab">Outstanding (open)</div><b>'+money(outstanding)+'</b></div>'
@@ -1956,8 +1953,8 @@ button{ cursor: pointer; }
       + ovCard("Book Status", "deals on the book by stage", statusBody)
       + ovCard("Where the Balance Sits", "outstanding on open deals",
           ovHbars(whereRows)
-          + '<div class="ov-lab" style="margin:18px 0 6px;">By platform</div>'
-          + ovHbars(plRows, "#4f7fd0"))
+          + '<div class="ov-lab" style="margin:var(--s-4) 0 var(--s-2);">By platform</div>'
+          + ovHbars(plRows.map(r=>Object.assign(r,{color:platVar(r.label)}))))
       + '</div>';
 
     // --- Payment health + legal by firm
@@ -1974,7 +1971,7 @@ button{ cursor: pointer; }
       {id:"hl", aria:"Open deals outside legal by consecutive returns"});
     const firms = {};
     legal.forEach(d=>{ const f = ovFirm((d.legalCase||{}).firm); (firms[f]=firms[f]||{n:0,v:0,stale:0}); firms[f].n++; firms[f].v+=ovRem(d); try{ if(legalIsStale(d)) firms[f].stale++; }catch(e){} });
-    const firmRows = Object.keys(firms).map(f=>({label:f, v:firms[f].v, text:ovCompact(firms[f].v), sub:firms[f].n+" deals"+(firms[f].stale?" · "+firms[f].stale+" quiet":"") , color:"var(--ov-s3)"})).sort((a,b)=>b.v-a.v);
+    const firmRows = Object.keys(firms).map(f=>({label:f, v:firms[f].v, text:ovCompact(firms[f].v), sub:firms[f].n+" deals"+(firms[f].stale?" · "+firms[f].stale+" quiet":"") , color:"var(--accent)"})).sort((a,b)=>b.v-a.v);
     h += '<div class="ov-row">'
       + ovCard("Payment Health", "open deals outside legal · consecutive returns",
           '<div class="ov-legend"><span>'+notLegal.length+' open deals · '+notLegal.filter(d=>(d.consecutive||0)===0).length+' with no current returns</span></div>'+healthBars)
@@ -1986,8 +1983,8 @@ button{ cursor: pointer; }
     // --- Largest open balances (outside legal) + clawbacks
     const largest = open.filter(d=>d.status!=="legal").sort((a,b)=>ovRem(b)-ovRem(a)).slice(0,8);
     const idBits = d=>[d.leadId?("Lead "+d.leadId+(d.platform&&d.platform!=="Breeze"?" ("+d.platform+")":"")):"", d.mcht?("MCHT "+d.mcht):""].filter(Boolean).join(" · ");
-    const toneOf = d=>{ const g = ovGroupOf(d); return g==="filing"||d.status==="contact_today"||d.status==="urgent" ? "var(--ov-bad)" : (d.consecutive||0)>0 ? "var(--ov-warn)" : "var(--ov-ink-3)"; };
-    const largestBody = '<div class="ov-list">'+largest.map(d=>'<div class="ov-li"><div style="min-width:0;"><div class="nm">'+esc(d.name)+'</div><div class="mt">'+esc(idBits(d))+'</div></div>'
+    const toneOf = d=>{ const g = ovGroupOf(d); return g==="filing"||d.status==="contact_today"||d.status==="urgent" ? "var(--danger)" : (d.consecutive||0)>0 ? "var(--warning)" : "var(--text-3)"; };
+    const largestBody = '<div>'+largest.map(d=>'<div class="ov-li"><div style="min-width:0;"><div class="nm">'+esc(d.name)+'</div><div class="mt">'+esc(idBits(d))+'</div></div>'
       + '<div class="am">'+money(ovRem(d))+'<small style="color:'+toneOf(d)+'">'+esc(statusOf(d.status).label)+((d.consecutive||0)>0?' · '+d.consecutive+(d.consecutive===1?' return':' returns'):'')+'</small></div></div>').join("")+'</div>';
     const cbRowsDef = [["needs_pull","Needs to be pulled"],["warning_sent","Warning sent to ISO"],["pulled_pending","Pulled — waiting to land"],["bounced","Pulled — bounced back"],["landed","Landed"]];
     const cbTable = '<table class="ov-table"><thead><tr><th>Clawback stage</th><th class="r">Deals</th><th class="r">Known amount</th></tr></thead><tbody>'
@@ -2006,6 +2003,7 @@ button{ cursor: pointer; }
   }
 
   function pageHtml(){
+    if(currentPage==="more") return "";
     if(currentPage==="overview") return overviewHtml();
     if(currentPage==="today") return todayHtml();
     if(currentPage==="david") return davidHtml();
@@ -2057,9 +2055,41 @@ button{ cursor: pointer; }
       const row = el.closest(".cd-formrow"); if(row && !row.querySelector("[data-allowdavid]")) row.classList.add("edit-only");
     });
   }
+  const THEME_KEY = "collections_hq_theme";
+  function themePref(){ try{ return localStorage.getItem(THEME_KEY) || "dark"; }catch(e){ return "dark"; } }
+  function applyTheme(t){
+    const eff = t === "system" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : t;
+    document.documentElement.setAttribute("data-theme", eff);
+  }
+  try{ matchMedia("(prefers-color-scheme: light)").addEventListener("change", ()=>{ if(themePref()==="system") applyTheme("system"); }); }catch(e){}
+  function themeToggleHtml(){
+    const t = themePref();
+    return '<div class="cd-theme" role="group" aria-label="Theme">' + [["dark","Dark"],["light","Light"],["system","System"]]
+      .map(([k,l])=>'<button type="button" data-theme-set="'+k+'" class="'+(t===k?'on':'')+'">'+l+'</button>').join('') + '</div>';
+  }
+  const PAGE_TITLES = {overview:"Overview", today:"Today", david:"David", uw:"Underwriting", plans:"Payment Plans", calendar:"Calendar", notifications:"Notifications",
+    watchlist:"Watchlist", tasks:"Tasks", legal:"Legal", deals:"Deals", merchants:"Merchants", repeatbouncers:"Repeat Bouncers", otherdeals:"Other Deals",
+    brokers:"Brokers", reports:"Reports", more:"More", deal:"Deal"};
+  const TAB_PAGES = ["today","deals","plans","calendar"];
+  function topBarHtml(){
+    return '<div id="cdTop"><b>'+esc(PAGE_TITLES[currentPage]||"Collections HQ")+'</b>'
+      + (davidMode() ? '<span class="pill" style="--c:var(--warning)">View only</span>' : '') + '</div>';
+  }
+  function tabsHtml(){
+    const t1 = tierCountsCached().t1 || 0;
+    const tabs = [["today","Today","today",t1],["deals","Deals","deals",0]];
+    if(typeof plansHtml === "function") tabs.push(["plans","Plans","plans", planUrgentCount()]);
+    tabs.push(["calendar","Calendar","calendar",0],["more","More","more",0]);
+    const onMore = currentPage === "more" || TAB_PAGES.indexOf(currentPage) < 0 && currentPage !== "deal";
+    return '<nav id="cdTabs">' + tabs.map(([id,label,icon,n])=>{
+      const on = id === "more" ? onMore : currentPage === id;
+      return '<button type="button" data-page="'+id+'" class="'+(on?'on':'')+'"><svg><use href="#i-'+icon+'"/></svg>'+label+(n?'<span class="dot">'+n+'</span>':'')+'</button>';
+    }).join('') + '</nav>';
+  }
   function render(){
     const app = document.getElementById("cdApp");
-    app.innerHTML = navHtml() + '<div id="cdMain">' + pageHtml() + '</div>';
+    app.classList.toggle("page-more", currentPage === "more");
+    app.innerHTML = navHtml() + '<div id="cdMain">' + topBarHtml() + pageHtml() + '</div>' + tabsHtml();
     wire();
   }
 
@@ -2068,6 +2098,7 @@ button{ cursor: pointer; }
     const out = document.getElementById("cdDavidOut");
     if(out) out.onclick = (e)=>{ e.preventDefault(); clearCfg(); document.body.classList.remove("cd-davidmode"); renderDavidLogin(); };
     markEditOnly(document);
+    document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem(THEME_KEY, b.dataset.themeSet); }catch(e){} applyTheme(b.dataset.themeSet); render(); });
     document.querySelectorAll(".cd-nagbanner[data-viewmode-hint]").forEach(el=>el.onclick=()=>{
       currentPage="deals"; dealViewMode=el.dataset.viewmodeHint; render();
     });
@@ -2508,7 +2539,8 @@ button{ cursor: pointer; }
     const d = it.deal, tier = it.tier;
     const bal = money((d.original||0)-(d.recovered||0));
     return '<div class="cd-remrow hq-tierrow hq-compact" data-hqpop="'+it.key+'" style="border-left:3px solid '+TIER_META[tier].color+';">'
-      + '<div class="hq-c1"><b>'+esc(d.name)+'</b>'+(dealIds(d)?'<span class="hq-ids">'+esc(dealIds(d))+'</span>':'')+platTag(d.platform)+'</div>'
+      + '<div class="hq-c1"><b>'+esc(d.name)+'</b>'+(dealIds(d)?'<span class="hq-ids">'+esc(dealIds(d))+'</span>':'')+platTag(d.platform)
+      + '<div class="phone-only">'+esc(it.what)+'</div><div class="phone-only">'+esc(it.who)+' · '+esc(it.act)+'</div></div>'
       + '<div class="hq-c2">'+esc(it.what)+'</div>'
       + '<div class="hq-c3">'+whoPill(it.who)+'<span>'+esc(it.act)+'</span></div>'
       + '<div class="hq-c4"><span>'+bal+'</span>'+(it.due?'<span class="hq-due'+(it.over?' over':'')+'">'+esc(it.due)+'</span>':'')+'</div>'
@@ -2640,12 +2672,12 @@ button{ cursor: pointer; }
       h += '<div class="hq-popsect"><div class="hq-poplab">Last notes</div>'+(notes.length?notes.map(n=>'<div class="hq-popnote"><span>'+esc(n.date||"")+'</span> '+esc((n.text||"").length>240?(n.text||"").slice(0,240)+"…":(n.text||""))+'</div>').join(''):'<div style="color:var(--text-2);">No notes yet.</div>')+'</div>';
       h += '<div class="hq-popsect"><div class="hq-poplab">Note</div><textarea class="input cd-input" id="hqPopNote" rows="2" placeholder="What happened on the call, what they said, what’s next"></textarea></div>';
     }
-    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">'
+    h += '<div class="hq-popacts" style="display:flex;gap:var(--s-2);flex-wrap:wrap;margin-top:var(--s-4);">'
       + (kind==='t'&&it.who!=="Claude"?'<button class="btn btn-primary" id="hqPopDone">Done</button>':'')
       + (kind==='t'?'<button class="btn btn-secondary" id="hqPopLater">Later</button>':'')
       + (kind==='u'&&it.status!=="done"?'<button class="btn btn-primary" id="hqPopUwDone">Acknowledged</button>':'')
       + (d?'<button class="btn btn-secondary" id="hqPopSaveNote">Save note</button>':'')
-      + (d?'<button class="btn btn-secondary" id="hqPopDrawer" style="margin-left:auto;">Drawer →</button>':'')
+      + (d?'<button class="btn btn-secondary" id="hqPopDrawer" style="margin-left:auto;">Open deal</button>':'')
       + '</div>';
     const m = document.getElementById("cdModal");
     m.innerHTML = h; m.style.position='relative'; m.style.width='560px'; m.classList.add('hq-pop');
@@ -3210,7 +3242,7 @@ button{ cursor: pointer; }
       return '<div class="row" data-open="'+d.id+'">'
         + '<div class="cd-namecell"><b>'+esc(d.name)+'</b>'
           + ((missingContact||(d.flags&&d.flags.length))?'<div class="tagrow">'+(missingContact?'<span class="tag" style="color:var(--danger)">No contact</span>':'')+(d.flags||[]).map(f=>'<span class="tag" style="color:var(--warning)">'+esc(f)+'</span>').join('')+'</div>':'')
-          + '<div class="ids"><span>'+esc([d.mcht, d.leadId?('Lead '+d.leadId):null].filter(Boolean).join(' · '))+'</span>'+platTag(d.platform)+'</div></div>'
+          + '<div class="ids"><span>'+esc([d.mcht, d.leadId?('Lead '+d.leadId):null].filter(Boolean).join(' · '))+'</span>'+platTag(d.platform)+'</div><div class="phone-only sub"><span class="pill" style="--c:'+st.color+'">'+st.label+'</span></div></div>'
         + '<div><span class="pill" style="--c:'+st.color+';">'+st.label+'</span></div>'
         + '<div class="r">'+money(remaining)+'</div>'
         + '<div class="r" style="display:flex;align-items:center;gap:var(--s-2);width:100%;"><span class="bar" style="flex:1;"><i style="width:'+p.toFixed(0)+'%"></i></span><span>'+p.toFixed(0)+'%</span></div>'
