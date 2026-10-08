@@ -218,12 +218,6 @@ button{ cursor: pointer; }
   .cd-kpi b{ font-family:inherit; font-size:var(--fs-6); font-weight:600; line-height:var(--lh-tight); }
   .cd-kpisub{ font-size:var(--fs-3); color:var(--text-3); margin-top:var(--s-1); }
 
-  /* ---- Drawer (replaced by the deal page in step 12) ---- */
-  #cdDrawer{ position:fixed; top:0; right:0; width:560px; max-width:100vw; height:100vh; background:var(--surface);
-    border-left:1px solid var(--line); transform:translateX(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
-    z-index:50; overflow-y:auto; padding:var(--s-5) var(--s-5) 80px; box-shadow:var(--shadow); font-family:var(--font); color:var(--text); }
-  #cdDrawer.on{ transform:translateX(0); }
-  :where(#cdDrawer *){ color:inherit; }
 
   /* ---- Sidebar search ---- */
   .cd-navsearch{ padding:0 0 var(--s-2); }
@@ -258,8 +252,6 @@ button{ cursor: pointer; }
   .cd-searchempty{ padding:var(--s-5); text-align:center; color:var(--text-2); font-size:var(--fs-3); }
 
   /* ---- Overlays, modal ---- */
-  #cdDrawerOverlay{ position:fixed; inset:0; background:oklch(0 0 0 / .5); z-index:49; display:none; }
-  #cdDrawerOverlay.on{ display:block; }
   #cdModalOverlay{ position:fixed; inset:0; background:oklch(0 0 0 / .55); z-index:59; display:none; align-items:center; justify-content:center; }
   #cdModalOverlay.on{ display:flex; }
   #cdModal{ background:var(--surface); color:var(--text); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-5);
@@ -494,7 +486,7 @@ button{ cursor: pointer; }
   .cd-brandrow{ display:flex; align-items:center; gap:var(--s-2); justify-content:space-between; }
   .view-only{ display:flex; align-items:center; gap:var(--s-2); margin-top:var(--s-2); font-size:var(--fs-2); }
   .view-only a{ color:var(--text-2); }
-  .cd-davidmode .edit-only{ display:none !important; }
+  .cd-davidmode .edit-only, .cd-davidmode .cd-drsect:has(+ .edit-only){ display:none !important; }
   svg.ic{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
   .grid-table .tag{ display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; line-height:18px; vertical-align:middle; }
 
@@ -559,10 +551,110 @@ button{ cursor: pointer; }
     #cdModal, #cdModal.hq-pop{ position:fixed !important; inset:auto 0 0 0; width:100% !important; max-width:none; max-height:92vh; border-radius:var(--r-lg) var(--r-lg) 0 0;
       padding:var(--s-4) var(--s-4) var(--s-5); }
     #cdModal .hq-popacts, #cdModal .sheet-actions{ position:sticky; bottom:calc(-1 * var(--s-5)); background:var(--surface); padding:var(--s-3) 0; margin-bottom:calc(-1 * var(--s-5)); }
-    #cdDrawer{ width:100%; padding:var(--s-4) var(--s-4) 96px; }
     .cd-calgrid{ grid-template-columns:repeat(7,minmax(0,1fr)); }
     .cd-calday{ min-height:56px; padding:var(--s-1); }
     .cd-weekwrap{ overflow-x:auto; }
+  }
+
+  /* ---- Deal page (step 12) ---- */
+  .dp-head{ position:sticky; top:0; z-index:30; background:var(--bg); border-bottom:1px solid var(--line);
+    margin:calc(-1 * var(--s-5)) calc(-1 * var(--s-6)) var(--s-5); padding:var(--s-4) var(--s-6) 0; }
+  .dp-top{ display:flex; align-items:flex-start; gap:var(--s-3); }
+  .dp-title{ flex:1; min-width:0; }
+  .dp-title h1{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; margin:0; font-size:var(--fs-5); font-weight:600; line-height:var(--lh-tight); }
+  .dp-ids{ display:flex; gap:var(--s-3); flex-wrap:wrap; align-items:center; margin-top:var(--s-1); font-size:var(--fs-2); color:var(--text-2); }
+  .dp-ids a{ display:inline-flex; align-items:center; gap:2px; color:var(--accent); text-decoration:underline; text-underline-offset:2px; font-weight:500; }
+  .dp-ids a svg{ width:12px; height:12px; }
+  .dp-bal{ text-align:right; flex:none; }
+  .dp-bal b{ display:block; font-size:var(--fs-5); font-weight:600; line-height:var(--lh-tight); }
+  .tabs{ display:flex; gap:var(--s-5); margin-top:var(--s-3); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ height:40px; padding:0; border:0; background:none; color:var(--text-2); font-family:inherit; font-size:var(--fs-3); font-weight:500; cursor:pointer; white-space:nowrap; }
+  .tab:hover{ color:var(--text); }
+  .tab.on{ color:var(--text); box-shadow:inset 0 -2px 0 var(--accent); }
+  .tab span{ color:var(--text-3); margin-left:var(--s-1); }
+  .dp-figs{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--s-3); margin-bottom:var(--s-5); }
+  .dp-fig{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-4); min-width:0; }
+  .dp-fig > span{ display:block; font-size:var(--fs-3); color:var(--text-2); font-weight:500; }
+  .dp-fig > b{ display:block; font-size:var(--fs-5); font-weight:600; margin-top:var(--s-1); line-height:var(--lh-tight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dp-fig > small{ display:block; font-size:var(--fs-2); color:var(--text-3); margin-top:var(--s-1); }
+  .dp-fig .bar{ margin-top:var(--s-2); }
+  .dp-cols{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:var(--s-4); align-items:start; }
+  .dp-cols > .cd-panel{ margin-bottom:0; }
+  .dp-cardhead{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--s-3); flex-wrap:wrap; margin-bottom:var(--s-3); }
+  .dp-cardhead h3{ margin:0; }
+  .dp-cardhead small{ font-size:var(--fs-2); color:var(--text-3); display:flex; gap:var(--s-2); align-items:center; }
+  .pay-row{ display:grid; grid-template-columns:1fr 1fr auto; gap:var(--s-3); align-items:center; padding:var(--s-2) var(--s-4); margin:0 calc(-1 * var(--s-4)); border-top:1px solid var(--line); font-size:var(--fs-3); }
+  .pay-row.head{ border-top:0; font-size:var(--fs-2); font-weight:500; color:var(--text-2); padding-top:0; }
+  .pay-row.ret{ background:color-mix(in oklch, var(--danger) 6%, transparent); }
+  .pay-row > :nth-child(2){ text-align:right; }
+  .pay-row > :nth-child(3){ justify-self:end; }
+  .kv{ display:flex; justify-content:space-between; align-items:center; gap:var(--s-3); padding:var(--s-2) 0; border-top:1px solid var(--line); font-size:var(--fs-3); }
+  .kv:first-of-type{ border-top:0; }
+  .kv > span:first-child{ color:var(--text-2); }
+  .kv > span:last-child{ text-align:right; }
+  .dp-section{ margin-bottom:var(--s-5); }
+  .dp-section > h3{ font-size:var(--fs-5); font-weight:600; margin:0 0 var(--s-3); }
+  .dp-tabbody{ max-width:860px; }
+  .dp-tabbody.wide{ max-width:none; }
+
+  /* ---- Payment Plans (step 13) ---- */
+  .plan-kpis{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--s-3); margin-bottom:var(--s-5); }
+  .plan-kpis .cd-kpi b{ font-size:var(--fs-5); }
+  .plan-kpis .bar{ margin-top:var(--s-2); }
+  .filterrow{ display:flex; align-items:center; gap:var(--s-2); margin-bottom:var(--s-2); }
+  .filterrow > label{ width:64px; flex:none; font-size:var(--fs-2); font-weight:500; color:var(--text-2); }
+  .filterrow .cd-chiprow{ margin:0; flex:1; min-width:0; }
+  .plan-sort{ margin-left:auto; font-size:var(--fs-2); color:var(--text-2); white-space:nowrap; }
+  .plan-sort b{ color:var(--text); font-weight:500; }
+  .plan-form{ grid-column:1 / -1; display:flex; gap:var(--s-5); flex-wrap:wrap; align-items:flex-start; padding:var(--s-4); margin:0 calc(-1 * var(--s-4)) calc(-1 * var(--s-3));
+    background:color-mix(in oklch, var(--accent) 6%, transparent); border-top:1px solid var(--line); cursor:default; }
+  .plan-form .cd-minical{ margin-top:0; box-shadow:none; }
+  .plan-form .fields{ flex:1; min-width:220px; display:grid; gap:var(--s-3); }
+  .plan-form .acts{ display:flex; gap:var(--s-2); justify-content:flex-end; }
+  .grid-table[data-gt="plansHtml"]{ --cols:minmax(200px,2fr) 104px 64px 84px 112px 80px 84px 124px 88px 84px; }
+  .grid-table[data-gt="plansHtml"] > .thead, .grid-table[data-gt="plansHtml"] > .row{ column-gap:var(--s-2); }
+  @media (max-width:1400px) and (min-width:761px){
+    .grid-table[data-gt="plansHtml"]{ --cols:minmax(160px,2fr) 104px 64px 80px 104px 76px 120px 84px 84px; }
+    .grid-table[data-gt="plansHtml"] > .thead > :nth-child(7), .grid-table[data-gt="plansHtml"] > .row > :nth-child(7){ display:none !important; }
+  }
+  .grid-table > .row.planrow{ cursor:pointer; }
+  .duecell.warn{ color:var(--warning); font-weight:500; } .duecell.bad{ color:var(--danger); font-weight:500; }
+
+  /* ---- Calendar (step 14) ---- */
+  .cal-legend{ display:flex; gap:var(--s-4); font-size:var(--fs-2); color:var(--text-2); }
+  .cal-legend i{ display:inline-block; width:8px; height:8px; border-radius:var(--r-pill); margin-right:var(--s-1); }
+  .cd-calitem{ background:color-mix(in oklch, var(--c) var(--tint), transparent); color:var(--c); cursor:pointer; }
+  .cal-dot{ display:none; width:6px; height:6px; border-radius:var(--r-pill); background:var(--c); }
+  .cal-week{ display:grid; grid-template-columns:repeat(7,minmax(120px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; }
+  .cal-wday{ background:var(--surface); min-height:220px; padding:var(--s-2); cursor:pointer; }
+  .cal-wday.today .dnum{ color:var(--accent); }
+  .cal-wday.sel{ background:var(--surface-2); }
+  .cal-wday .dnum{ font-size:var(--fs-5); font-weight:600; margin:var(--s-1) 0 var(--s-2); }
+  .cal-ev{ display:block; border-left:3px solid var(--c); background:color-mix(in oklch, var(--c) var(--tint), transparent); border-radius:var(--r-sm); padding:var(--s-1) var(--s-2); margin-bottom:var(--s-1); cursor:pointer; font-size:var(--fs-2); }
+  .cal-ev small{ display:block; font-size:var(--fs-1); color:var(--text-2); }
+  .cal-dayrow{ display:grid; grid-template-columns:88px 1fr auto; gap:var(--s-3); align-items:center; padding:var(--s-3) var(--s-4); margin:0 calc(-1 * var(--s-4)); border-top:1px solid var(--line); cursor:pointer; font-size:var(--fs-3); }
+  .cal-dayrow:hover{ background:var(--surface-2); }
+  .cal-dayrow .t{ color:var(--text-2); font-size:var(--fs-2); }
+
+  @media (max-width:1100px){ .dp-figs, .plan-kpis{ grid-template-columns:repeat(3,minmax(0,1fr)); } .dp-cols{ grid-template-columns:1fr; } }
+  @media (max-width:760px){
+    .dp-head{ margin:calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) var(--s-4); padding:var(--s-3) var(--s-4) 0; }
+    .dp-top{ flex-wrap:wrap; }
+    .dp-bal{ width:100%; text-align:left; display:flex; justify-content:space-between; align-items:baseline; }
+    .dp-figs, .plan-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .plan-kpis > :last-child{ grid-column:1 / -1; }
+    .filterrow{ flex-wrap:wrap; } .filterrow > label{ width:100%; }
+    .tab{ height:44px; }
+    .plan-sort{ display:none; }
+    .grid-table[data-gt="plansHtml"] > .row > :nth-child(n+2):nth-child(-n+9){ display:none !important; }
+    .grid-table[data-gt="plansHtml"] .plan-form{ display:flex !important; }
+    .cal-legend{ display:none; }
+    .cd-calday .cd-calitem{ display:none; }
+    .cd-calday .cal-dot{ display:inline-block; margin-right:2px; }
+    .cal-week{ overflow-x:auto; }
+    .cal-dayrow{ grid-template-columns:64px 1fr; }
+    .cal-dayrow > :last-child{ display:none; }
   }
 
   .cd-davidmode .hq-davact, .cd-davidmode .hq-davnotebox { display:none !important; }
@@ -662,8 +754,6 @@ button{ cursor: pointer; }
   <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
 </svg>
 <div id="cdApp"><div style="padding:var(--s-6);color:var(--text-3)">Loading Collections HQ...</div></div>
-<div id="cdDrawerOverlay"></div>
-<div id="cdDrawer"></div>
 <div id="cdModalOverlay"><div id="cdModal"></div></div>
 
 <script>
@@ -1020,14 +1110,14 @@ button{ cursor: pointer; }
 
   function emptyDb(){
     return { deals:[], commitments:[], tasks:[], reminders:[], inbox:[], watch:[],
-             brokers:[], owners:[], eventLog:[], david:[], uwNotes:[], todayState:{}, version: DATA_VERSION,
+             brokers:[], owners:[], eventLog:[], david:[], uwNotes:[], plans:[], todayState:{}, version: DATA_VERSION,
              thresholds:{daily:3, weeklyMonthly:10}, lastReportAt:null, appliedUpdates:[] };
   }
 
   function normalise(db){
     const base = emptyDb();
     const out = Object.assign(base, db || {});
-    ["deals","commitments","tasks","reminders","inbox","watch","brokers","owners","eventLog","david","uwNotes"]
+    ["deals","commitments","tasks","reminders","inbox","watch","brokers","owners","eventLog","david","uwNotes","plans"]
       .forEach(k=>{ if(!Array.isArray(out[k])) out[k] = []; });
     if(!out.todayState || typeof out.todayState!=="object") out.todayState = {};
     return out;
@@ -1263,7 +1353,7 @@ button{ cursor: pointer; }
   function dateFieldHtml(key){
     const val = datePickerValues[key] || "";
     const displayVal = val ? fmtDateShort(val) : "Select date";
-    let html = '<button type="button" class="cd-select cd-datebtn" data-datetoggle="'+key+'" style="justify-content:space-between;align-items:center;color:'+(val?'var(--text)':'var(--text-3)')+';">'+esc(displayVal)+'<span></span></button>';
+    let html = '<button type="button" class="cd-select cd-datebtn" data-datetoggle="'+key+'" style="color:'+(val?'var(--text)':'var(--text-3)')+';">'+esc(displayVal)+'<svg class="ic"><use href="#i-chev-d"/></svg></button>';
     if(datePickerOpenFor===key) html += miniCalendarHtml(key);
     return html;
   }
@@ -1766,6 +1856,7 @@ button{ cursor: pointer; }
       + item("today","Today", tierCounts.t1 || null, tierCounts.t1>0)
       + item("david","David", openDavid || null, openDavid>0)
       + item("uw","Underwriting", openUw || null, false)
+      + item("plans","Payment Plans", planUrgentCount() || null, planUrgentCount()>0)
       + item("calendar","Calendar")
       + item("notifications","Notifications", firedReminders().length || null, firedReminders().length>0)
       + '<div class="cd-navsec">Work</div>'
@@ -2004,6 +2095,8 @@ button{ cursor: pointer; }
 
   function pageHtml(){
     if(currentPage==="more") return "";
+    if(currentPage==="deal") return dealPageHtml();
+    if(currentPage==="plans") return plansHtml();
     if(currentPage==="overview") return overviewHtml();
     if(currentPage==="today") return todayHtml();
     if(currentPage==="david") return davidHtml();
@@ -2036,7 +2129,7 @@ button{ cursor: pointer; }
       if(n !== lastFiredCount){
         lastFiredCount = n;
         const typing = document.activeElement && ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
-        const drawerOpen = document.getElementById("cdDrawer") && document.getElementById("cdDrawer").classList.contains("open");
+        const drawerOpen = currentPage === "deal";
         if(!typing && !drawerOpen && (currentPage==="today" || currentPage==="notifications" || currentPage==="calendar")) render();
       }
     }, 20000);
@@ -2046,7 +2139,7 @@ button{ cursor: pointer; }
   // login hides. The relay is the real lock; this only keeps the screen honest.
   const EDIT_SEL = '.hq-c5, #cdInboxAllRead, [data-inboxread], [data-taskdone], #cdNewTask, #cdAddTask, #cdAddNote, #cdNewNote, #cdAddCommit, .cd-remacts,'
     + ' #cdRemAddBtn, #cdRemToggleDone, #cdGenReport, #cdExportBtn, #cdReconfig, #cdPageBrokerAddBtn, [data-brokerpageedit], [data-statuschange], [data-clawback],'
-    + ' [data-ownerchange], [data-ownerpick], [data-brokerchange], [data-doctoggle], [data-legalcontacttoday], #cdLegalFirmSelect, #cdLegalStage, #cdLegalSnooze,'
+    + ' [data-ownerchange], [data-ownerpick], [data-brokerchange], [data-doctoggle], [data-legalcontacttoday], [data-legalcontactask], #cdNewCommitDesc, #cdNewCommitBy, #cdNewCommitRecur, #cdNewTaskType, #cdNewTaskWaiting, #cdNewTaskDesc, [data-datetoggle=newCommit], [data-datetoggle=newTask], #cdLegalFirmSelect, #cdLegalStage, #cdLegalSnooze,'
     + ' [data-commitedit], [data-commitfulfill], [data-commitbreak], [data-taskedit], [data-taskcompletebox], [data-addcontact], [data-addemerg], [data-delemerg],'
     + ' [data-triedemerg], #cdStartLegal, #hqUwAdd, #hqUwSave, #hqUwArchive, #hqPopDone, #hqPopLater, #hqPopSaveNote, #hqPopNote, #hqPopUwDone, .cd-comment-del, #cdSaveContact';
   function markEditOnly(root){
@@ -2072,6 +2165,7 @@ button{ cursor: pointer; }
     brokers:"Brokers", reports:"Reports", more:"More", deal:"Deal"};
   const TAB_PAGES = ["today","deals","plans","calendar"];
   function topBarHtml(){
+    if(currentPage === "deal") return "";
     return '<div id="cdTop"><b>'+esc(PAGE_TITLES[currentPage]||"Collections HQ")+'</b>'
       + (davidMode() ? '<span class="pill" style="--c:var(--warning)">View only</span>' : '') + '</div>';
   }
@@ -2108,10 +2202,16 @@ button{ cursor: pointer; }
       const id = el.dataset.open; const d = dealById(id);
       if(d) openDrawer(d);
     });
-    document.getElementById("cdDrawerOverlay").onclick = ()=>{ hqReturn=null; closeDrawer(); };
     document.getElementById("cdModalOverlay").onclick = (e)=>{ if(e.target.id!=="cdModalOverlay") return; if(hqPopKey) closeSituation(); else closeQuickTaskModal(); };
     wireHq();
     wirePageSpecific();
+    if(currentPage === "plans") wirePlans();
+    if(currentPage === "deal"){
+      const d = dealById(drawerDealId);
+      document.querySelectorAll("[data-dtab]").forEach(b=>b.onclick=()=>{ dealTab = b.dataset.dtab; commitEditingId = null; taskEditingId = null; legalConfirmFor = null; render(); });
+      if(d) wireDrawer(d);
+      markEditOnly(document);
+    }
   }
 
   function wirePageSpecific(){
@@ -2347,8 +2447,7 @@ button{ cursor: pointer; }
     });
     document.querySelectorAll("[data-calday]").forEach(el=>el.onclick=(e)=>{
       if(e.target.closest("[data-open]")) return;
-      if(calViewMode==="month"){ calSelectedDay = el.dataset.calday; render(); }
-      else { calAnchor = el.dataset.calday; calViewMode = "day"; render(); }
+      calSelectedDay = calSelectedDay === el.dataset.calday ? null : el.dataset.calday; render();
     });
 
     const genBtn = document.getElementById("cdGenReport");
@@ -2842,43 +2941,6 @@ button{ cursor: pointer; }
   let calViewMode = "month"; // month | week | day
   let calSelectedDay = null;
 
-  function allCalendarEvents(){
-    // returns map dateStr -> [{label, color, dealId}]
-    const map = {};
-    function add(dateStr, label, color, dealId, time, reminderId){
-      if(!dateStr) return;
-      if(!map[dateStr]) map[dateStr] = [];
-      map[dateStr].push({label, color, dealId, time: time||null, reminderId: reminderId||null});
-    }
-    DB.commitments.filter(c=>c.status==="open").forEach(c=>{
-      const d = dealById(c.dealId);
-      if(!d || isOtherOwnerDeal(d)) return;
-      add(c.dueDate, d.name+": "+c.description, "var(--accent)", c.dealId);
-    });
-    ourDeals().filter(d=>d.legalCase).forEach(d=>{
-      const nf = legalNextFollowUp(d);
-      if(nf) add(nf, d.name+": Legal follow-up", "var(--danger)", d.id);
-    });
-    DB.tasks.filter(t=>t.status==="open" && t.dueDate).forEach(t=>{
-      const d = dealById(t.dealId);
-      if(!d || isOtherOwnerDeal(d)) return;
-      add(t.dueDate, d.name+": "+(TASK_TYPES[t.type]||t.type), "var(--p-mcapay)", t.dealId);
-    });
-    allReminders().filter(r=>r.status==="open").forEach(r=>{
-      const {date,time} = splitDueAt(r.dueAt);
-      const d = r.dealId ? dealById(r.dealId) : null;
-      const who = d ? d.name+": " : "";
-      add(date, (time?fmtTime(time)+" ":"")+""+who+r.text, "var(--warning)", r.dealId, time, r.id);
-    });
-    // Manual-pay deals (wire/manual, invisible to bounce feeds) — recurring check-in
-    // computed from the stored frequency, always showing the current upcoming occurrence.
-    ourDeals().filter(d=>d.manualPay).forEach(d=>{
-      const nd = nextManualPayDate(d.manualPay);
-      if(nd) add(nd, d.name+": Check for "+(d.manualPay.method||"manual")+" payment ("+money(d.manualPay.expectedAmount)+")", "var(--success)", d.id);
-    });
-    return map;
-  }
-
   function nextManualPayDate(mp){
     if(!mp) return null;
     // Trust the stored nextExpectedDate if it's still in the future or today;
@@ -2903,129 +2965,381 @@ button{ cursor: pointer; }
     return addDays(dateStr, -dow);
   }
 
+  // ---------------------------------------------------------------------------
+  // DEAL PAGE (step 12). Replaces the drawer: full page, sticky header, five tabs.
+  // The old drawer sections are rendered by drawerBody() and rehomed tab by tab.
+  // ---------------------------------------------------------------------------
+  let dealTab = "performance", dealPrevPage = "deals", legalConfirmFor = null;
+  function dealLeadUrl(d){
+    if(d.leadUrl) return d.leadUrl;
+    const m = String(d.leadId||"").match(/\d+/); if(!m) return null;
+    const p = String(d.platform||"").toLowerCase();
+    if(p.includes("ember")) return "https://emberstonecapital.lendtech.io/backend/account_report.php?id="+m[0]+"#/ui/summary";
+    if(p.includes("breeze") || p.includes("mca")) return "https://breezeadvance.lendtech.io/backend/account_report.php?id="+m[0]+"#/ui/summary";
+    return null;   // Legacy / DLP: only an explicit d.leadUrl
+  }
+  function openDeal(d, tab){
+    if(typeof d === "string") d = dealById(d);
+    if(!d) return;
+    if(currentPage !== "deal") dealPrevPage = currentPage;
+    drawerDealId = d.id; dealTab = tab || "performance";
+    drawerEditingContact = false; commitEditingId = null; taskEditingId = null; addingOwnerFor = null; addingBrokerFor = null;
+    datePickerValues = {}; datePickerMonth = {}; datePickerOpenFor = null; legalConfirmFor = null;
+    currentPage = "deal"; render(); window.scrollTo(0,0);
+  }
+  function dealBalance(d){
+    const pf = d.perf;
+    return (pf && pf.balance != null) ? pf.balance : Math.max(0,(d.original||0)-(d.recovered||0));
+  }
+  function splitOverview(d){
+    const html = drawerBody(d, "overview");
+    const part = (a,b)=>{ const i = html.indexOf("<!--DP:"+a+"-->"); const j = b ? html.indexOf("<!--DP:"+b+"-->") : html.length; return i<0 ? "" : html.slice(i, j<0?html.length:j); };
+    return { contact: part("contact","status"), status: part("status","broker"), broker: part("broker","clawback"), clawback: part("clawback", null) };
+  }
+  function fmtStamp(iso){
+    if(!iso) return "";
+    const t = new Date(iso); if(isNaN(t)) return esc(iso);
+    return t.toLocaleString("en-US",{month:"short", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit"});
+  }
+  const PERF_SOURCE = {"lendsaas-breeze":"LendSaaS", "emberstone":"EmberStone", "mcapay":"MCA Pay"};
+  function dealPerformanceHtml(d, parts){
+    const pf = d.perf || null;
+    const fig = (label, value, sub, extra)=>'<div class="dp-fig"><span>'+label+'</span><b>'+value+'</b>'+(extra||'')+(sub?'<small>'+sub+'</small>':'')+'</div>';
+    const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
+    let figs;
+    if(pf){
+      const paid = pf.pctPaid != null ? pf.pctPaid : (pf.payback ? (pf.collected||0)/pf.payback*100 : 0);
+      figs = fig("Advance", pf.advance!=null?money(pf.advance):"—")
+        + fig("Payback (RTR)", pf.payback!=null?money(pf.payback):"—")
+        + fig("Factor", pf.factor!=null?Number(pf.factor).toFixed(2):"—")
+        + fig("Funded", (pf.fundedDate||d.fundedDate)?fmtDate(pf.fundedDate||d.fundedDate):"—")
+        + fig("Collected to date", pf.collected!=null?money(pf.collected):"—")
+        + fig("Balance incl. fees", pf.balance!=null?money(pf.balance):"—", pf.fees?money(pf.fees)+" in fees":"no fees")
+        + fig("% paid", Math.round(paid)+"%", null, '<span class="bar"><i style="width:'+Math.min(100,Math.max(0,paid)).toFixed(0)+'%"></i></span>')
+        + fig("Last cleared payment", pf.lastCleared&&pf.lastCleared.amount!=null?money(pf.lastCleared.amount):"—", pf.lastCleared&&pf.lastCleared.date?fmtDate(pf.lastCleared.date):null)
+        + fig("Next expected", pf.nextExpected&&pf.nextExpected.amount!=null?money(pf.nextExpected.amount):"—", pf.nextExpected?[pf.nextExpected.date?fmtDateShort(pf.nextExpected.date):"", pf.nextExpected.method||""].filter(Boolean).join(" · "):null);
+    } else {
+      const p = pct(d.recovered, d.original);
+      figs = fig("Placed", money(d.original)) + fig("Recovered", money(d.recovered)) + fig("Remaining", money(remaining))
+        + fig("% recovered", p.toFixed(0)+"%", null, '<span class="bar"><i style="width:'+p.toFixed(0)+'%"></i></span>')
+        + fig("Funded", d.fundedDate?fmtDate(d.fundedDate):"—") + fig("Last payment", d.lastPaymentDate?fmtDate(d.lastPaymentDate):"—");
+    }
+    const pays = pf && Array.isArray(pf.payments) ? pf.payments.slice(0,6) : [];
+    const payRows = pays.map(x=>{
+      const ret = x.result === "returned";
+      const pill = ret ? '<span class="pill strong" style="--c:var(--danger)">Returned'+(x.code?' '+esc(x.code):'')+'</span>'
+        : x.result === "pending" ? '<span class="pill" style="--c:var(--neutral)">Pending</span>' : '<span class="pill" style="--c:var(--success)">Cleared</span>';
+      return '<div class="pay-row'+(ret?' ret':'')+'"><span>'+(x.date?fmtDateShort(x.date):"—")+'</span><span>'+money(x.amount)+'</span>'+pill+'</div>';
+    }).join("");
+    const payCard = '<div class="cd-panel"><div class="dp-cardhead"><h3>Last 6 payments</h3>'
+      + (pf ? '<small>'+(pf.source?'<span class="tag">'+esc(PERF_SOURCE[pf.source]||pf.source)+'</span>':'')+(pf.updatedAt?'Updated as of '+esc(fmtStamp(pf.updatedAt)):'')+'</small>' : '')
+      + '</div>'
+      + (payRows ? '<div class="pay-row head"><span>Date</span><span>Amount</span><span>Result</span></div>'+payRows
+                 : '<div class="empty">Payment history fills in on the next collections run.</div>')
+      + '</div>';
+    const kv = (k,v)=>'<div class="kv"><span>'+k+'</span><span>'+v+'</span></div>';
+    const infoCard = '<div class="cd-panel"><div class="dp-cardhead"><h3>Deal info</h3></div>'
+      + kv("Platform", esc(d.platform||"—")) + kv("Source / ISO firm", esc(d.source||"—")) + kv("Date placed", fmtDate(d.datePlaced))
+      + kv("Frequency", esc(d.freq||"—")) + kv("Last payment", fmtDate(d.lastPaymentDate)) + kv("Consecutive / lifetime returns", (d.consecutive||0)+" / "+(d.lifetime||0))
+      + parts.status + parts.clawback + '</div>';
+    return '<div class="dp-figs">'+figs+'</div><div class="dp-cols">'+payCard+infoCard+'</div>';
+  }
+  function dealPageHtml(){
+    const d = dealById(drawerDealId);
+    if(!d) return '<div class="empty">That deal is no longer in the book.</div>';
+    const st = statusOf(d.status);
+    const dealCommitments = DB.commitments.filter(cm=>cm.dealId===d.id);
+    const dealTasks = DB.tasks.filter(t=>t.dealId===d.id);
+    const dealRems = allReminders().filter(r=>r.dealId===d.id && r.status==="open");
+    const openDavid = (DB.david||[]).filter(i=>i.dealId===d.id&&i.status!=="done").length;
+    const url = dealLeadUrl(d);
+    const lead = d.leadId ? (url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener">Lead '+esc(d.leadId)+'<svg class="ic"><use href="#i-ext"/></svg></a>' : '<span>Lead '+esc(d.leadId)+'</span>') : '';
+    const back = hqReturn ? '<button class="btn btn-icon" data-hqback="1" title="Back to '+(hqReturn[0]==='u'?'underwriting':'today')+'"><svg class="ic"><use href="#i-back"/></svg></button>'
+                          : '<button class="btn btn-icon" data-drclose="1" title="Back"><svg class="ic"><use href="#i-back"/></svg></button>';
+    const tabs = [["performance","Performance",null],["notes","Notes",(d.notesLog||[]).length+openDavid],["tasks","Tasks & Reminders",dealCommitments.filter(c=>c.status==="open").length+dealTasks.filter(t=>t.status==="open").length+dealRems.length],["legal","Legal",null],["contacts","Contacts",null]];
+    let h = '<div class="dp-head"><div class="dp-top">'+back
+      + '<div class="dp-title"><h1>'+esc(d.name)+'<span class="pill" style="--c:'+st.color+'">'+st.label+'</span>'+platTag(d.platform)+'</h1>'
+      + '<div class="dp-ids">'+lead+(d.mcht?'<span>MCHT '+esc(d.mcht)+'</span>':'')+(d.source?'<span>'+esc(d.source)+'</span>':'')+'</div></div>'
+      + '<div class="dp-bal"><span class="eyebrow">Balance owed</span><b>'+money(dealBalance(d))+'</b></div></div>'
+      + '<div class="tabs" role="tablist">'+tabs.map(([k,l,n])=>'<button type="button" class="tab'+(dealTab===k?' on':'')+'" data-dtab="'+k+'">'+l+(n?'<span>'+n+'</span>':'')+'</button>').join('')+'</div></div>';
+    let body = "";
+    if(dealTab === "performance"){ body = dealPerformanceHtml(d, splitOverview(d)); }
+    else if(dealTab === "notes"){
+      const pend = (d.pending||[]).length;
+      body = '<div class="dp-tabbody"><div class="dp-section"><h3>Notes</h3>'+drawerBody(d,"notes")+'</div>'
+        + '<div class="dp-section"><h3>From David</h3>'+drawerBody(d,"david")+'</div>'
+        + (pend ? '<div class="dp-section"><h3>Legacy pending</h3>'+drawerBody(d,"pending")+'</div>' : '') + '</div>';
+    }
+    else if(dealTab === "tasks"){
+      const rems = dealRems.sort((a,b)=>String(a.dueAt).localeCompare(String(b.dueAt)))
+        .map(r=>'<div class="kv"><span>'+esc(r.text||"")+'</span><span>'+esc(fmtDueAt(r.dueAt))+'</span></div>').join("");
+      body = '<div class="dp-tabbody"><div class="dp-section"><h3>Promises</h3>'+drawerBody(d,"commitments")+'</div>'
+        + '<div class="dp-section"><h3>Tasks</h3>'+drawerBody(d,"tasks")+'</div>'
+        + '<div class="dp-section"><h3>Reminders</h3>'+(rems?'<div class="cd-panel">'+rems+'</div>':'<div class="empty">No open reminders on this deal.</div>')+'</div></div>';
+    }
+    else if(dealTab === "legal"){ body = '<div class="dp-tabbody">'+drawerBody(d,"legal")+'</div>'; }
+    else { const p = splitOverview(d); body = '<div class="dp-tabbody">'+p.contact+p.broker+'<div class="cd-drsect">Source</div><div class="kv"><span>Source / ISO firm</span><span>'+esc(d.source||"—")+'</span></div></div>'; }
+    return h + body;
+  }
+
+  // ---------------------------------------------------------------------------
+  // PAYMENT PLANS (step 13). DB.plans is filled by Claude from LendSaaS and Yaakov's
+  // list; the app never seeds it. Status is computed, never stored.
+  // ---------------------------------------------------------------------------
+  let planType = "all", planMethod = "all", planStat = "all", planShowDone = false, planRecv = null;
+  function addBizDays(ds, n){ let x = ds; let k = 0; while(k < n){ x = addDays(x, 1); const dow = new Date(x+"T12:00:00Z").getUTCDay(); if(dow!==0 && dow!==6) k++; } return x; }
+  function planNextAfter(p, ds){
+    if(!ds) return null;
+    if(p.frequency === "weekly") return addDays(ds, 7);
+    if(p.frequency === "biweekly") return addDays(ds, 14);
+    if(p.frequency === "monthly"){
+      const t = new Date(ds+"T12:00:00Z"); const want = p.dayOfMonth || t.getUTCDate();
+      const y = t.getUTCFullYear(), m = t.getUTCMonth()+1; const last = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+      return new Date(Date.UTC(y, m, Math.min(want, last), 12)).toISOString().slice(0,10);
+    }
+    return null;   // once
+  }
+  // Late / Missed rules. Yaakov can change these: the grace days are the only knobs.
+  function planStatus(p){
+    const GRACE_BUSINESS_DAYS = {"ACH":1, "MCA Pay":1};   // the debit settles the next business day
+    const DEFAULT_GRACE = 0;                                // Wire, Zelle, Check: late the day after it's due
+    if(!p || p.state !== "active" || !p.nextDue) return "ontrack";
+    const today = todayStr(), g = GRACE_BUSINESS_DAYS[p.method] != null ? GRACE_BUSINESS_DAYS[p.method] : DEFAULT_GRACE;
+    const deadline = ds => g ? addBizDays(ds, g) : ds;
+    if(p.nextDue === today) return "due";
+    if(deadline(p.nextDue) < today){
+      const following = planNextAfter(p, p.nextDue);
+      return (following && deadline(following) < today) ? "missed" : "late";
+    }
+    return "ontrack";
+  }
+  const PLAN_STATUS = {ontrack:["On track","var(--success)"], due:["Due today","var(--warning)"], late:["Late","var(--danger)"], missed:["Missed","var(--danger)"]};
+  const PLAN_TYPES = {settlement:"Settlement", manual:"Manual pay", wire:"Wire agreement"};
+  const PLAN_METHODS = ["ACH","Wire","Zelle","Check","MCA Pay"];
+  function activePlans(){ return (DB.plans||[]).filter(p=>p.state==="active" && dealById(p.dealId)); }
+  function planUrgentCount(){ return activePlans().filter(p=>planStatus(p)!=="ontrack").length; }
+  function planFreqLabel(p){
+    const dows = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const dow = p.dayOfWeek != null ? (typeof p.dayOfWeek==="number" ? dows[p.dayOfWeek] : String(p.dayOfWeek).slice(0,3)) : (p.nextDue ? dows[new Date(p.nextDue+"T12:00:00Z").getUTCDay()] : "");
+    const ord = n => n+(n%10===1&&n!==11?"st":n%10===2&&n!==12?"nd":n%10===3&&n!==13?"rd":"th");
+    if(p.frequency==="weekly") return "Weekly"+(dow?", "+dow:"");
+    if(p.frequency==="biweekly") return "Every 2 weeks"+(dow?", "+dow:"");
+    if(p.frequency==="monthly") return "Monthly"+(p.dayOfMonth?", "+ord(p.dayOfMonth):"");
+    return "Once";
+  }
+  function planOccurrences(p, from, to){
+    const out = []; let ds = p.nextDue, guard = 0;
+    if(!ds || p.state !== "active") return out;
+    while(ds && ds <= to && guard < 400){ if(ds >= from) out.push(ds); ds = planNextAfter(p, ds); guard++; }
+    return out;
+  }
+  function plansHtml(){
+    const today = todayStr(), weekEnd = addDays(today, 6), mStart = today.slice(0,8)+"01";
+    const mEnd = addDays(planNextAfter({frequency:"monthly", dayOfMonth:1}, mStart), -1);
+    const all = (DB.plans||[]).filter(p=>dealById(p.dealId));
+    const act = all.filter(p=>p.state==="active");
+    const stats = act.map(p=>({p, s:planStatus(p)}));
+    const sumAmt = arr => arr.reduce((a,x)=>a+(Number((x.p||x).amount)||0),0);
+    const dueToday = stats.filter(x=>x.s==="due"), late = stats.filter(x=>x.s==="late"), missed = stats.filter(x=>x.s==="missed");
+    const thisWeek = act.filter(p=>p.nextDue && p.nextDue >= today && p.nextDue <= weekEnd);
+    const receivedM = all.reduce((a,p)=>a+(p.received||[]).filter(r=>(r.date||"").slice(0,7)===today.slice(0,7)).reduce((s,r)=>s+(Number(r.amount)||0),0),0);
+    const expectedM = receivedM + act.reduce((a,p)=>{ let n = planOccurrences(p, mStart, mEnd).length; return a + n*(Number(p.amount)||0); },0);
+    const ratio = expectedM ? Math.min(100, receivedM/expectedM*100) : 0;
+    const lateSub = late.length ? esc(dealById(late[0].p.dealId).name)+" · "+Math.round((new Date(today+"T12:00:00Z")-new Date(late[0].p.nextDue+"T12:00:00Z"))/864e5)+" days late" : money(0);
+    const missSub = missed.length ? esc(dealById(missed[0].p.dealId).name)+" · "+money(missed[0].p.amount) : money(0);
+    const monthName = TODAY.toLocaleDateString("en-US",{month:"short"});
+    const kpi = (lab, val, sub, col, extra)=>'<div class="cd-kpi"><span>'+lab+'</span><b'+(col?' style="color:'+col+'"':'')+'>'+val+'</b>'+(sub?'<div class="cd-kpisub">'+sub+'</div>':'')+(extra||'')+'</div>';
+    let h = '<div class="cd-h1">Payment Plans</div><p class="cd-sub">Every deal paying on an agreed schedule we watch ourselves: settlements, manual-pay deals and wire agreements. Mark wires, Zelle and checks received here; ACH and MCA Pay post on their own.</p>'
+      + '<div class="plan-kpis">'
+      + kpi("Due today", dueToday.length, money(sumAmt(dueToday)), dueToday.length?"var(--warning)":null)
+      + kpi("Due this week", thisWeek.length, money(sumAmt(thisWeek)))
+      + kpi("Late", late.length, lateSub, late.length?"var(--danger)":null)
+      + kpi("Missed this month", missed.length, missSub, missed.length?"var(--danger)":null)
+      + kpi("Expected vs received · "+monthName, money(expectedM), money(receivedM)+" received · "+Math.round(ratio)+"%", null, '<span class="bar"><i style="width:'+ratio.toFixed(0)+'%"></i></span>')
+      + '</div>';
+    const chip = (attr, k, label, on)=>'<div class="cd-chip'+(on?' on':'')+'" '+attr+'="'+k+'">'+label+'</div>';
+    h += '<div class="filterrow"><label>Type</label><div class="cd-chiprow">'+chip("data-plantype","all","All",planType==="all")+Object.keys(PLAN_TYPES).map(k=>chip("data-plantype",k,PLAN_TYPES[k],planType===k)).join("")+'</div></div>'
+      + '<div class="filterrow"><label>Method</label><div class="cd-chiprow">'+chip("data-planmethod","all","All",planMethod==="all")+PLAN_METHODS.map(k=>chip("data-planmethod",k,k,planMethod===k)).join("")+'</div></div>'
+      + '<div class="filterrow"><label>Status</label><div class="cd-chiprow">'+chip("data-planstat","all","All",planStat==="all")+Object.keys(PLAN_STATUS).map(k=>chip("data-planstat",k,PLAN_STATUS[k][0],planStat===k)).join("")
+      +   chip("data-plandone","1","Show completed",planShowDone)+'</div><span class="plan-sort">Sort: <b>Next due</b></span></div>';
+    let list = all.filter(p=>planShowDone ? true : p.state==="active");
+    if(planType!=="all") list = list.filter(p=>p.type===planType);
+    if(planMethod!=="all") list = list.filter(p=>p.method===planMethod);
+    if(planStat!=="all") list = list.filter(p=>p.state==="active" && planStatus(p)===planStat);
+    list.sort((a,b)=>(a.state==="active"?0:1)-(b.state==="active"?0:1) || String(a.nextDue||"9999").localeCompare(String(b.nextDue||"9999")));
+    let rows = list.map(p=>{
+      const d = dealById(p.dealId), s = p.state==="active" ? planStatus(p) : null;
+      const [sl, sc] = s ? PLAN_STATUS[s] : [p.state==="completed"?"Completed":"Cancelled","var(--neutral)"];
+      const dueCls = s==="due" ? " warn" : (s==="late"||s==="missed") ? " bad" : "";
+      const manual = ["Wire","Zelle","Check"].indexOf(p.method) >= 0 && p.state==="active";
+      const paidPct = p.totalAgreed ? Math.min(100, (p.paidToDate||0)/p.totalAgreed*100) : 0;
+      const recvBtn = manual ? (davidMode() ? '<button class="btn btn-sm btn-secondary" disabled title="View only">Received</button>'
+                                            : '<button class="btn btn-sm btn-secondary" data-planrecv="'+esc(p.id)+'">Received</button>') : '';
+      const ids = [d.leadId?"Lead "+d.leadId:null, d.mcht?"MCHT "+d.mcht:null].filter(Boolean).join(" · ");
+      let r = '<div class="row planrow" data-planopen="'+esc(d.id)+'">'
+        + '<div class="cd-namecell"><b>'+esc(d.name)+'</b><div class="ids"><span>'+esc(ids)+'</span></div>'
+        +   '<div class="phone-only sub">'+esc(PLAN_TYPES[p.type]||p.type||"")+' · '+esc(p.method||"")+' · '+money(p.amount)+' · next '+(p.nextDue?fmtDateShort(p.nextDue):"—")+' <span class="pill" style="--c:'+sc+'">'+sl+'</span></div></div>'
+        + '<div><span class="tag">'+esc(PLAN_TYPES[p.type]||p.type||"")+'</span></div>'
+        + '<div>'+esc(p.method||"")+'</div>'
+        + '<div class="r" style="font-weight:600;">'+money(p.amount)+'</div>'
+        + '<div style="color:var(--text-2);">'+esc(planFreqLabel(p))+'</div>'
+        + '<div class="duecell'+dueCls+'">'+(p.nextDue?fmtDateShort(p.nextDue):"—")+'</div>'
+        + '<div style="color:var(--text-2);">'+(p.lastReceived?fmtDateShort(p.lastReceived):"—")+'</div>'
+        + '<div><div style="font-weight:600;">'+money(p.paidToDate||0)+(p.totalAgreed?'<span style="color:var(--text-3);font-weight:400;"> / '+money(p.totalAgreed)+'</span>':'')+'</div>'+(p.totalAgreed?'<span class="bar"><i style="width:'+paidPct.toFixed(0)+'%"></i></span>':'')+'</div>'
+        + '<div><span class="pill" style="--c:'+sc+'">'+sl+'</span></div>'
+        + '<div class="r">'+recvBtn+'</div></div>';
+      if(planRecv && planRecv.id === p.id && !davidMode()){
+        const key = "planRecv";
+        if(!datePickerValues[key]) datePickerValues[key] = today;
+        r += '<div class="plan-form" data-planform="'+esc(p.id)+'">'+miniCalendarHtml(key)
+          + '<div class="fields"><div class="cd-formrow" style="margin:0;"><label>Date received</label><button type="button" class="cd-select cd-datebtn" id="planRecvDate">'+esc(fmtDateShort(datePickerValues[key]))+'<svg class="ic"><use href="#i-chev-d"/></svg></button></div>'
+          + '<div class="cd-formrow" style="margin:0;"><label>Amount</label><input class="input" id="planRecvAmt" inputmode="decimal" value="'+esc(planRecv.amount)+'"></div>'
+          + '<div class="cd-formrow" style="margin:0;"><label>Note</label><input class="input" id="planRecvNote" placeholder="Optional" value="'+esc(planRecv.note||"")+'"></div>'
+          + '<div class="acts"><button class="btn btn-secondary" id="planRecvCancel">Cancel</button><button class="btn btn-primary" id="planRecvSave">Save as received</button></div></div></div>';
+      }
+      return r;
+    }).join("");
+    const empty = (DB.plans||[]).length ? 'No plans match these filters.' : 'No payment plans yet. They fill in from LendSaaS and the settlement list on the next collections run.';
+    h += '<div class="cd-panel grid-table" data-gt="plansHtml"><div class="thead"><div>Merchant</div><div>Type</div><div>Method</div><div class="r">Amount</div><div>Frequency</div><div>Next due</div><div>Last received</div><div>Paid / agreed</div><div>Status</div><div></div></div>'
+      + (rows || '<div class="empty">'+empty+'</div>') + '</div>';
+    return h;
+  }
+  function wirePlans(){
+    const set = (attr, fn)=>document.querySelectorAll("["+attr+"]").forEach(el=>el.onclick=()=>{ fn(el.getAttribute(attr)); planRecv = null; render(); });
+    set("data-plantype", v=>planType=v); set("data-planmethod", v=>planMethod=v); set("data-planstat", v=>planStat=v); set("data-plandone", ()=>planShowDone=!planShowDone);
+    document.querySelectorAll("[data-planopen]").forEach(el=>el.onclick=(e)=>{ if(e.target.closest("button, .plan-form")) return; openDeal(el.dataset.planopen, "performance"); });
+    document.querySelectorAll("[data-planrecv]").forEach(b=>b.onclick=(e)=>{
+      e.stopPropagation();
+      const p = (DB.plans||[]).find(x=>x.id===b.dataset.planrecv); if(!p) return;
+      planRecv = planRecv && planRecv.id===p.id ? null : {id:p.id, amount:String(p.amount||""), note:""};
+      datePickerValues.planRecv = todayStr(); datePickerMonth.planRecv = null; render();
+    });
+    const amt = document.getElementById("planRecvAmt"), note = document.getElementById("planRecvNote");
+    if(amt) amt.oninput = ()=>{ planRecv.amount = amt.value; };
+    if(note) note.oninput = ()=>{ planRecv.note = note.value; };
+    wireDatePickers(()=>render());
+    const cancel = document.getElementById("planRecvCancel"); if(cancel) cancel.onclick = ()=>{ planRecv = null; render(); };
+    const sv = document.getElementById("planRecvSave");
+    if(sv) sv.onclick = async ()=>{
+      const p = (DB.plans||[]).find(x=>x.id===planRecv.id); const d = p && dealById(p.dealId);
+      const date = datePickerValues.planRecv; const amount = Number(String(amt.value).replace(/[$,\s]/g,""));
+      if(!date){ fieldErr(document.getElementById("planRecvDate"), true, "Pick the date it arrived."); return; }
+      if(!(amount > 0)){ fieldErr(amt, true, "Enter the amount received."); return; }
+      if(!p || !d) return;
+      const noteText = (note.value||"").trim();
+      p.received = p.received || [];
+      p.received.push({date, amount, method:p.method, note:noteText, by:"Yaakov", at:new Date().toISOString()});
+      p.lastReceived = date;
+      p.paidToDate = Math.round(((Number(p.paidToDate)||0) + amount)*100)/100;
+      if(p.frequency === "once") p.state = "completed";
+      else p.nextDue = planNextAfter(p, p.nextDue) || p.nextDue;
+      if(p.totalAgreed && p.paidToDate >= p.totalAgreed) p.state = "completed";
+      const [y,m,dd] = date.split("-");
+      d.notesLog = d.notesLog || [];
+      d.notesLog.push({date:todayStr(), stamp:nowStamp(), text: Number(m)+"/"+Number(dd)+"/"+y+" · Payment received: "+money(amount)+" by "+p.method+" (Payment Plans)"+(noteText?". "+noteText:"")});
+      logEvent(d.name+": payment received "+money(amount)+" by "+p.method+" (Payment Plans)", d.id);
+      planRecv = null; datePickerValues.planRecv = null;
+      render();
+      await save(d.name+": payment received (Payment Plans)");
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // CALENDAR (step 14): view only. Each event has a stable id for a later Google
+  // Calendar sync: plan:<planId>:<date>, rem:<id>, promise:<id>, task:<id>, legal:<dealId>:<date>.
+  // ---------------------------------------------------------------------------
+  const CAL_TYPES = {plan:["Plan payment","var(--accent)"], reminder:["Reminder","var(--warning)"], promise:["Promise","var(--success)"], legal:["Legal follow-up","var(--neutral)"], task:["Task due","var(--neutral)"]};
+  function calRange(){
+    if(calViewMode === "week"){ const s = startOfWeek(calAnchor); return [s, addDays(s, 6)]; }
+    const a = new Date(calAnchor+"T12:00:00Z"); const y = a.getUTCFullYear(), m = a.getUTCMonth();
+    return [new Date(Date.UTC(y,m,1,12)).toISOString().slice(0,10), new Date(Date.UTC(y,m+1,0,12)).toISOString().slice(0,10)];
+  }
+  function allCalendarEvents(){
+    const map = {};
+    const [from, to] = calRange();
+    function add(ev){ if(!ev.date) return; (map[ev.date] = map[ev.date] || []).push(ev); }
+    activePlans().forEach(p=>{
+      const d = dealById(p.dealId); if(!d || isOtherOwnerDeal(d)) return;
+      planOccurrences(p, from, to).forEach(ds=>add({id:"plan:"+p.id+":"+ds, type:"plan", date:ds, label:d.name+": "+(PLAN_TYPES[p.type]||"Plan")+" "+money(p.amount)+" "+(p.method||""), dealId:d.id}));
+    });
+    allReminders().filter(r=>r.status==="open").forEach(r=>{
+      const {date,time} = splitDueAt(r.dueAt); const d = r.dealId ? dealById(r.dealId) : null;
+      add({id:"rem:"+r.id, type:"reminder", date, time:time||null, label:(d?d.name+": ":"")+r.text, dealId:r.dealId||null});
+    });
+    DB.commitments.filter(c=>c.status==="open").forEach(c=>{
+      const d = dealById(c.dealId); if(!d || isOtherOwnerDeal(d)) return;
+      add({id:"promise:"+c.id, type:"promise", date:c.dueDate, label:d.name+": "+c.description, dealId:c.dealId});
+    });
+    ourDeals().filter(d=>d.legalCase).forEach(d=>{ const nf = legalNextFollowUp(d); if(nf) add({id:"legal:"+d.id+":"+nf, type:"legal", date:nf, label:d.name+": legal follow-up", dealId:d.id}); });
+    DB.tasks.filter(t=>t.status==="open" && t.dueDate).forEach(t=>{
+      const d = dealById(t.dealId); if(!d || isOtherOwnerDeal(d)) return;
+      add({id:"task:"+t.id, type:"task", date:t.dueDate, label:d.name+": "+(TASK_TYPES[t.type]||t.type), dealId:t.dealId});
+    });
+    // Manual-pay deals not yet set up as a plan keep their expected-payment reminder.
+    const planned = new Set(activePlans().map(p=>p.dealId));
+    ourDeals().filter(d=>d.manualPay && !planned.has(d.id)).forEach(d=>{
+      const nd = nextManualPayDate(d.manualPay);
+      if(nd) add({id:"manual:"+d.id+":"+nd, type:"plan", date:nd, label:d.name+": check for "+(d.manualPay.method||"manual")+" payment ("+money(d.manualPay.expectedAmount)+")", dealId:d.id});
+    });
+    Object.values(map).forEach(list=>list.sort((a,b)=>(a.time||"").localeCompare(b.time||"")));
+    return map;
+  }
   function calNavHtml(label){
     return '<div class="cd-calnav">'
       + '<button class="btn btn-secondary" data-calmove="today">Today</button>'
-      + '<button class="btn btn-icon cd-calnavbtn" data-calmove="-1"><svg class="ic"><use href="#i-chev-l"/></svg></button>'
-      + '<button class="btn btn-icon cd-calnavbtn" data-calmove="1"><svg class="ic"><use href="#i-chev-r"/></svg></button>'
-      + '<b style="font-size:var(--fs-4);">'+label+'</b>'
+      + '<button class="btn btn-secondary btn-icon" style="width:32px;height:32px;" data-calmove="-1" title="Previous"><svg class="ic"><use href="#i-chev-l"/></svg></button>'
+      + '<button class="btn btn-secondary btn-icon" style="width:32px;height:32px;" data-calmove="1" title="Next"><svg class="ic"><use href="#i-chev-r"/></svg></button>'
+      + '<b>'+label+'</b>'
+      + '<div class="cal-legend">'+["plan","reminder","promise","legal"].map(k=>'<span><i style="background:'+CAL_TYPES[k][1]+'"></i>'+(k==="legal"?"Legal & tasks":CAL_TYPES[k][0])+'</span>').join("")+'</div>'
       + '<div class="cd-calviewsel">'
         + '<button class="cd-calviewbtn '+(calViewMode==="month"?"on":"")+'" data-calview="month">Month</button>'
         + '<button class="cd-calviewbtn '+(calViewMode==="week"?"on":"")+'" data-calview="week">Week</button>'
-        + '<button class="cd-calviewbtn '+(calViewMode==="day"?"on":"")+'" data-calview="day">Day</button>'
       + '</div></div>';
   }
-
   function calendarHtml(){
+    if(calViewMode !== "month" && calViewMode !== "week") calViewMode = "month";
     const events = allCalendarEvents();
-    let body, label;
-    if(calViewMode==="month") { const r = monthViewHtml(events); body=r.body; label=r.label; }
-    else if(calViewMode==="week") { const r = weekViewHtml(events); body=r.body; label=r.label; }
-    else { const r = dayViewHtml(events); body=r.body; label=r.label; }
-
-    const selectedEvs = calSelectedDay ? (events[calSelectedDay]||[]) : [];
-
-    return '<div class="cd-h1">Calendar</div><p class="cd-sub">Every open commitment, reminder, legal follow-up, and task due date in one place.</p>'
-      + calNavHtml(label)
-      + body
-      + (calSelectedDay && calViewMode==="month" ? '<div class="cd-panel" style="margin-top:16px;"><h3>'+fmtDate(calSelectedDay)+'</h3>'
-          + (selectedEvs.length ? selectedEvs.map(e=>'<div class="cd-listrow" data-open="'+e.dealId+'"><div><b>'+esc(e.label)+'</b></div></div>').join("") : '<div class="empty">Nothing due this day.</div>')
-          + '</div>' : "");
+    const r = calViewMode === "week" ? weekViewHtml(events) : monthViewHtml(events);
+    const sel = calSelectedDay || null;
+    const evs = sel ? (events[sel]||[]) : [];
+    return '<div class="cd-h1">Calendar</div><p class="cd-sub">Everything due: plan payments, reminders, promises, legal follow-ups and task due dates. View only; tap a day to list it, tap an item to open the deal.</p>'
+      + calNavHtml(r.label) + r.body
+      + (sel ? '<div class="cd-panel" style="margin-top:var(--s-4);"><h3>'+fmtDate(sel)+'</h3>'
+          + (evs.length ? evs.map(e=>'<div class="cal-dayrow" data-calev="'+esc(e.id)+'"'+(e.dealId?' data-open="'+esc(e.dealId)+'"':'')+'><span class="t">'+(e.time?fmtTime(e.time):"All day")+'</span><span>'+esc(e.label)+'</span><span class="pill" style="--c:'+CAL_TYPES[e.type][1]+'">'+CAL_TYPES[e.type][0]+'</span></div>').join("")
+                        : '<div class="empty">Nothing due this day.</div>') + '</div>' : '');
   }
-
   function monthViewHtml(events){
     const anchor = new Date(calAnchor+"T12:00:00Z");
     const y = anchor.getUTCFullYear(), m = anchor.getUTCMonth();
     const first = new Date(Date.UTC(y, m, 1));
-    const startDow = first.getUTCDay();
-    const daysInMonth = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+    const startDow = first.getUTCDay(), daysInMonth = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
     const label = first.toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"});
-
     let cells = "";
     for(let i=0;i<startDow;i++) cells += '<div class="cd-calday empty"></div>';
     for(let day=1; day<=daysInMonth; day++){
-      const dateStr = y+"-"+String(m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
-      const isToday = dateStr===todayStr();
-      const evs = events[dateStr]||[];
-      cells += '<div class="cd-calday'+(isToday?' today':'')+'" data-calday="'+dateStr+'">'
-        + '<div class="cd-caldate">'+day+'</div>'
-        + evs.slice(0,3).map(e=>'<span class="cd-calitem" data-open="'+e.dealId+'" style="background:rgba(255,255,255,.08);color:'+e.color+';" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join("")
-        + (evs.length>3?'<span style="font-size:var(--fs-1);color:var(--text-3);">+'+(evs.length-3)+' more</span>':"")
+      const ds = y+"-"+String(m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+      const evs = events[ds]||[];
+      cells += '<div class="cd-calday'+(ds===todayStr()?' today':'')+(ds===calSelectedDay?' sel':'')+'" data-calday="'+ds+'"><div class="cd-caldate">'+day+'</div>'
+        + evs.slice(0,3).map(e=>'<span class="cd-calitem" style="--c:'+CAL_TYPES[e.type][1]+'" data-calev="'+esc(e.id)+'"'+(e.dealId?' data-open="'+esc(e.dealId)+'"':'')+' title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join("")
+        + evs.slice(0,6).map(e=>'<span class="cal-dot" style="--c:'+CAL_TYPES[e.type][1]+'"></span>').join("")
+        + (evs.length>3?'<span class="cd-calitem" style="--c:var(--text-3);background:none;padding-left:0;">+'+(evs.length-3)+' more</span>':'')
         + '</div>';
     }
-    const body = '<div class="cd-calgrid">'
-      + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div class="cd-calhead">'+d+'</div>').join("")
-      + cells + '</div>';
-    return {body, label};
+    return {label, body:'<div class="cd-calgrid">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div class="cd-calhead">'+d+'</div>').join("")+cells+'</div>'};
   }
-
-  function hourGridHtml(dayDateStrs, events){
-    const hourLabels = [];
-    for(let h=0;h<24;h++){
-      const hr = h===0?"12 AM":h<12?h+" AM":h===12?"12 PM":(h-12)+" PM";
-      hourLabels.push('<div class="cd-hourlabel">'+hr+'</div>');
-    }
-    const now = TODAY;
-    const nowTop = (now.getHours() + now.getMinutes()/60) * 44;
-
-    const cols = dayDateStrs.map(ds=>{
-      const slots = Array.from({length:24}).map(()=>'<div class="cd-hourslot"></div>').join("");
-      const isToday = ds===localDateStr(now);
-      const timed = ((events[ds]||[]).filter(e=>e.time)).map(e=>{
-        const [h,m] = e.time.split(":").map(Number);
-        const top = (h + m/60) * 44;
-        return '<div class="cd-timedev" style="top:'+top+'px;" '+(e.dealId?'data-open="'+e.dealId+'"':'')+' title="'+esc(e.label)+'">'+esc(e.label)+'</div>';
-      }).join("");
-      return '<div class="cd-hourcol" data-calday="'+ds+'">'+slots+timed+(isToday?'<div class="cd-nowline" style="top:'+nowTop+'px;"><div class="cd-nowdot"></div></div>':"")+'</div>';
-    }).join("");
-
-    return '<div class="cd-hourgrid">'
-      + '<div class="cd-hourlabels">'+hourLabels.join("")+'</div>'
-      + '<div class="cd-hourcols" style="grid-template-columns:repeat('+dayDateStrs.length+',1fr);">'+cols+'</div>'
-      + '</div>';
-  }
-
   function weekViewHtml(events){
-    const weekStart = startOfWeek(calAnchor);
-    const days = Array.from({length:7}).map((_,i)=>addDays(weekStart, i));
-    const label = new Date(days[0]+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"})
-      + " – " + new Date(days[6]+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
-
-    const headCells = days.map(ds=>{
-      const d = new Date(ds+"T12:00:00Z");
-      const isToday = ds===todayStr();
-      return '<div class="cd-weekheadcell'+(isToday?' today':'')+'"><div class="dow">'+d.toLocaleDateString("en-US",{weekday:"short",timeZone:"UTC"}).toUpperCase()+'</div><div class="dnum">'+d.getUTCDate()+'</div></div>';
+    const s = startOfWeek(calAnchor), days = Array.from({length:7}).map((_,i)=>addDays(s, i));
+    const f = (ds,o)=>new Date(ds+"T12:00:00Z").toLocaleDateString("en-US",Object.assign({timeZone:"UTC"},o));
+    const label = f(days[0],{month:"short",day:"numeric"})+" – "+f(days[6],{month:"short",day:"numeric",year:"numeric"});
+    const cols = days.map(ds=>{
+      const evs = events[ds]||[];
+      return '<div class="cal-wday'+(ds===todayStr()?' today':'')+(ds===calSelectedDay?' sel':'')+'" data-calday="'+ds+'"><div class="eyebrow">'+f(ds,{weekday:"short"})+'</div><div class="dnum">'+f(ds,{day:"numeric"})+'</div>'
+        + evs.map(e=>'<span class="cal-ev" style="--c:'+CAL_TYPES[e.type][1]+'" data-calev="'+esc(e.id)+'"'+(e.dealId?' data-open="'+esc(e.dealId)+'"':'')+'><small>'+(e.time?fmtTime(e.time):"All day")+'</small>'+esc(e.label)+'</span>').join("")
+        + '</div>';
     }).join("");
-
-    const alldayCells = days.map(ds=>{
-      const evs = (events[ds]||[]).filter(e=>!e.time);
-      return '<div class="cd-allday-cell" data-calday="'+ds+'">'+evs.map(e=>'<span class="cd-calitem-chip" data-open="'+e.dealId+'" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join("")+'</div>';
-    }).join("");
-
-    const body = '<div class="cd-weekwrap">'
-      + '<div class="cd-weekheadrow" style="grid-template-columns:52px repeat(7,1fr);"><div></div>'+headCells+'</div>'
-      + '<div class="cd-allday-row" style="grid-template-columns:52px repeat(7,1fr);"><div style="font-size:var(--fs-1);color:var(--text-3);padding:4px;">All-day</div>'+alldayCells+'</div>'
-      + hourGridHtml(days, events)
-      + '</div>';
-    return {body, label};
+    return {label, body:'<div class="cal-week">'+cols+'</div>'};
   }
 
-  function dayViewHtml(events){
-    const ds = calAnchor;
-    const d = new Date(ds+"T12:00:00Z");
-    const label = d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric",timeZone:"UTC"});
-    const isToday = ds===todayStr();
-    const evs = events[ds]||[];
-
-    const body = '<div class="cd-weekwrap">'
-      + '<div class="cd-weekheadrow" style="grid-template-columns:52px 1fr;"><div></div><div class="cd-weekheadcell'+(isToday?' today':'')+'"><div class="dow">'+d.toLocaleDateString("en-US",{weekday:"short",timeZone:"UTC"}).toUpperCase()+'</div><div class="dnum">'+d.getUTCDate()+'</div></div></div>'
-      + '<div class="cd-allday-row" style="grid-template-columns:52px 1fr;"><div style="font-size:var(--fs-1);color:var(--text-3);padding:4px;">All-day</div><div class="cd-allday-cell" data-calday="'+ds+'">'+(evs.filter(e=>!e.time).length?evs.filter(e=>!e.time).map(e=>'<span class="cd-calitem-chip" data-open="'+e.dealId+'" title="'+esc(e.label)+'">'+esc(e.label)+'</span>').join(""):"")+'</div></div>'
-      + hourGridHtml([ds], events)
-      + '</div>';
-    return {body, label};
-  }
-
-  // ---------------- TASKS ----------------
   let taskTypeFilter = "all";
   let taskWaitingFilter = "all";
 
@@ -3466,36 +3780,15 @@ button{ cursor: pointer; }
       + (isOpen ? '<div class="cd-collapsible-body">'+innerHtml+'</div>' : '');
   }
 
-  function openDrawer(d){
-    // Callers have passed both a deal and a deal id here. Accept either: getting it wrong
-    // used to open a blank drawer with no error, which is a miserable thing to debug.
-    if(typeof d === "string") d = dealById(d);
-    if(!d) return;
-    drawerDealId = d.id;
-    drawerTab = "overview";
-    drawerEditingContact = false;
-    commitEditingId = null;
-    taskEditingId = null;
-    addingOwnerFor = null;
-    addingBrokerFor = null;
-    datePickerValues = {}; datePickerMonth = {}; datePickerOpenFor = null;
-    renderDrawer(d);
-    document.getElementById("cdDrawer").classList.add("on");
-    document.getElementById("cdDrawerOverlay").classList.add("on");
-  }
+  function openDrawer(d){ openDeal(d); }
   function closeDrawer(){
-    document.getElementById("cdDrawer").classList.remove("on");
-    document.getElementById("cdDrawerOverlay").classList.remove("on");
     drawerDealId = null;
+    if(currentPage === "deal"){ currentPage = dealPrevPage || "deals"; render(); }
   }
+  function renderDrawer(){ if(currentPage === "deal") render(); }
 
-  function renderDrawer(d){
-    document.getElementById("cdDrawer").innerHTML = drawerHtml(d);
-    wireDrawer(d);
-    markEditOnly(document.getElementById("cdDrawer"));
-  }
-
-  function drawerHtml(d){
+  function drawerBody(d, which){
+    const drawerTab = which;
     const st = statusOf(d.status);
     const remaining = Math.max(0,(d.original||0)-(d.recovered||0));
     const p = pct(d.recovered, d.original);
@@ -3528,6 +3821,7 @@ button{ cursor: pointer; }
         + '<div class="cd-tlrow"><span>Frequency</span><span>'+esc(d.freq||"—")+'</span></div>'
         + '<div class="cd-tlrow"><span>Last Payment</span><span>'+fmtDate(d.lastPaymentDate)+'</span></div>'
         + '<div class="cd-tlrow"><span>Consecutive / Lifetime Returns</span><span>'+(d.consecutive||0)+' / '+(d.lifetime||0)+'</span></div>'
+        + '<!--DP:contact-->'
         + '<div class="cd-drsect">Contact'+(missingContact?' <span style="color:var(--danger);">— missing</span>':'')+'</div>'
         + (drawerEditingContact
             ? '<input class="cd-note" id="cdContactName" placeholder="Name" value="'+esc(c.name||"")+'" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
@@ -3542,6 +3836,7 @@ button{ cursor: pointer; }
                   + '<div class="cd-tlrow"><span>Email</span><span>'+esc(c.email||"—")+'</span></div>'
                   + '<button class="btn btn-sm btn-ghost" data-addcontact="'+d.id+'" style="margin-top:6px;">Edit contact info</button>'))
         + emergencyContactsHtml(d)
+        + '<!--DP:status-->'
         + '<div class="cd-drsect">Status</div>'
         + '<select class="cd-select" data-statuschange="'+d.id+'">'
           + Object.keys(STATUS).map(k=>'<option value="'+k+'" '+(d.status===k?'selected':'')+'>'+STATUS[k].label+'</option>').join("")
@@ -3562,6 +3857,7 @@ button{ cursor: pointer; }
                       + '</select>')
                 : "")
           ) : "")
+        + '<!--DP:broker-->'
         + sectionHtml("broker","Broker Contact",
             (addingBrokerFor===d.id
               ? '<input class="cd-note" id="cdNewBrokerName" placeholder="Broker name" style="min-height:auto;padding:8px 10px;margin-bottom:6px;">'
@@ -3574,11 +3870,12 @@ button{ cursor: pointer; }
                 + '<option value="__new__">+ Add new broker…</option>'
                 + '</select>'
                 + (currentBroker && (currentBroker.phone||currentBroker.email) ? '<div class="cd-tlrow"><span>Phone</span><span>'+esc(currentBroker.phone||"—")+'</span></div><div class="cd-tlrow"><span>Email</span><span>'+esc(currentBroker.email||"—")+'</span></div>' : "")))
+        + '<!--DP:clawback-->'
         + sectionHtml("clawback","Clawback",
             '<select class="cd-select" data-clawback="'+d.id+'">'
               + Object.keys(CLAWBACK).map(k=>'<option value="'+k+'" '+(d.clawback===k?'selected':'')+'>'+CLAWBACK[k].label+'</option>').join("")
             + '</select>')
-        + (d.contractUrl ? sectionHtml("documents","Documents",'<a class="cd-savebtn" style="display:inline-block;text-decoration:none;text-align:center;" href="'+esc(d.contractUrl)+'" target="_blank" rel="noopener">Open Contract</a>') : "");
+        + (d.contractUrl ? sectionHtml("documents","Documents",'<a class="btn btn-secondary" href="'+esc(d.contractUrl)+'" target="_blank" rel="noopener">Open Contract</a>') : "");
     } else if(drawerTab==="notes"){
       body = '<textarea class="cd-note" id="cdNewNote" placeholder="Add a note..."></textarea>'
         + '<p class="cd-caption" style="margin:4px 0 0;">Ctrl+Enter to add · Enter for a new line</p>'
@@ -3661,7 +3958,9 @@ button{ cursor: pointer; }
           + '<div class="cd-tlrow"><span>Filed</span><span>'+fmtDate(lc.filedDate)+'</span></div>'
           + '<div class="cd-tlrow"><span>Last Contact</span><span>'+fmtDate(lc.lastContactDate)+'</span></div>'
           + '<div class="cd-tlrow"><span>Next Follow-up</span><span style="'+(legalIsStale(d)?'color:var(--danger);':'')+'">'+(nf?fmtDate(nf):"—")+'</span></div>'
-          + '<button class="btn btn-sm btn-ghost" data-legalcontacttoday="'+d.id+'" style="margin-top:6px;">Log contact today</button> '
+          + (legalConfirmFor===d.id
+              ? '<div class="cd-warn" style="display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap;margin:var(--s-2) 0;">Log contact with the firm as today?<button class="btn btn-sm btn-primary" data-legalcontacttoday="'+d.id+'">Log it</button><button class="btn btn-sm btn-secondary" data-legalcontactcancel="1">Cancel</button></div>'
+              : '<button class="btn btn-sm btn-ghost" data-legalcontactask="'+d.id+'" style="margin-top:var(--s-2);">Log contact today</button> ')
           + '<select class="cd-select" id="cdLegalSnooze" style="display:inline-block;width:auto;margin-top:6px;"><option value="0">Snooze...</option><option value="1">+1 week</option><option value="2">+2 weeks</option><option value="3">+3 weeks</option><option value="4">+4 weeks</option></select>'
           + sectionHtml("legaldocs","Document Checklist ("+Object.keys(LEGAL_DOC_LABELS).filter(k=>(lc.docs||{})[k]&&(lc.docs||{})[k]!=="pending").length+"/"+Object.keys(LEGAL_DOC_LABELS).length+")",
               Object.keys(LEGAL_DOC_LABELS).map(k=>{
@@ -3682,26 +3981,13 @@ button{ cursor: pointer; }
       body = (d.pending||[]).length ? d.pending.map((p,i)=>'<div class="cd-comment"><div class="cd-comment-head"><span class="cd-comment-time">'+esc(p.date||"")+'</span></div><div class="cd-comment-text" style="'+(p.done?"text-decoration:line-through;color:var(--text-3);":"")+'">'+esc(p.text)+'</div></div>').join("") : '<p class="cd-caption">Nothing legacy-pending on this deal.</p>';
     }
 
-    return '<button class="btn btn-icon cd-drclose" data-drclose="1"><svg class="ic"><use href="#i-close"/></svg></button>'
-      + (hqReturn ? '<div style="margin-bottom:10px;"><button class="btn btn-sm btn-secondary" data-hqback="1">← Back to '+(hqReturn[0]==='u'?'underwriting':'today')+'</button></div>' : '')
-      + '<div class="cd-drtitle">'+esc(d.name)+'</div>'
-      + '<div class="cd-drsub">'+esc(d.mcht||"")+(d.leadId?' · Lead '+esc(d.leadId):"")+' · <span class="pill" style="--c:'+st.color+';">'+st.label+'</span></div>'
-      + '<div class="cd-drtabbar">'
-        + tab("overview","Overview")
-        + tab("notes","Notes",(d.notesLog||[]).length)
-        + tab("commitments","Commitments",dealCommitments.filter(c=>c.status==="open").length)
-        + tab("tasks","Tasks",dealTasks.filter(t=>t.status==="open").length)
-        + tab("legal","Legal")
-        + tab("david","David",(DB.david||[]).filter(i=>i.dealId===d.id&&i.status!=="done").length)
-        + tab("pending","Legacy",(d.pending||[]).filter(p=>!p.done).length)
-      + '</div>'
-      + body;
+    return body;
   }
 
   function wireDrawer(d){
     document.querySelectorAll("[data-drclose]").forEach(b=>b.onclick=()=>{ hqReturn=null; closeDrawer(); });
     document.querySelectorAll("[data-hqback]").forEach(b=>b.onclick=()=>{ const k=hqReturn; hqReturn=null; closeDrawer(); if(k) openSituation(k); });
-    if(drawerTab==="david") wireDavidItems(()=>renderDrawer(dealById(drawerDealId)));
+    if(dealTab==="notes") wireDavidItems(()=>renderDrawer(dealById(drawerDealId)));
     document.querySelectorAll("[data-drtab]").forEach(b=>b.onclick=()=>{ drawerTab=b.dataset.drtab; commitEditingId=null; taskEditingId=null; renderDrawer(dealById(drawerDealId)); });
     wireDatePickers(()=>renderDrawer(d));
     document.querySelectorAll("[data-sectiontoggle]").forEach(el=>el.onclick=()=>{
@@ -4019,7 +4305,10 @@ button{ cursor: pointer; }
       logEvent(d.name+": legal stage moved to "+(LEGAL_STAGES[stageEl.value]||{}).label, d.id);
       save(); renderDrawer(d); render();
     };
+    document.querySelectorAll("[data-legalcontactask]").forEach(b=>b.onclick=()=>{ legalConfirmFor = d.id; renderDrawer(d); });
+    document.querySelectorAll("[data-legalcontactcancel]").forEach(b=>b.onclick=()=>{ legalConfirmFor = null; renderDrawer(d); });
     document.querySelectorAll("[data-legalcontacttoday]").forEach(b=>b.onclick=()=>{
+      legalConfirmFor = null;
       d.legalCase.lastContactDate = todayStr();
       d.legalCase.snoozeWeeks = 0;
       logEvent(d.name+": logged legal contact today", d.id);
