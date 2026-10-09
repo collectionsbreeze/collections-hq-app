@@ -486,7 +486,7 @@ button{ cursor: pointer; }
   .cd-brandrow{ display:flex; align-items:center; gap:var(--s-2); justify-content:space-between; }
   .view-only{ display:flex; align-items:center; gap:var(--s-2); margin-top:var(--s-2); font-size:var(--fs-2); }
   .view-only a{ color:var(--text-2); }
-  .cd-davidmode .edit-only, .cd-davidmode .cd-drsect:has(+ .edit-only){ display:none !important; }
+  .cd-viewer .viewer-hide, .cd-davidmode .edit-only, .cd-davidmode .cd-drsect:has(+ .edit-only){ display:none !important; }
   svg.ic{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
   .grid-table .tag{ display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; line-height:18px; vertical-align:middle; }
 
@@ -909,6 +909,13 @@ button{ cursor: pointer; }
   const RELAY_URL = "https://collections-relay.collections-bd3.workers.dev";
   let DAVID_BASE = null;   // JSON of the state as last read, to undo edits outside the David page
   function davidMode(){ return ghCfg.mode === "david"; }
+  // Two view-only logins share the /david/ routes: David (can post on the David page) and
+  // a viewer (Mendy, read only everywhere). The relay says which; the relay is the lock.
+  function viewerMode(){ return davidMode() && ghCfg.role === "viewer"; }
+  async function fetchRole(){
+    try{ const r = await davidApi("/david/whoami"); return r && r.role === "viewer" ? "viewer" : "david"; }
+    catch(e){ if(e && e.code === "bad_token") throw e; return ghCfg.role || "david"; }
+  }
   async function davidApi(path, opts){
     opts = opts || {};
     const headers = { "x-relay-key": ghCfg.davidKey };
@@ -918,6 +925,7 @@ button{ cursor: pointer; }
     catch(e){ throw {code:"blocked", message:"Couldn't reach the server. Check the connection and try again."}; }
     let body = {}; try{ body = await r.json(); }catch(e){}
     if(r.status === 401) throw {code:"bad_token", message:"Wrong password."};
+    if(r.status === 403) throw {code:"view_only", message:"View only, nothing was saved."};
     if(!r.ok) throw {code:"http", message: body.error || ("Server returned " + r.status + ".")};
     return body;
   }
@@ -938,14 +946,15 @@ button{ cursor: pointer; }
         }
         showBanner("Sent. It's on the David page as <b>New</b>.", "ok"); setTimeout(hideBanner, 2600);
       }catch(e){
-        showBanner("<b>Not sent.</b> " + esc((e && e.message) || ""), "bad");
+        if(e && e.code === "view_only") showBanner("View only, nothing was saved.", "warn");
+        else showBanner("<b>Not sent.</b> " + esc((e && e.message) || ""), "bad");
       }
       try{ await davidReload(); }catch(e){}
       return;
     }
     // Anything else is outside what this login can change: put the data back as it was.
     DB = normalise(base);
-    showBanner("View only. From this login only the David page can be changed, so that edit wasn't saved.", "warn");
+    showBanner(viewerMode() ? "View only, nothing was saved." : "View only. From this login only the David page can be changed, so that edit wasn't saved.", "warn");
     setTimeout(hideBanner, 4200);
     setTimeout(()=>render(), 0);
   }
@@ -953,7 +962,7 @@ button{ cursor: pointer; }
     const app = document.getElementById("cdApp");
     app.innerHTML = '<div style="margin:auto;max-width:420px;padding:40px 24px;">'
       + '<div class="cd-h1" style="font-size:var(--fs-6);">Collections HQ</div>'
-      + '<p class="cd-sub" style="margin:8px 0 24px;">View-only sign in. You can see everything and post instructions on the David page.</p>'
+      + '<p class="cd-sub" style="margin:8px 0 24px;">View-only sign in. You can see everything; nothing here can be changed.</p>'
       + (err ? '<div class="cd-warn">' + esc(err) + '</div>' : '')
       + '<div class="cd-formrow"><label>Password</label>'
       + '<input class="input cd-input" id="cfgDavidPw" type="password" autocomplete="current-password"></div>'
@@ -965,7 +974,7 @@ button{ cursor: pointer; }
       const status = document.getElementById("cfgDavidStatus");
       status.textContent = "Checking\u2026";
       ghCfg = { owner:"", repo:"", token:"", mode:"david", davidKey: pw };
-      try{ await ghRead(); saveCfg(); currentPage = "david"; await load(); }
+      try{ await ghRead(); ghCfg.role = await fetchRole(); saveCfg(); currentPage = "david"; await load(); }
       catch(e){ ghCfg = { owner:"", repo:"", token:"" }; status.innerHTML = '<span style="color:var(--danger);">' + esc((e && e.message) || "Couldn't sign in.") + '</span>'; }
     };
     document.getElementById("cfgDavidGo").onclick = go;
@@ -1169,6 +1178,8 @@ button{ cursor: pointer; }
       const remote = await ghRead();
       DB = normalise(remote);
       if(davidMode()){
+        if(!ghCfg.role){ ghCfg.role = await fetchRole(); saveCfg(); }
+        document.body.classList.toggle("cd-viewer", viewerMode());
         DAVID_BASE = JSON.stringify(remote);
         document.body.classList.add("cd-davidmode");
       }
@@ -1259,7 +1270,7 @@ button{ cursor: pointer; }
       + '<input class="input cd-input" id="cfgToken" type="password" placeholder="github_pat_..."></div>'
       + '<button class="btn btn-primary" id="cfgSave" style="margin-top:8px;">Connect</button>'
       + '<div id="cfgStatus" class="cd-sub" style="margin-top:14px;"></div>'
-      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToDavid" style="color:var(--text-2);">View-only sign in (David)</a></p></div>';
+      + '<p class="cd-caption" style="margin-top:28px;"><a href="#" id="cfgToDavid" style="color:var(--text-2);">View-only sign in</a></p></div>';
     document.getElementById("cfgToDavid").onclick = (e)=>{ e.preventDefault(); renderDavidLogin(); };
     document.getElementById("cfgSave").onclick = async ()=>{
       const owner = document.getElementById("cfgOwner").value.trim();
@@ -1848,7 +1859,7 @@ button{ cursor: pointer; }
     }
     return '<div id="cdNav">'
       + '<div class="cd-brand"><div class="cd-brandrow"><b>Collections HQ</b></div><span>Breeze / EmberStone</span>'
-      + (davidMode() ? '<div class="view-only"><span class="pill" style="--c:var(--warning)">View only</span><a href="#" id="cdDavidOut">Sign out</a></div>' : '')
+      + (davidMode() ? '<div class="view-only"><span class="pill" style="--c:var(--warning)">'+(viewerMode()?'View only · Mendy':'View only')+'</span><a href="#" id="cdDavidOut">Sign out</a></div>' : '')
       + '</div>'
       + navSearchHtml()
       + item("overview","Overview")
@@ -2167,7 +2178,7 @@ button{ cursor: pointer; }
   function topBarHtml(){
     if(currentPage === "deal") return "";
     return '<div id="cdTop"><b>'+esc(PAGE_TITLES[currentPage]||"Collections HQ")+'</b>'
-      + (davidMode() ? '<span class="pill" style="--c:var(--warning)">View only</span>' : '') + '</div>';
+      + (davidMode() ? '<span class="pill" style="--c:var(--warning)">'+(viewerMode()?'View only · Mendy':'View only')+'</span>' : '') + '</div>';
   }
   function tabsHtml(){
     const t1 = tierCountsCached().t1 || 0;
@@ -2190,7 +2201,7 @@ button{ cursor: pointer; }
   function wire(){
     bindNavSearch();
     const out = document.getElementById("cdDavidOut");
-    if(out) out.onclick = (e)=>{ e.preventDefault(); clearCfg(); document.body.classList.remove("cd-davidmode"); renderDavidLogin(); };
+    if(out) out.onclick = (e)=>{ e.preventDefault(); clearCfg(); document.body.classList.remove("cd-davidmode","cd-viewer"); renderDavidLogin(); };
     markEditOnly(document);
     document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem(THEME_KEY, b.dataset.themeSet); }catch(e){} applyTheme(b.dataset.themeSet); render(); });
     document.querySelectorAll(".cd-nagbanner[data-viewmode-hint]").forEach(el=>el.onclick=()=>{
@@ -2814,7 +2825,7 @@ button{ cursor: pointer; }
         + '<button class="btn btn-sm btn-secondary hq-davnote" data-n="'+i.id+'">Note</button>'
         + (d&&!compact?'<span class="cd-caption" style="margin:0 0 0 auto;font-size:var(--fs-1);">click row → deal</span>':'')
       + '</div>'
-      + (davidMode()&&!compact?'<div class="hq-davupdwrap" data-stop="1"><button class="btn btn-sm btn-secondary hq-davupd" data-n="'+i.id+'">Update this instruction</button>'
+      + (davidMode()&&!compact?'<div class="hq-davupdwrap viewer-hide" data-stop="1"><button class="btn btn-sm btn-secondary hq-davupd" data-n="'+i.id+'">Update this instruction</button>'
         + '<div class="hq-davupdbox" data-n="'+i.id+'" hidden style="margin-top:8px;">'
         + '<div style="display:flex;gap:6px;margin-bottom:6px;"><button class="btn btn-sm btn-primary hq-davmode" data-n="'+i.id+'" data-mode="add">Add to it</button><button class="btn btn-sm btn-secondary hq-davmode" data-n="'+i.id+'" data-mode="replace">Replace it</button></div>'
         + '<textarea class="input cd-input" rows="2" placeholder="What changed?"></textarea>'
@@ -2829,7 +2840,7 @@ button{ cursor: pointer; }
     const done = items.filter(i=>i.status==="done" && (i.closedDate||i.when||"").slice(0,10)>=cutoff);
     const archived = items.filter(i=>i.status==="done" && (i.closedDate||i.when||"").slice(0,10)<cutoff);
     let html = '<div class="cd-h1">David</div><p class="cd-sub">Write the instruction against the deal. It lands in the next sweep; the status shows here. Click an instruction to open the deal.</p>';
-    html += '<div class="cd-panel"><div class="cd-formrow"><label>Deal</label><input class="input cd-input" id="hqDavidDeal" placeholder="Start typing a merchant, MCHT or lead ID…" autocomplete="off"><div id="hqDavidSugg" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
+    html += '<div class="cd-panel viewer-hide"><div class="cd-formrow"><label>Deal</label><input class="input cd-input" id="hqDavidDeal" placeholder="Start typing a merchant, MCHT or lead ID…" autocomplete="off"><div id="hqDavidSugg" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);max-height:180px;overflow:auto;margin-top:6px;"></div></div>'
       + '<div class="cd-formrow"><label>Instruction</label><textarea class="input cd-input" id="hqDavidText" rows="3" placeholder="e.g. send to madeb. ensure anusha clawback"></textarea></div>'
       + '<div style="display:flex;gap:12px;align-items:center;"><button class="btn btn-primary" id="hqDavidPost">Post instruction</button><span class="cd-caption" style="margin:0;">Timestamped · goes on the deal as a note · shows in Tier 1 until it’s completed</span></div></div>';
     html += '<div class="cd-panel"><h3>Open ('+open.length+')</h3>' + (open.length?open.map(i=>davidItemHtml(i,false)).join(''):'<div class="empty">Nothing open.</div>') + '</div>';
